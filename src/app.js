@@ -122,20 +122,22 @@ function prepCarPhoto(file,cb){const r=new FileReader();r.onload=()=>{const im=n
   const MAX=700,s0=Math.min(1,MAX/Math.max(im.width,im.height));
   const c=document.createElement('canvas');c.width=Math.round(im.width*s0);c.height=Math.round(im.height*s0);const x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);
   const W=c.width,H=c.height;let id;try{id=x.getImageData(0,0,W,H);}catch(e){cb(c.toDataURL('image/jpeg',0.85));return;}
-  const d=id.data,px=(i,j)=>(j*W+i)*4;
-  const corners=[px(2,2),px(W-3,2),px(2,H-3),px(W-3,H-3)].map(k=>[d[k],d[k+1],d[k+2]]);
-  const ref=[0,1,2].map(n=>corners.reduce((a,c)=>a+c[n],0)/4);
-  const spread=Math.max(...corners.map(c=>Math.abs(c[0]-ref[0])+Math.abs(c[1]-ref[1])+Math.abs(c[2]-ref[2])));
-  const light=ref[0]+ref[1]+ref[2]>600;
-  if(spread>60||!light){cb(c.toDataURL('image/jpeg',0.85));return;} /* real photo: keep as is */
-  const TOL=40,seen=new Uint8Array(W*H),stack=[];
-  const near=k=>Math.abs(d[k]-ref[0])+Math.abs(d[k+1]-ref[1])+Math.abs(d[k+2]-ref[2])<TOL;
-  for(let i=0;i<W;i++){stack.push(i,0,i,H-1);}for(let j=0;j<H;j++){stack.push(0,j,W-1,j);}
-  while(stack.length){const j=stack.pop(),i=stack.pop();if(i<0||j<0||i>=W||j>=H)continue;const q=j*W+i;if(seen[q])continue;const k=q*4;if(!near(k))continue;seen[q]=1;d[k+3]=0;stack.push(i+1,j,i-1,j,i,j+1,i,j-1);}
-  /* soften the cut edge */
-  for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const q=j*W+i;if(seen[q])continue;if(seen[q-1]||seen[q+1]||seen[q-W]||seen[q+W])d[q*4+3]=150;}
+  const d=id.data,seen=new Uint8Array(W*H);
+  /* grow the background from the edges: each step may only change a little (handles white and grey studio gradients), never into colourful areas */
+  const STEP=12,stack=[];
+  const push=(i,j,k)=>{stack.push(i,j,k);};
+  for(let i=0;i<W;i++){push(i,0,-1);push(i,H-1,-1);}for(let j=0;j<H;j++){push(0,j,-1);push(W-1,j,-1);}
+  let n=0;
+  while(stack.length){const pk=stack.pop(),j=stack.pop(),i=stack.pop();if(i<0||j<0||i>=W||j>=H)continue;const q=j*W+i;if(seen[q])continue;const k=q*4;
+    const R=d[k],G=d[k+1],B=d[k+2];if(Math.max(R,G,B)-Math.min(R,G,B)>40)continue;
+    if(pk>=0&&Math.abs(R-d[pk])+Math.abs(G-d[pk+1])+Math.abs(B-d[pk+2])>STEP)continue;
+    seen[q]=1;n++;push(i+1,j,k);push(i-1,j,k);push(i,j+1,k);push(i,j-1,k);}
+  const frac=n/(W*H);
+  if(frac<0.08||frac>0.92){cb(c.toDataURL('image/jpeg',0.85));return;} /* real photo: keep as is */
+  for(let q=0;q<W*H;q++)if(seen[q])d[q*4+3]=0;
+  for(let j=1;j<H-1;j++)for(let i=1;i<W-1;i++){const q=j*W+i;if(seen[q])continue;if(seen[q-1]||seen[q+1]||seen[q-W]||seen[q+W])d[q*4+3]=140;}
   x.putImageData(id,0,0);
-  let x0=W,y0=H,x1=-1,y1=-1;for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(d[px(i,j)+3]>30){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}
+  let x0=W,y0=H,x1=-1,y1=-1;for(let j=0;j<H;j++)for(let i=0;i<W;i++)if(d[(j*W+i)*4+3]>30){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}
   if(x1<0){cb(c.toDataURL('image/jpeg',0.85));return;}
   const w=x1-x0+1,h=y1-y0+1,o=document.createElement('canvas'),k2=Math.min(1,560/w);o.width=Math.round(w*k2);o.height=Math.round(h*k2);
   o.getContext('2d').drawImage(c,x0,y0,w,h,0,0,o.width,o.height);cb(o.toDataURL('image/png'));

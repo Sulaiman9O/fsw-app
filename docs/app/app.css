@@ -62,7 +62,8 @@ nav.rail{display:none}
 .md .pic svg{width:100%;height:96px}
 .md .pic img{width:100%;height:100px}
 .pic img.cut{object-fit:contain;padding:4px 10px 0;filter:drop-shadow(0 10px 10px rgba(0,0,0,.7))}
-.pic img.photo{object-fit:cover}
+.pic img.photo{object-fit:cover;-webkit-mask-image:linear-gradient(180deg,#000 70%,transparent);mask-image:linear-gradient(180deg,#000 70%,transparent)}
+.md .pic:has(img.photo){padding-top:0}
 .md .nm{padding:6px 12px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .md .nm b{font:400 .92rem var(--f-brand);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .md .nm span{font-size:.68rem;color:var(--muted)}
