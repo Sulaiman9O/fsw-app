@@ -1,4 +1,36 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d9de"/><stop offset=".55" stop-color="#8d8d95"/><stop offset="1" stop-color="#3b3b41"/></linearGradient>
+    <linearGradient id="paintR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b5f"/><stop offset=".55" stop-color="#c2201f"/><stop offset="1" stop-color="#5a0d0d"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3340"/><stop offset="1" stop-color="#0c0f14"/></linearGradient>
+  </defs>
+  <symbol id="suvR" viewBox="0 0 200 120">
+    <ellipse cx="100" cy="110" rx="86" ry="6" fill="rgba(0,0,0,.7)"/>
+    <rect x="30" y="92" width="24" height="18" rx="4" fill="#111"/><rect x="146" y="92" width="24" height="18" rx="4" fill="#111"/>
+    <path d="M50 16 H150 L164 50 H36 Z" fill="url(#paintR)"/>
+    <path d="M56 21 H144 L155 48 H45 Z" fill="url(#glass)"/>
+    <path d="M24 50 H176 Q184 52 184 62 V92 Q184 98 176 98 H24 Q16 98 16 92 V62 Q16 52 24 50 Z" fill="url(#paintR)"/>
+    <rect x="10" y="44" width="16" height="9" rx="3" fill="url(#paintR)"/><rect x="174" y="44" width="16" height="9" rx="3" fill="url(#paintR)"/>
+    <rect x="70" y="60" width="60" height="22" rx="4" fill="#111"/>
+    <path d="M74 66 H126 M74 71 H126 M74 76 H126" stroke="#3a3a40" stroke-width="1.6"/>
+    <path d="M24 60 H62 L60 70 H26 Z" fill="#fff"/><path d="M176 60 H138 L140 70 H174 Z" fill="#fff"/>
+    <path d="M24 60 H62 L60 70 H26 Z" fill="#fff" opacity=".5" style="filter:blur(3px)"/>
+    <rect x="80" y="86" width="40" height="7" rx="1.5" fill="#e9e9ec"/>
+    <rect x="22" y="84" width="16" height="5" rx="2.5" fill="#2a2a2e"/><rect x="162" y="84" width="16" height="5" rx="2.5" fill="#2a2a2e"/>
+  </symbol>
+  <symbol id="sedanR" viewBox="0 0 200 120">
+    <ellipse cx="100" cy="110" rx="90" ry="6" fill="rgba(0,0,0,.7)"/>
+    <rect x="28" y="94" width="22" height="15" rx="4" fill="#111"/><rect x="150" y="94" width="22" height="15" rx="4" fill="#111"/>
+    <path d="M58 30 Q100 22 142 30 L162 60 H38 Z" fill="url(#paintR)"/>
+    <path d="M63 34 Q100 27 137 34 L152 58 H48 Z" fill="url(#glass)"/>
+    <path d="M22 60 Q100 52 178 60 Q188 63 188 74 V92 Q188 99 180 99 H20 Q12 99 12 92 V74 Q12 63 22 60 Z" fill="url(#paintR)"/>
+    <rect x="14" y="54" width="16" height="8" rx="3" fill="url(#paintR)"/><rect x="170" y="54" width="16" height="8" rx="3" fill="url(#paintR)"/>
+    <path d="M74 70 H126 L122 86 H78 Z" fill="#111"/>
+    <path d="M80 75 H120 M80 80 H120" stroke="#3a3a40" stroke-width="1.6"/>
+    <path d="M20 68 Q40 66 64 70 L60 77 H24 Z" fill="#fff"/><path d="M180 68 Q160 66 136 70 L140 77 H176 Z" fill="#fff"/>
+    <rect x="84" y="89" width="32" height="6" rx="1.5" fill="#e9e9ec"/>
+  </symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-calc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
