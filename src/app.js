@@ -13,12 +13,25 @@ const bootEl=document.getElementById('boot');if(bootEl)bootEl.remove();
 /* ---------- users: stored on this device only ---------- */
 const COLORS=['#ee3a39','#2563c9','#2e9d3a','#c98a00','#5a45c4','#0f8f8a'];
 async function hashPin(pin){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('fsw:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return 'p:'+pin;}}
-const users=()=>store.get('users',[]);
-const saveUsers=u=>store.set('users',u);
+/* ---------- shared data (Firebase): users, pictures, history ---------- */
+const FB_CFG={apiKey:"AIzaSyAVQKq_pYmZxH-F2dfh97PKimPZGT22Hgo",authDomain:"fsw-app-2b544.firebaseapp.com",projectId:"fsw-app-2b544",storageBucket:"fsw-app-2b544.firebasestorage.app",messagingSenderId:"936194077597",appId:"1:936194077597:web:32c63c2943b2ce91657574"};
+const MEM={logos:null,carpics:null,users:null,hist:null};
+const SYNC={db:null,state:'off',start:Date.now(),usersLoaded:false};
+const enc=k=>encodeURIComponent(k).replace(/\./g,'%2E');
+const dec=k=>decodeURIComponent(k);
+const users=()=>MEM.users||store.get('users',[]);
+function saveUsers(list){
+  const old=users();store.set('users',list);
+  if(SYNC.db){const col=SYNC.db.collection('users');
+    list.forEach(u=>col.doc(u.id).set(u).catch(()=>{}));
+    old.filter(o=>!list.find(u=>u.id===o.id)).forEach(o=>col.doc(o.id).delete().catch(()=>{}));
+  }
+  if(MEM.users)MEM.users=list;
+}
 
 /* ---------- extra services ---------- */
 const EXTRAS=[{id:'insp',name:'Maintenance check',ar:'فحص الصيانة',icon:'i-check',price:{0:5,1:5}}];
-const LOGOS=()=>store.get('logos',{});
+const LOGOS=()=>Object.assign({},store.get('logos',{}),MEM.logos||{});
 const VCOL={'0W-16':'--v016','0W-20':'--v020','5W-30':'--v530','5W-40':'--v540','10W-40':'--v1040','20W-50':'--v2050','15W-40':'--v1540'};
 const vc=v=>'var('+(VCOL[v]||'--vx')+')';
 const MONO={Toyota:'#c8102e',Lexus:'#1f2937',Nissan:'#4b5563',Honda:'#b91c1c',Chevrolet:'#b8860b',GMC:'#9f1239',Ford:'#1e40af',Hyundai:'#0c4a6e',Kia:'#334155',Mazda:'#374151',Mitsubishi:'#dc2626',Subaru:'#1d4ed8',BYD:'#0f766e','Mercedes-Benz':'#111827',MG:'#7f1d1d',Jeep:'#3f6212',RAM:'#18181b',Infiniti:'#44403c',Genesis:'#292524',Suzuki:'#1e3a8a'};
@@ -113,7 +126,7 @@ function oilList(sc){
 /* ---------- images ---------- */
 const LOGO_IMG='data:image/png;base64,__LOGO__';
 const EMBLEM_IMG='data:image/png;base64,__EMBLEM__';
-const CARPICS=()=>store.get('carpics',{});
+const CARPICS=()=>Object.assign({},store.get('carpics',{}),MEM.carpics||{});
 const isSuv=c=>c&&c.suvN&&c.suv*2>=c.suvN;
 function carPic(c){const p=c?CARPICS()[c.mk+'|'+c.md]:null;return p?`<img class="photo" src="${p}" alt="">`:`<svg viewBox="0 0 200 120"><use href="#${isSuv(c)?'suvR':'sedanR'}"/></svg>`;}
 function shrinkImage(file,maxW,type,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,maxW/im.width);const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL(type,0.82));};im.src=r.result;};r.readAsDataURL(file);}
@@ -159,6 +172,7 @@ let pinBuf='',pickUser=null;
 function initials(n){const p=String(n).trim().split(/\s+/);return esc((p[0]||'?')[0]+(p[1]?p[1][0]:''));}
 function renderLogin(){
   const us=users();
+  if(!us.length&&navigator.onLine&&!SYNC.usersLoaded&&Date.now()-SYNC.start<9000){$('#root').innerHTML=`<div class="login"><div class="in"><img class="logo" src="${LOGO_IMG}" alt="Fast Service World"><p>Connecting…</p></div></div>`;setTimeout(()=>{if(!S.user)renderLogin();},1500);return;}
   if(!us.length){renderSetup();return;}
   if(us.length===1&&!pickUser)pickUser=us[0].id;
   $('#root').innerHTML=`<div class="login"><div class="in">
@@ -225,7 +239,7 @@ function renderQuote(){
   m.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{S.model=b.dataset.md;S.suv=isSuv(car())?1:0;render();scrollTo(0,0);});
   m.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{S.year=+b.dataset.yr;S.eng=null;resetQuote();render();scrollTo(0,0);});
   m.querySelectorAll('[data-en]').forEach(b=>b.onclick=()=>{S.eng=+b.dataset.en;resetQuote();render();scrollTo(0,0);});
-  m.querySelectorAll('[data-pic]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;prepCarPhoto(f,url=>{const p=CARPICS();p[inp.dataset.pic]=url;store.set('carpics',p);toast('Photo saved');rerender();});});
+  m.querySelectorAll('[data-pic]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;prepCarPhoto(f,url=>{putPic('carpics',inp.dataset.pic,url);toast('Photo saved');rerender();});});
 }
 function bindCrumbs(){document.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{const k=b.dataset.clr;if(k==='make'){S.make=null;S.model=null;S.year=null;}if(k==='model'){S.model=null;S.year=null;}if(k==='year'){S.year=null;}S.eng=null;resetQuote();S.extras.clear();S.disc=0;S.own=false;S.labOn=true;render();scrollTo(0,0);});}
 function resetQuote(){S.visc=null;S.picked.clear();S.fi=null;S.L=null;}
@@ -327,12 +341,12 @@ function renderSheet(){
 }
 function saveHist(){
   const sc=scenario();const sel=selectedLines();if(!sel.length)return;
-  const h=store.get('hist',[]);
-  h.unshift({t:Date.now(),by:S.user.name,car:sc.c.mk+' '+sc.c.md+(S.year?' '+S.year:''),L:sc.L,oils:sel.map(x=>x.name+' '+x.visc),total:sel[0].total});
-  store.set('hist',h.slice(0,200));
+  const item={id:'h'+Date.now()+Math.random().toString(36).slice(2,6),t:Date.now(),by:S.user.name,car:sc.c.mk+' '+sc.c.md+(S.year?' '+S.year:''),L:sc.L,oils:sel.map(x=>x.name+' '+x.visc),total:sel[0].total};
+  if(SYNC.db){SYNC.db.collection('hist').doc(item.id).set(item).catch(()=>{});if(MEM.hist)MEM.hist.unshift(item);}
+  else{const h=store.get('hist',[]);h.unshift(item);store.set('hist',h.slice(0,200));}
 }
 function renderHist(){
-  const h=store.get('hist',[]);
+  const h=MEM.hist?MEM.hist.concat(store.get('hist',[])).sort((a,b)=>b.t-a.t):store.get('hist',[]);
   $('#main').innerHTML=`<div class="lbl">Quotes sent</div>${h.length?`<div class="hist">${h.map(x=>`<div class="hi"><b>${esc(x.car)}</b><span>${esc(x.oils.join(' · '))} · ${x.L} L</span><span>${new Date(x.t).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'})} · ${esc(x.by)}</span><span class="tot">${f3(x.total)}</span></div>`).join('')}</div>`:`<div class="empty"><svg><use href="#i-list"/></svg>No quotes yet. Every quote you send is saved here.</div>`}`;
 }
 function renderRem(){
@@ -349,6 +363,7 @@ function renderSet(){
     <div id="pricesRow">${jr('<svg><use href="#i-calc"/></svg>','Prices from the system',dt.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'}),'<span class="tag t-ok">On this device</span>')}</div>
     ${jr('<svg><use href="#i-can"/></svg>',`${D.oils.length} oils · ${D.filters.length} filters · ${Object.keys(CARS).length} car models`,'Works with no internet. Updates every morning.')}
     ${jr('<svg><use href="#i-gear"/></svg>',esc(appVersion()),'Updates install by themselves')}
+    ${jr('<svg><use href="#i-list"/></svg>','Shared with all devices',SYNC.state==='on'?(navigator.onLine?'Connected':'Offline · will sync when back online'):SYNC.state==='loading'?'Connecting…':'Not connected yet · needs internet',SYNC.state==='on'?'<span class="tag t-ok">On</span>':'<span class="tag t-warn">Off</span>')}
   </div>
   <div id="hiddenRefresh" hidden><button class="btn ghost" id="refresh">Update prices now</button></div>
   ${isAdmin()?`<div class="lbl">Users on this device</div>
@@ -369,8 +384,8 @@ function renderSet(){
     if(addUser.pin.length===4){const all=users();all.push({id:'u'+Date.now(),name:addUser.name,role:'staff',pin:await hashPin(addUser.pin),color:COLORS[all.length%COLORS.length]});saveUsers(all);toast(addUser.name+' added');addUser=null;}
     renderSet();});
   document.querySelectorAll('[data-rmuser]').forEach(b=>b.onclick=()=>{if(b.dataset.armed){saveUsers(users().filter(u=>u.id!==b.dataset.rmuser));renderSet();}else{b.dataset.armed=1;b.textContent='Tap again';}});
-  document.querySelectorAll('[data-logo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;trimLogo(f,url=>{const l=LOGOS();l[inp.dataset.logo]=url;store.set('logos',l);toast('Picture saved');rerender();});});
-  document.querySelectorAll('[data-rmlogo]').forEach(b=>b.onclick=()=>{const l=LOGOS();delete l[b.dataset.rmlogo];store.set('logos',l);rerender();});
+  document.querySelectorAll('[data-logo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;trimLogo(f,url=>{putPic('logos',inp.dataset.logo,url);toast('Picture saved');rerender();});});
+  document.querySelectorAll('[data-rmlogo]').forEach(b=>b.onclick=()=>{delPic('logos',b.dataset.rmlogo);rerender();});
 }
 function appVersion(){
   const n=window.FSW_APP_NAME||window.FSW_VERSION_NAME;
@@ -389,6 +404,68 @@ window.addEventListener('fsw-update',e=>{
     setTimeout(()=>{const u=$('.upd');if(u)u.innerHTML='Close the app and open it again to finish the update.';},2000);
   };
 });
+
+/* ---------- sync engine ---------- */
+function putPic(col,key,url){
+  const loc=store.get(col,{});
+  if(SYNC.db){SYNC.db.collection(col).doc(enc(key)).set({img:url,t:Date.now(),by:S.user?S.user.name:''}).catch(()=>{});MEM[col]=Object.assign({},MEM[col]||{},{[key]:url});if(loc[key]){delete loc[key];store.set(col,loc);}}
+  else{loc[key]=url;try{localStorage.setItem('fsw_'+col,JSON.stringify(loc));}catch(e){toast('Storage full. Connect to the internet to share pictures.');}}
+}
+function delPic(col,key){
+  const loc=store.get(col,{});if(loc[key]){delete loc[key];store.set(col,loc);}
+  if(MEM[col]&&MEM[col][key]){const m=Object.assign({},MEM[col]);delete m[key];MEM[col]=m;}
+  if(SYNC.db)SYNC.db.collection(col).doc(enc(key)).delete().catch(()=>{});
+}
+let rTimer;
+function liveRender(){clearTimeout(rTimer);rTimer=setTimeout(()=>{
+  if(S.sheet)return;
+  if(!S.user){if(!pinBuf)renderLogin();return;}
+  if(S.tab==='set'&&addUser)return;
+  rerender();},250);}
+async function loadFB(){
+  if(window.firebase&&window.firebase.firestore)return true;
+  let code=null;try{code=localStorage.getItem('fsw_fbsdk_10141');}catch(e){}
+  if(!code){try{code=await fetch(BASE+'app/fb.js?v=10141',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text();});if(code.indexOf('firebase')<0)return false;try{localStorage.setItem('fsw_fbsdk_10141',code);}catch(e){}}catch(e){return false;}}
+  const s=document.createElement('script');s.textContent=code;document.head.appendChild(s);
+  return !!(window.firebase&&window.firebase.firestore);
+}
+async function startSync(){
+  if(SYNC.state!=='off')return;SYNC.state='loading';
+  if(!await loadFB()){SYNC.state='off';setTimeout(startSync,60e3);return;}
+  try{
+    const fb=window.firebase;fb.initializeApp(FB_CFG);
+    const db=fb.firestore();try{await db.enablePersistence({synchronizeTabs:false});}catch(e){}
+    await new Promise(res=>{const un=fb.auth().onAuthStateChanged(u=>{un();res(u);});});
+    const signIn=()=>fb.auth().currentUser?Promise.resolve():fb.auth().signInAnonymously();
+    try{await signIn();}catch(e){SYNC.state='waiting';const retry=()=>signIn().then(()=>{SYNC.state='on';attach(db);}).catch(()=>setTimeout(retry,60e3));window.addEventListener('online',retry,{once:true});setTimeout(retry,60e3);SYNC.db=db;return;}
+    SYNC.db=db;SYNC.state='on';attach(db);
+  }catch(e){SYNC.state='off';}
+}
+function attach(db){
+  if(SYNC.attached)return;SYNC.attached=true;
+  const picCol=col=>db.collection(col).onSnapshot(s=>{const m={};s.forEach(d=>{m[dec(d.id)]=d.data().img;});MEM[col]=m;
+      if(!s.metadata.fromCache){const loc=store.get(col,{});let ch=false;Object.keys(loc).forEach(k=>{if(!(k in m)){db.collection(col).doc(enc(k)).set({img:loc[k],t:Date.now(),by:S.user?S.user.name:''}).then(()=>{const l2=store.get(col,{});delete l2[k];store.set(col,l2);}).catch(()=>{});}else{delete loc[k];ch=true;}});if(ch)store.set(col,loc);}
+      liveRender();},()=>{});
+  picCol('logos');picCol('carpics');
+  db.collection('users').onSnapshot(s=>{
+    const list=[];s.forEach(d=>list.push(d.data()));
+    if(!s.metadata.fromCache&&!SYNC.usersLoaded){SYNC.usersLoaded=true;
+      const loc=store.get('users',[]);
+      if(!list.length&&loc.length){loc.forEach(u=>db.collection('users').doc(u.id).set(u).catch(()=>{}));return;}
+      loc.filter(u=>u.role!=='admin'&&!list.find(r=>r.id===u.id)).forEach(u=>{db.collection('users').doc(u.id).set(u).catch(()=>{});list.push(u);});
+    }
+    if(!list.length)return;
+    list.sort((a,b)=>(a.role==='admin'?0:1)-(b.role==='admin'?0:1)||String(a.id).localeCompare(String(b.id)));
+    MEM.users=list;store.set('users',list);
+    if(S.user){const me=list.find(u=>u.id===S.user.id);if(!me){S.user=null;store.set('user',null);}else S.user=me;}
+    liveRender();
+  },()=>{});
+  db.collection('hist').orderBy('t','desc').limit(200).onSnapshot(s=>{
+    const h=[];s.forEach(d=>h.push(d.data()));MEM.hist=h;
+    if(!s.metadata.fromCache){const loc=store.get('hist',[]);if(loc.length){loc.forEach(x=>{const id=x.id||('h'+x.t);db.collection('hist').doc(id).set(Object.assign({id},x)).catch(()=>{});});store.set('hist',[]);}}
+    if(S.tab==='hist')liveRender();
+  },()=>{});
+}
 
 /* ---------- look for app updates while the app stays open ---------- */
 let lastUpd=0;
@@ -414,6 +491,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkAppU
 setInterval(checkAppUpdate,10*60e3);
 
 /* ---------- start ---------- */
+startSync();
 (async()=>{
   await loadData();
   const saved=store.get('user',null);S.user=users().find(u=>u.id===saved)||null;
