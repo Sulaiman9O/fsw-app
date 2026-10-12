@@ -113,6 +113,7 @@ nav.rail{display:none}
 .jr .k small{display:block;color:var(--muted);font-weight:400;font-size:.74rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .jr .v{font:400 1.1rem var(--f-brand)}
 .jr .ctl{display:flex;align-items:center;gap:8px}
+.cat{display:inline-flex;align-items:center;margin-top:4px;margin-right:6px;border:1px solid rgba(242,123,33,.5);color:var(--orange);background:rgba(242,123,33,.1);border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:600;text-transform:none;letter-spacing:0}
 .stp{display:flex;align-items:center;gap:4px;background:var(--panel2);border-radius:12px;padding:4px}
 .stp button{width:36px;height:36px;border-radius:9px;background:#26262a;font-weight:700;font-size:1.1rem}
 .stp .v{min-width:44px;text-align:center}

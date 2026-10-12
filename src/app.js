@@ -82,10 +82,12 @@ function scenario(){
   const eng=engs.length===1?engs[0]:(S.eng!=null&&engs[S.eng]?engs[S.eng]:null);
   const hr=histRow(c,eng?eng[3]:0);
   const fr=filterRanks(c,hr?hr[3]:'');
-  const L=S.L||(eng?eng[3]:(hr?hr[1]:0));
+  const histL=hr&&hr[4]!=='far'?hr[1]:(!eng&&hr?hr[1]:0);
+  const specL=eng?eng[3]:0;
+  const L=S.L||histL||specL;
   const fi=S.fi!=null?S.fi:fr.rec;
   const visc=S.visc||defaultVisc(c,eng);
-  return {c,eng,hr,fr,L,fi,visc};
+  return {c,eng,hr,fr,L,fi,visc,histL,specL};
 }
 function extrasTotal(){let t=0;S.extras.forEach(id=>{const e=EXTRAS.find(x=>x.id===id);if(e)t+=e.price[S.suv]||0;});return t;}
 function lineFor(sc,o,i){
@@ -261,7 +263,7 @@ function sideBody(sc){
   const sel=sc.L?oilList(sc).filter(x=>S.picked.has(x.i)):[];
   const one=sel.length===1;
   return `<div class="job">
-      <div class="jr"><div class="k">Litres<small>${S.L?'changed':'from past jobs'}</small></div><div class="ctl"><div class="stp"><button data-l="-0.5" aria-label="Less">−</button><span class="v num">${sc.L||0}</span><button data-l="0.5" aria-label="More">+</button></div></div></div>
+      <div class="jr"><div class="k">Litres<small>${S.L?'changed':(sc.histL?'our usual':'catalog')}</small>${sc.specL&&sc.specL!==sc.L?`<button class="cat" data-cat="${sc.specL}">Catalog ${sc.specL} L</button>`:''}${S.L&&sc.histL&&sc.histL!==sc.L&&sc.histL!==sc.specL?`<button class="cat" data-cat="${sc.histL}">Our usual ${sc.histL} L</button>`:''}</div><div class="ctl"><div class="stp"><button data-l="-0.1" aria-label="Less">−</button><span class="v num">${sc.L||0}</span><button data-l="0.1" aria-label="More">+</button></div></div></div>
       <div class="jr" data-sheet="filter" role="button" tabindex="0"><div class="k">Filter ›<small>${f?esc(filterName(f)):'None'}${f&&f[3]<=0?' · OUT':''}</small></div><div class="ctl"><span class="v">${f3(f?f[2]:0)}</span></div></div>
       <div class="jr"><div class="k">Labour<small>${S.labOn?f3(D.lab[S.suv])+' added':'removed'}</small></div><div class="ctl"><div class="seg"><button data-suv="0" aria-pressed="${!S.suv}">Sedan</button><button data-suv="1" aria-pressed="${!!S.suv}">SUV</button></div><button class="sw" role="switch" aria-checked="${S.labOn}" aria-label="Labour on or off" data-lab></button></div></div>
       <div class="jr"><div class="k">Customer oil<small>${S.own?'Yes, no oil charge':'No'}</small></div><div class="ctl"><button class="sw" role="switch" aria-checked="${S.own}" aria-label="Customer brings oil" data-own></button></div></div>
@@ -276,6 +278,7 @@ function bindQuote(){
   m.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.visc=b.dataset.v;S.picked.clear();rerender();});
   m.querySelectorAll('[data-oil]').forEach(b=>b.onclick=()=>{const i=+b.dataset.oil;S.picked.has(i)?S.picked.delete(i):S.picked.add(i);rerender();});
   m.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{const sc=scenario();S.L=Math.max(1,Math.round(((sc.L||4)+parseFloat(b.dataset.l))*10)/10);rerender();});
+  m.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{const sc=scenario();const v=+b.dataset.cat;S.L=(v===sc.histL&&!S.L)?null:v;if(v===sc.histL)S.L=null;rerender();});
   m.querySelectorAll('[data-suv]').forEach(b=>b.onclick=()=>{S.suv=+b.dataset.suv;rerender();});
   m.querySelectorAll('[data-lab]').forEach(b=>b.onclick=()=>{S.labOn=!S.labOn;rerender();});
   m.querySelectorAll('[data-own]').forEach(b=>b.onclick=()=>{S.own=!S.own;rerender();});
