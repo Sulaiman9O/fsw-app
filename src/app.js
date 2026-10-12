@@ -361,8 +361,8 @@ function pinBox(){
   return `<div class="card" id="pinbox" style="padding:16px 14px"><div style="display:grid;gap:14px;justify-items:center"><b>${title}</b>${dots(pinCh.buf.length)}${pad()}<div class="err" id="pinerr">${pinCh.err||''}</div><button class="small-btn" id="pinCancel">Cancel</button></div></div>`;
 }
 function bindPinChange(){
-  const my=$('#mypin');if(my)my.onclick=()=>{pinCh={id:S.user.id,self:true,step:'old',buf:''};renderSet();const b=$('#pinbox');if(b)b.scrollIntoView({block:'center'});};
-  document.querySelectorAll('[data-pinuser]').forEach(b=>b.onclick=()=>{pinCh={id:b.dataset.pinuser,self:false,step:'new',buf:''};renderSet();const x=$('#pinbox');if(x)x.scrollIntoView({block:'center'});});
+  const my=$('#mypin');if(my)my.onclick=()=>{addUser=null;pinCh={id:S.user.id,self:true,step:'old',buf:''};renderSet();const b=$('#pinbox');if(b)b.scrollIntoView({block:'center'});};
+  document.querySelectorAll('[data-pinuser]').forEach(b=>b.onclick=()=>{addUser=null;pinCh={id:b.dataset.pinuser,self:false,step:'new',buf:''};renderSet();const x=$('#pinbox');if(x)x.scrollIntoView({block:'center'});});
   if(!pinCh)return;
   $('#pinCancel').onclick=()=>{pinCh=null;renderSet();};
   bindPad(async k=>{
@@ -403,7 +403,7 @@ function renderSet(){
   $('#refresh').onclick=async()=>{toast('Checking…');const r=await syncData(true);toast(r===true?'Prices updated':r==='same'?'Prices already up to date':'No internet. Try later.');if(r===true)render();};
   $('#logout').onclick=()=>{S.user=null;store.set('user',null);pickUser=null;render();};
   if(!isAdmin())return;
-  const a=$('#addU');if(a)a.onclick=()=>{addUser={step:'name',name:'',pin:''};renderSet();const i=$('#uname');if(i)i.focus();};
+  const a=$('#addU');if(a)a.onclick=()=>{pinCh=null;addUser={step:'name',name:'',pin:''};renderSet();const i=$('#uname');if(i)i.focus();};
   const n=$('#uNext');if(n)n.onclick=()=>{const v=$('#uname').value.trim();if(!v)return;addUser.name=v;addUser.step='pin';renderSet();};
   if(addUser&&addUser.step==='pin')bindPad(async k=>{
     if(k==='⌫')addUser.pin=addUser.pin.slice(0,-1);else if(addUser.pin.length<4)addUser.pin+=k;
