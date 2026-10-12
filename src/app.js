@@ -432,19 +432,22 @@ window.addEventListener('fsw-update',e=>{
 });
 
 /* ---------- Android back gesture: step back inside the app ---------- */
-function deeper(){try{history.pushState({fsw:Date.now()},'');}catch(e){}}
-window.addEventListener('popstate',()=>{
-  if(!S.user)return;
-  if(S.sheet){closeSheet();return;}
-  if(S.tab!=='quote'){S.tab='quote';render();scrollTo(0,0);return;}
+function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
+function goBackStep(){
+  if(!S.user)return false;
+  if(S.sheet){closeSheet();return true;}
+  if(S.tab!=='quote'){S.tab='quote';render();scrollTo(0,0);return true;}
   const c=car();
   if(S.year!=null&&c&&enginesFor(c).length>=2&&S.eng!=null){S.eng=null;resetQuote();}
   else if(S.year!=null){S.year=null;S.eng=null;resetQuote();}
   else if(S.model){S.model=null;}
   else if(S.make){S.make=null;}
-  else return;
-  render();scrollTo(0,0);
-});
+  else return false;
+  render();scrollTo(0,0);return true;
+}
+const CapApp=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
+if(CapApp&&CapApp.addListener){try{CapApp.addListener('backButton',()=>{if(!goBackStep())CapApp.exitApp();});}catch(e){}}
+else window.addEventListener('popstate',()=>{goBackStep();});
 
 /* ---------- sync engine ---------- */
 function putPic(col,key,url){
