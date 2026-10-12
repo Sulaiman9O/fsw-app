@@ -1,0 +1,6 @@
+{
+  "appId": "om.fsw.workshop",
+  "appName": "FSW",
+  "webDir": "www",
+  "android": { "backgroundColor": "#141414" }
+}

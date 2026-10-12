@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141414">
+<title>FSW</title>
+<style>
+html,body{margin:0;height:100%;background:#141414;color:#fff;font-family:system-ui,-apple-system,Roboto,sans-serif}
+#boot{height:100%;display:grid;place-items:center;font-weight:700;font-size:2.4rem;letter-spacing:.05em}
+#boot i{display:inline-block;width:14px;height:32px;background:#ee3a39;transform:skewX(-14deg);margin-right:8px;vertical-align:-4px}
+</style>
+</head>
+<body>
+<div id="boot"><div><i></i>FSW</div></div>
+<script>
+/* FSW loader: runs the newest app code it has (saved copy or bundled copy),
+   then checks online for a newer version and saves it for next start. */
+(function(){
+  var BASE='https://sulaiman9o.github.io/fsw-app/';
+  window.FSW_BASE=BASE;
+  function get(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+  function set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function txt(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();});}
+  function run(code){
+    window.FSW_CODE_VERSION=code.v;
+    var st=document.createElement('style');st.textContent=code.css;document.head.appendChild(st);
+    var sc=document.createElement('script');sc.textContent=code.js;document.body.appendChild(sc);
+  }
+  function checkOnline(cur){
+    txt(BASE+'app/version.json?t='+Date.now()).then(function(t){
+      var rv=JSON.parse(t);if(!(rv.v>cur.v))return;
+      return Promise.all([txt(BASE+'app/app.css?v='+rv.v),txt(BASE+'app/app.js?v='+rv.v)]).then(function(p){
+        set('fsw_code',{v:rv.v,css:p[0],js:p[1]});
+        window.dispatchEvent(new CustomEvent('fsw-update',{detail:rv}));
+      });
+    }).catch(function(){});
+  }
+  var saved=get('fsw_code');
+  txt('app/version.json').then(function(t){return JSON.parse(t);}).catch(function(){return {v:0};}).then(function(bv){
+    if(saved&&saved.v>=bv.v){run(saved);checkOnline(saved);return;}
+    return Promise.all([txt('app/app.css'),txt('app/app.js')]).then(function(p){
+      var cur={v:bv.v,css:p[0],js:p[1]};run(cur);checkOnline(cur);
+    });
+  }).catch(function(e){
+    document.getElementById('boot').innerHTML='<div style="font-size:1rem;padding:20px;text-align:center">App could not start.<br>Close it and open again.</div>';
+  });
+})();
+</script>
+</body>
+</html>
