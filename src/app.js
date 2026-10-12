@@ -424,11 +424,15 @@ async function checkAppUpdate(){
     let saved=null;try{saved=JSON.parse(localStorage.getItem('fsw_code')||'null');}catch(e){}
     if(!(saved&&saved.v>=rv.v)){
       const [css,js]=await Promise.all([g(BASE+'app/app.css?v='+rv.v),g(BASE+'app/app.js?v='+rv.v)]);
+      if(rv.name&&js.indexOf('window.FSW_APP_NAME="'+rv.name+'"')!==0){lastUpd=Date.now()-50e3;return;} /* server still sending the old file: try again shortly */
       try{localStorage.setItem('fsw_code',JSON.stringify({v:rv.v,name:rv.name,css,js}));}catch(e){return;}
     }
     window.dispatchEvent(new CustomEvent('fsw-update',{detail:rv}));
   }catch(e){}
 }
+/* if a saved copy is labelled newer than the code inside it, forget the label so it downloads again */
+try{const sc=JSON.parse(localStorage.getItem('fsw_code')||'null');if(sc&&sc.name&&window.FSW_APP_NAME&&sc.name!==window.FSW_APP_NAME&&sc.v===window.FSW_CODE_VERSION){sc.v=0;localStorage.setItem('fsw_code',JSON.stringify(sc));window.FSW_CODE_VERSION=0;}}catch(e){}
+setTimeout(checkAppUpdate,4000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkAppUpdate();syncData(false).then(r=>{if(r===true&&!S.sheet)rerender();});}});
 setInterval(checkAppUpdate,10*60e3);
 
