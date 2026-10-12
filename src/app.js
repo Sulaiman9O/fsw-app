@@ -332,7 +332,7 @@ function renderSet(){
   const jr=(ic,b,s,right)=>`<div class="jr"><span class="ic">${ic}</span><div class="k">${b}<small>${s}</small></div>${right||''}</div>`;
   $('#main').innerHTML=`<div class="card">
     ${jr(`<span class="av me">${initials(S.user.name)}</span>`,esc(S.user.name),isAdmin()?'Owner':'Staff')}
-    <div id="pricesRow">${jr('<svg><use href="#i-calc"/></svg>','Prices from ARI',dt.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'}),'<span class="tag t-ok">On this device</span>')}</div>
+    <div id="pricesRow">${jr('<svg><use href="#i-calc"/></svg>','Prices from the system',dt.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'}),'<span class="tag t-ok">On this device</span>')}</div>
     ${jr('<svg><use href="#i-can"/></svg>',`${D.oils.length} oils · ${D.filters.length} filters · ${Object.keys(CARS).length} car models`,'Works with no internet. Updates every morning.')}
     ${jr('<svg><use href="#i-gear"/></svg>',esc(appVersion()),'Updates install by themselves')}
   </div>
