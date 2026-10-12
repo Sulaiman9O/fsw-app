@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.1.6";
+window.FSW_APP_NAME="1.1.7";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';

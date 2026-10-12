@@ -28,7 +28,7 @@ button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;paddin
 .top .em{height:30px}
 .top .t{font:400 1rem var(--f-brand)}
 .top .me{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.7rem;color:var(--muted);text-align:right;line-height:1.15}
-.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:400 .78rem var(--f-brand);color:#fff;background:#232327;border:2px solid #34343a;flex:0 0 auto}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:700 .85rem var(--f-body);color:#fff;background:#232327;border:2px solid #34343a;flex:0 0 auto}
 .av.me{background:var(--red);border-color:var(--red2)}
 main{padding:14px 16px calc(var(--navh) + 110px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;align-content:start;max-width:1400px}
 nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:12;background:#0b0b0c;border-top:1px solid var(--line2);padding-bottom:env(safe-area-inset-bottom,0px)}
