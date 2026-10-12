@@ -60,12 +60,14 @@ nav.rail{display:none}
 .md{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(90% 55% at 50% 100%,rgba(242,123,33,.3),transparent 70%),linear-gradient(180deg,#121214,#050506);display:grid;text-align:left}
 .md .pic{height:100px;display:grid;place-items:center;padding-top:8px}
 .md .pic svg{width:100%;height:96px}
-.md .pic img{width:100%;height:100px;object-fit:cover}
+.md .pic img{width:100%;height:100px}
+.pic img.cut{object-fit:contain;padding:4px 10px 0;filter:drop-shadow(0 10px 10px rgba(0,0,0,.7))}
+.pic img.photo{object-fit:cover}
 .md .nm{padding:6px 12px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .md .nm b{font:400 .92rem var(--f-brand);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .md .nm span{font-size:.68rem;color:var(--muted)}
-.cam{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer}
-.cam svg{width:16px;height:16px}
+.cam{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;cursor:pointer;color:rgba(255,255,255,.75)}
+.cam svg{width:14px;height:14px}
 .years{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
 .yr{background:var(--panel);border:1px solid var(--line);border-radius:14px;min-height:56px;display:grid;place-items:center;font:400 1.15rem var(--f-brand);position:relative}
 .yr.hist::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)}
@@ -81,7 +83,8 @@ nav.rail{display:none}
 .hero{border-radius:20px;border:1px solid var(--line);background:radial-gradient(70% 80% at 30% 115%,rgba(238,58,57,.45),transparent 70%),linear-gradient(180deg,#141416,#050506);display:flex;align-items:center;gap:12px;padding:10px 14px;overflow:hidden}
 .hero .pic{width:130px;height:78px;flex:0 0 auto;display:grid;place-items:center}
 .hero .pic svg{width:100%;height:100%}
-.hero .pic img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+.hero .pic img{width:100%;height:100%}
+.hero .pic img.photo{border-radius:10px}
 .hero b{display:block;font:400 1.15rem var(--f-brand)}
 .hero span{color:var(--muted);font-size:.8rem}
 .visc{display:flex;gap:7px;flex-wrap:wrap}
