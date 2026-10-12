@@ -206,7 +206,7 @@ function render(){
     <nav class="rail"><img class="em" src="${EMBLEM_IMG}" alt="FSW">${navButtons()}<span class="av me" title="${esc(S.user.name)}">${initials(S.user.name)}</span></nav>
     <main id="main"></main>
     <nav class="bottom"><div class="in">${navButtons()}</div></nav></div>`;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render();scrollTo(0,0);});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;render();scrollTo(0,0);});
   ({quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
   if(S.keepScroll){scrollTo(0,y);S.keepScroll=false;}
   if(S.sheet)renderSheet();
@@ -235,10 +235,10 @@ function renderQuote(){
     } else { m.classList.add('has-dock');m.innerHTML=crumbs+quoteBody();bindQuote();bindCrumbs();return; }
   }
   m.innerHTML=h;bindCrumbs();
-  m.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{S.make=b.dataset.mk;render();scrollTo(0,0);});
-  m.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{S.model=b.dataset.md;S.suv=isSuv(car())?1:0;render();scrollTo(0,0);});
-  m.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{S.year=+b.dataset.yr;S.eng=null;resetQuote();render();scrollTo(0,0);});
-  m.querySelectorAll('[data-en]').forEach(b=>b.onclick=()=>{S.eng=+b.dataset.en;resetQuote();render();scrollTo(0,0);});
+  m.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{deeper();S.make=b.dataset.mk;render();scrollTo(0,0);});
+  m.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{deeper();S.model=b.dataset.md;S.suv=isSuv(car())?1:0;render();scrollTo(0,0);});
+  m.querySelectorAll('[data-yr]').forEach(b=>b.onclick=()=>{deeper();S.year=+b.dataset.yr;S.eng=null;resetQuote();render();scrollTo(0,0);});
+  m.querySelectorAll('[data-en]').forEach(b=>b.onclick=()=>{deeper();S.eng=+b.dataset.en;resetQuote();render();scrollTo(0,0);});
   m.querySelectorAll('[data-pic]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;prepCarPhoto(f,url=>{putPic('carpics',inp.dataset.pic,url);toast('Photo saved');rerender();});});
 }
 function bindCrumbs(){document.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{const k=b.dataset.clr;if(k==='make'){S.make=null;S.model=null;S.year=null;}if(k==='model'){S.model=null;S.year=null;}if(k==='year'){S.year=null;}S.eng=null;resetQuote();S.extras.clear();S.disc=0;S.own=false;S.labOn=true;render();scrollTo(0,0);});}
@@ -300,8 +300,8 @@ function bindQuote(){
   m.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{const id=b.dataset.ex;S.extras.has(id)?S.extras.delete(id):S.extras.add(id);rerender();});
   m.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{S.discMode=b.dataset.dm;S.disc=0;rerender();});
   m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.disc=+b.dataset.d;rerender();});
-  m.querySelectorAll('[data-sheet]').forEach(b=>{b.onclick=()=>{S.sheet=b.dataset.sheet;renderSheet();};b.onkeydown=e=>{if(e.key==='Enter')b.click();};});
-  const s=$('#send');if(s)s.onclick=()=>{S.sheet='msg';renderSheet();};
+  m.querySelectorAll('[data-sheet]').forEach(b=>{b.onclick=()=>{deeper();S.sheet=b.dataset.sheet;renderSheet();};b.onkeydown=e=>{if(e.key==='Enter')b.click();};});
+  const s=$('#send');if(s)s.onclick=()=>{deeper();S.sheet='msg';renderSheet();};
 }
 function selectedLines(){const sc=scenario();if(!sc||!sc.L)return [];return oilList(sc).filter(x=>S.picked.has(x.i));}
 function message(){
@@ -429,6 +429,21 @@ window.addEventListener('fsw-update',e=>{
     setTimeout(()=>{try{location.reload();}catch(e){}},400);
     setTimeout(()=>{const u=$('.upd');if(u)u.innerHTML='Close the app and open it again to finish the update.';},2000);
   };
+});
+
+/* ---------- Android back gesture: step back inside the app ---------- */
+function deeper(){try{history.pushState({fsw:Date.now()},'');}catch(e){}}
+window.addEventListener('popstate',()=>{
+  if(!S.user)return;
+  if(S.sheet){closeSheet();return;}
+  if(S.tab!=='quote'){S.tab='quote';render();scrollTo(0,0);return;}
+  const c=car();
+  if(S.year!=null&&c&&enginesFor(c).length>=2&&S.eng!=null){S.eng=null;resetQuote();}
+  else if(S.year!=null){S.year=null;S.eng=null;resetQuote();}
+  else if(S.model){S.model=null;}
+  else if(S.make){S.make=null;}
+  else return;
+  render();scrollTo(0,0);
 });
 
 /* ---------- sync engine ---------- */
