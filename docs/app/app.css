@@ -23,7 +23,8 @@
   --v016:#2cc7c0; --v020:#4cc95a; --v530:#5b93f5; --v540:#8f7cf0; --v1040:#f0b72e; --v2050:#f27a43; --v1540:#c08d62; --vx:#9ca3af;
   color-scheme:dark}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html{background:var(--bg);min-height:100%}
+body{margin:0;min-height:100%;height:auto}
 #boot{display:none}
 :root{padding-top:env(safe-area-inset-top,0px)}
 body{background:var(--bg);color:var(--ink);font:17px/1.4 var(--f-body);-webkit-tap-highlight-color:transparent}
