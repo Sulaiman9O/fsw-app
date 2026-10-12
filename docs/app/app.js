@@ -1,3 +1,4 @@
+window.FSW_APP_NAME="1.0.4";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -326,7 +327,7 @@ function renderSet(){
     <div class="row"><span class="avatar" style="background:${S.user.color};width:42px;height:42px">${initials(S.user.name)}</span><div class="tx"><b>${esc(S.user.name)}</b><span>${isAdmin()?'Owner':'Staff'}</span></div></div>
     <div class="row" id="pricesRow"><span class="ic"><svg><use href="#i-calc"/></svg></span><div class="tx"><b>Prices from ARI</b><span class="num">${dt.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'})}</span></div><span class="tag t-ok">On this phone</span></div>
     <div class="row"><span class="ic"><svg><use href="#i-can"/></svg></span><div class="tx"><b>${D.oils.length} oils · ${D.filters.length} filters · ${Object.keys(CARS).length} car models</b><span>Works with no internet. Updates every morning.</span></div></div>
-    <div class="row"><span class="ic"><svg><use href="#i-gear"/></svg></span><div class="tx"><b>App version</b><span class="num">${esc(window.FSW_CODE_VERSION||'-')}</span></div></div>
+    <div class="row"><span class="ic"><svg><use href="#i-gear"/></svg></span><div class="tx"><b>App version</b><span class="num">${esc(appVersion())}</span></div></div>
   </div>
   <div id="hiddenRefresh" hidden><button class="btn ghost" id="refresh" style="width:100%">Update prices now</button></div>
   ${isAdmin()?`<h2>Users on this device <span class="tag t-red">Owner only</span></h2>
@@ -350,12 +351,16 @@ function renderSet(){
   document.querySelectorAll('[data-logo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const s=Math.min(1,128/Math.max(im.width,im.height));c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);const l=LOGOS();l[inp.dataset.logo]=c.toDataURL('image/png');store.set('logos',l);toast('Picture saved');render();};im.src=r.result;};r.readAsDataURL(f);});
   document.querySelectorAll('[data-rmlogo]').forEach(b=>b.onclick=()=>{const l=LOGOS();delete l[b.dataset.rmlogo];store.set('logos',l);render();});
 }
+function appVersion(){
+  const n=window.FSW_APP_NAME||window.FSW_VERSION_NAME;
+  return n?'Version '+n:'Version 1.0';
+}
 let tt;function toast(s){const t=$('#toast');t.textContent=s;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400);}
 
 /* app update notice */
-window.addEventListener('fsw-update',()=>{
+window.addEventListener('fsw-update',e=>{
   if($('.upd'))return;
-  document.body.insertAdjacentHTML('beforeend','<div class="upd">New version ready<button id="updNow">Restart</button></div>');
+  document.body.insertAdjacentHTML('beforeend','<div class="upd">Version '+esc((e&&e.detail&&e.detail.name)||'')+' is ready<button id="updNow">Restart</button></div>');
   $('#updNow').onclick=()=>{
     const b=$('#updNow');b.textContent='…';
     try{location.replace(location.origin+'/index.html?r='+Date.now());}catch(e){}
