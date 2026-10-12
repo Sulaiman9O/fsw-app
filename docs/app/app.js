@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.1.1";
+window.FSW_APP_NAME="1.1.2";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -117,6 +117,16 @@ const isSuv=c=>c&&c.suvN&&c.suv*2>=c.suvN;
 function carPic(c){const p=c?CARPICS()[c.mk+'|'+c.md]:null;return p?`<img src="${p}" alt="">`:`<svg viewBox="0 0 200 120"><use href="#${isSuv(c)?'suvR':'sedanR'}"/></svg>`;}
 function shrinkImage(file,maxW,type,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,maxW/im.width);const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL(type,0.82));};im.src=r.result;};r.readAsDataURL(file);}
 
+function trimLogo(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+  const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+  let d;try{d=x.getImageData(0,0,c.width,c.height).data;}catch(e){d=null;}
+  let x0=c.width,y0=c.height,x1=-1,y1=-1;
+  if(d)for(let y=0;y<c.height;y++)for(let i=0;i<c.width;i++){const k=(y*c.width+i)*4;const a=d[k+3];const wh=d[k]>235&&d[k+1]>235&&d[k+2]>235;if(a>20&&!wh){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y;}}
+  if(x1<0){x0=0;y0=0;x1=c.width-1;y1=c.height-1;}
+  const w=x1-x0+1,h=y1-y0+1,S=160,pad=8,s=Math.min((S-pad*2)/w,(S-pad*2)/h);
+  const o=document.createElement('canvas');o.width=S;o.height=S;const ox=o.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,S,S);
+  ox.imageSmoothingQuality='high';ox.drawImage(c,x0,y0,w,h,(S-w*s)/2,(S-h*s)/2,w*s,h*s);cb(o.toDataURL('image/png'));};im.src=r.result;};r.readAsDataURL(file);}
+
 /* ---------- pin pad ---------- */
 function pad(){return `<div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button class="key${k==='⌫'?' ghost':''}" data-k="${k}" aria-label="${k==='⌫'?'Delete':k}">${k}</button>`).join('')}</div>`;}
 function dots(n){return `<div class="dots">${[0,1,2,3].map(i=>`<i class="${i<n?'on':''}"></i>`).join('')}</div>`;}
@@ -194,7 +204,7 @@ function renderQuote(){
   if(!S.make){
     const mk={};Object.values(CARS).forEach(x=>mk[x.mk]=(mk[x.mk]||0)+x.n);const lg=LOGOS();
     const list=Object.entries(mk).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-    h=`<div class="lbl"><b>1</b>Car make</div><div class="grid">${list.map(([k,n],i)=>`<button class="mk${i<2?' hot':''}" data-mk="${esc(k)}">${lg[k]?`<img src="${lg[k]}" alt="">`:`<span class="mono">${esc(k.replace('Mercedes-Benz','MB').slice(0,3).toUpperCase())}</span>`}${esc(k)}${n?`<span class="cnt">${n} cars</span>`:''}</button>`).join('')}</div>`;
+    h=`<div class="lbl"><b>1</b>Car make</div><div class="grid">${list.map(([k,n],i)=>`<button class="mk${i<2?' hot':''}" data-mk="${esc(k)}">${lg[k]?`<span class="badge"><img src="${lg[k]}" alt=""></span>`:`<span class="mono">${esc(k.replace('Mercedes-Benz','MB').slice(0,3).toUpperCase())}</span>`}${esc(k)}${n?`<span class="cnt">${n} cars</span>`:''}</button>`).join('')}</div>`;
   } else if(!S.model){
     const pics=CARPICS();
     h=crumbs+`<div class="lbl"><b>2</b>Model</div><div class="models">${Object.values(CARS).filter(x=>x.mk===S.make).sort((a,b)=>b.n-a.n||a.md.localeCompare(b.md)).map(x=>`<div class="md"><button data-md="${esc(x.md)}" style="display:grid;text-align:left"><div class="pic">${carPic(x)}</div><div class="nm"><b>${esc(x.md)}</b>${x.n?`<span>${x.n}</span>`:''}</div></button>${isAdmin()?`<label class="cam" title="Add photo"><svg><use href="#i-cam"/></svg><input type="file" accept="image/*" data-pic="${esc(x.mk+'|'+x.md)}" hidden></label>`:''}</div>`).join('')}</div>${isAdmin()?'<p class="hint">Tap the camera on a model to add its photo.</p>':''}`;
@@ -343,7 +353,7 @@ function renderSet(){
     <div style="padding:10px 0">${addUser?(addUser.step==='name'?`<div style="display:grid;gap:10px"><input class="field" id="uname" placeholder="Worker name" autocomplete="off"><button class="btn" id="uNext">Next</button></div>`:`<div style="display:grid;gap:12px;justify-items:center"><b>PIN for ${esc(addUser.name)}</b>${dots(addUser.pin.length)}${pad()}</div>`):`<button class="small-btn" id="addU">+ Add worker</button>`}</div>
   </div>
   <div class="lbl">Car make pictures</div>
-  <div class="card">${[...new Set(Object.values(CARS).map(x=>x.mk))].sort().map(k=>{const lg=LOGOS()[k];return jr(lg?`<img src="${lg}" alt="" style="width:34px;height:34px;object-fit:contain">`:`<span class="num" style="font-size:.8rem">${esc(k.slice(0,3).toUpperCase())}</span>`,esc(k),lg?'Picture added':'No picture',`<label class="small-btn">${lg?'Change':'Add'}<input type="file" accept="image/*" data-logo="${esc(k)}" hidden></label>${lg?`<button class="small-btn" data-rmlogo="${esc(k)}" aria-label="Remove">✕</button>`:''}`);}).join('')}</div>`:''}
+  <div class="card">${[...new Set(Object.values(CARS).map(x=>x.mk))].sort().map(k=>{const lg=LOGOS()[k];return jr(lg?`<span class="badge sm"><img src="${lg}" alt=""></span>`:`<span class="num" style="font-size:.8rem">${esc(k.slice(0,3).toUpperCase())}</span>`,esc(k),lg?'Picture added':'No picture',`<label class="small-btn">${lg?'Change':'Add'}<input type="file" accept="image/*" data-logo="${esc(k)}" hidden></label>${lg?`<button class="small-btn" data-rmlogo="${esc(k)}" aria-label="Remove">✕</button>`:''}`);}).join('')}</div>`:''}
   <button class="btn ghost" id="logout">Change user</button>`;
   $('#pricesRow').onclick=()=>{tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>tapCount=0,1500);if(tapCount>=5){$('#hiddenRefresh').hidden=false;tapCount=0;}};
   $('#refresh').onclick=async()=>{toast('Checking…');const r=await syncData(true);toast(r===true?'Prices updated':r==='same'?'Prices already up to date':'No internet. Try later.');if(r===true)render();};
@@ -356,7 +366,7 @@ function renderSet(){
     if(addUser.pin.length===4){const all=users();all.push({id:'u'+Date.now(),name:addUser.name,role:'staff',pin:await hashPin(addUser.pin),color:COLORS[all.length%COLORS.length]});saveUsers(all);toast(addUser.name+' added');addUser=null;}
     renderSet();});
   document.querySelectorAll('[data-rmuser]').forEach(b=>b.onclick=()=>{if(b.dataset.armed){saveUsers(users().filter(u=>u.id!==b.dataset.rmuser));renderSet();}else{b.dataset.armed=1;b.textContent='Tap again';}});
-  document.querySelectorAll('[data-logo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;shrinkImage(f,128,'image/png',url=>{const l=LOGOS();l[inp.dataset.logo]=url;store.set('logos',l);toast('Picture saved');rerender();});});
+  document.querySelectorAll('[data-logo]').forEach(inp=>inp.onchange=()=>{const f=inp.files[0];if(!f)return;trimLogo(f,url=>{const l=LOGOS();l[inp.dataset.logo]=url;store.set('logos',l);toast('Picture saved');rerender();});});
   document.querySelectorAll('[data-rmlogo]').forEach(b=>b.onclick=()=>{const l=LOGOS();delete l[b.dataset.rmlogo];store.set('logos',l);rerender();});
 }
 function appVersion(){
