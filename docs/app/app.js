@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.1.5";
+window.FSW_APP_NAME="1.1.6";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -413,6 +413,25 @@ window.addEventListener('fsw-update',e=>{
     setTimeout(()=>{const u=$('.upd');if(u)u.innerHTML='Close the app and open it again to finish the update.';},2000);
   };
 });
+
+/* ---------- look for app updates while the app stays open ---------- */
+let lastUpd=0;
+async function checkAppUpdate(){
+  if(Date.now()-lastUpd<60e3)return;lastUpd=Date.now();
+  try{
+    const g=u=>fetch(u,{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text();});
+    const rv=JSON.parse(await g(BASE+'app/version.json?t='+Date.now()));
+    if(!(rv.v>(window.FSW_CODE_VERSION||0)))return;
+    let saved=null;try{saved=JSON.parse(localStorage.getItem('fsw_code')||'null');}catch(e){}
+    if(!(saved&&saved.v>=rv.v)){
+      const [css,js]=await Promise.all([g(BASE+'app/app.css?v='+rv.v),g(BASE+'app/app.js?v='+rv.v)]);
+      try{localStorage.setItem('fsw_code',JSON.stringify({v:rv.v,name:rv.name,css,js}));}catch(e){return;}
+    }
+    window.dispatchEvent(new CustomEvent('fsw-update',{detail:rv}));
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkAppUpdate();syncData(false).then(r=>{if(r===true&&!S.sheet)rerender();});}});
+setInterval(checkAppUpdate,10*60e3);
 
 /* ---------- start ---------- */
 (async()=>{
