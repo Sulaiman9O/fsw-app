@@ -17,7 +17,7 @@ html,body{margin:0;height:100%;background:#141414;color:#fff;font-family:system-
 /* FSW loader: runs the newest app code it has (saved copy or bundled copy),
    then checks online for a newer version and saves it for next start. */
 (function(){
-  var BASE='https://sulaiman9o.github.io/fsw-app/';
+  var BASE='https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
   window.FSW_BASE=BASE;
   function get(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
   function set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}

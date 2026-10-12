@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const BASE=window.FSW_BASE||'https://sulaiman9o.github.io/fsw-app/';
+const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const f3=n=>(Math.round(n*1000)/1000).toFixed(3);
