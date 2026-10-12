@@ -356,7 +356,12 @@ let tt;function toast(s){const t=$('#toast');t.textContent=s;t.hidden=false;clea
 window.addEventListener('fsw-update',()=>{
   if($('.upd'))return;
   document.body.insertAdjacentHTML('beforeend','<div class="upd">New version ready<button id="updNow">Restart</button></div>');
-  $('#updNow').onclick=()=>location.reload();
+  $('#updNow').onclick=()=>{
+    const b=$('#updNow');b.textContent='…';
+    try{location.replace(location.origin+'/index.html?r='+Date.now());}catch(e){}
+    setTimeout(()=>{try{location.reload();}catch(e){}},400);
+    setTimeout(()=>{const u=$('.upd');if(u)u.innerHTML='Close the app and open it again to finish the update.';},2000);
+  };
 });
 
 /* ---------- start ---------- */
