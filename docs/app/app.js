@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.2.0";
+window.FSW_APP_NAME="1.2.1";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -355,7 +355,30 @@ function renderRem(){
 }
 
 /* ---------- settings ---------- */
-let tapCount=0,tapTimer,addUser=null;
+let tapCount=0,tapTimer,addUser=null,pinCh=null;
+function pinBox(){
+  const who=users().find(u=>u.id===pinCh.id)||{name:''};
+  const title=pinCh.step==='old'?'Enter your current PIN':pinCh.step==='new'?(pinCh.self?'Choose your new PIN':'New PIN for '+esc(who.name)):'Enter the new PIN again';
+  return `<div class="card" id="pinbox" style="padding:16px 14px"><div style="display:grid;gap:14px;justify-items:center"><b>${title}</b>${dots(pinCh.buf.length)}${pad()}<div class="err" id="pinerr">${pinCh.err||''}</div><button class="small-btn" id="pinCancel">Cancel</button></div></div>`;
+}
+function bindPinChange(){
+  const my=$('#mypin');if(my)my.onclick=()=>{pinCh={id:S.user.id,self:true,step:'old',buf:''};renderSet();const b=$('#pinbox');if(b)b.scrollIntoView({block:'center'});};
+  document.querySelectorAll('[data-pinuser]').forEach(b=>b.onclick=()=>{pinCh={id:b.dataset.pinuser,self:false,step:'new',buf:''};renderSet();const x=$('#pinbox');if(x)x.scrollIntoView({block:'center'});});
+  if(!pinCh)return;
+  $('#pinCancel').onclick=()=>{pinCh=null;renderSet();};
+  bindPad(async k=>{
+    pinCh.err='';
+    if(k==='⌫')pinCh.buf=pinCh.buf.slice(0,-1);else if(pinCh.buf.length<4)pinCh.buf+=k;
+    if(pinCh.buf.length===4){
+      const h=await hashPin(pinCh.buf);const buf=pinCh.buf;pinCh.buf='';
+      if(pinCh.step==='old'){const me=users().find(u=>u.id===pinCh.id);if(me&&me.pin===h)pinCh.step='new';else pinCh.err='Wrong PIN. Try again.';}
+      else if(pinCh.step==='new'){pinCh.newPin=buf;pinCh.step='new2';}
+      else{if(buf!==pinCh.newPin){pinCh.step='new';pinCh.err='PINs did not match. Try again.';}
+        else{const list=users().map(u=>u.id===pinCh.id?Object.assign({},u,{pin:h}):u);saveUsers(list);if(S.user.id===pinCh.id)S.user=list.find(u=>u.id===pinCh.id);toast('PIN changed');pinCh=null;}}
+    }
+    renderSet();const b=$('#pinbox');if(b)b.scrollIntoView({block:'center'});
+  });
+}
 function renderSet(){
   const dt=new Date(D.asof);const us=users();
   const jr=(ic,b,s,right)=>`<div class="jr"><span class="ic">${ic}</span><div class="k">${b}<small>${s}</small></div>${right||''}</div>`;
@@ -368,12 +391,15 @@ function renderSet(){
   </div>
   <div id="hiddenRefresh" hidden><button class="btn ghost" id="refresh">Update prices now</button></div>
   ${isAdmin()?`<div class="lbl">Users on this device</div>
-  <div class="card">${us.map(u=>jr(`<span class="av${u.role==='admin'?' me':''}">${initials(u.name)}</span>`,esc(u.name),u.role==='admin'?'Owner':'Staff',u.role!=='admin'?`<button class="small-btn" data-rmuser="${u.id}">Remove</button>`:'')).join('')}
+  <div class="card">${us.map(u=>jr(`<span class="av${u.role==='admin'?' me':''}">${initials(u.name)}</span>`,esc(u.name),u.role==='admin'?'Owner':'Staff',u.role!=='admin'?`<button class="small-btn" data-pinuser="${u.id}">PIN</button> <button class="small-btn" data-rmuser="${u.id}">Remove</button>`:'')).join('')}
     <div style="padding:10px 0">${addUser?(addUser.step==='name'?`<div style="display:grid;gap:10px"><input class="field" id="uname" placeholder="Worker name" autocomplete="off"><button class="btn" id="uNext">Next</button></div>`:`<div style="display:grid;gap:12px;justify-items:center"><b>PIN for ${esc(addUser.name)}</b>${dots(addUser.pin.length)}${pad()}</div>`):`<button class="small-btn" id="addU">+ Add worker</button>`}</div>
   </div>
   <div class="lbl">Car make pictures</div>
   <div class="card">${[...new Set(Object.values(CARS).map(x=>x.mk))].sort().map(k=>{const lg=LOGOS()[k];return jr(lg?`<span class="badge sm"><img src="${lg}" alt=""></span>`:`<span class="num" style="font-size:.8rem">${esc(k.slice(0,3).toUpperCase())}</span>`,esc(k),lg?'Picture added':'No picture',`<label class="small-btn">${lg?'Change':'Add'}<input type="file" accept="image/*" data-logo="${esc(k)}" hidden></label>${lg?`<button class="small-btn" data-rmlogo="${esc(k)}" aria-label="Remove">✕</button>`:''}`);}).join('')}</div>`:''}
+  ${pinCh?pinBox():''}
+  <button class="btn ghost" id="mypin">Change my PIN</button>
   <button class="btn ghost" id="logout">Change user</button>`;
+  bindPinChange();
   $('#pricesRow').onclick=()=>{tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>tapCount=0,1500);if(tapCount>=5){$('#hiddenRefresh').hidden=false;tapCount=0;}};
   $('#refresh').onclick=async()=>{toast('Checking…');const r=await syncData(true);toast(r===true?'Prices updated':r==='same'?'Prices already up to date':'No internet. Try later.');if(r===true)render();};
   $('#logout').onclick=()=>{S.user=null;store.set('user',null);pickUser=null;render();};
