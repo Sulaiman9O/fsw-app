@@ -211,7 +211,7 @@ function render(){
     <nav class="rail"><img class="em" src="${EMBLEM_IMG}" alt="FSW">${navButtons()}<span class="av me" title="${esc(S.user.name)}">${initials(S.user.name)}</span></nav>
     <main id="main"></main>
     <nav class="bottom"><div class="in">${navButtons()}</div></nav></div>`;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;if(S.tab==='home')S.sec=null;render();scrollTo(0,0);});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;if(S.tab==='home'){S.sec=null;S.job=null;}render();scrollTo(0,0);});
   ({home:renderHome,quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
   if(S.keepScroll){scrollTo(0,y);S.keepScroll=false;}
   if(S.sheet)renderSheet();
@@ -351,17 +351,23 @@ function renderSheet(){
     [...S.extras].forEach(i=>{const e=EXTRAS.find(z=>z.id===i);rows.push([e.name,'',e.price[S.suv]]);});
     if(x.disc)rows.push(['Discount','',-x.disc]);
     const jt='Job: '+car+'\n'+rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(x.total)+' OMR\nBy: '+S.user.name;
-    el.innerHTML=`<div class="pnl"><div class="jb-test">TEST · NOTHING IS SAVED</div><h3>New job</h3>
+    el.innerHTML=`<div class="pnl"><div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div><h3>New job</h3>
       <div class="jb-car"><svg><use href="#i-car"/></svg><div><b>${esc(car)}</b><span>${sc.L} L oil · ${S.suv?'SUV':'Sedan'}</span></div></div>
       <div class="jb-list">${rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(x.total)} OMR</b></div></div>
       <label class="jb-ph" id="jbph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam"><svg><use href="#i-cam"/></svg><span>Photo of ملكية</span></label>
       <div class="jb-in"><input inputmode="numeric" placeholder="Km now" id="jbkm"><input inputmode="tel" placeholder="Customer phone" id="jbtel"></div>
-      <button class="btn okb" id="jbgo"><svg><use href="#i-check"/></svg>Send to owner</button>
+      <button class="btn okb" id="jbgo"><svg><use href="#i-check"/></svg>Create job</button>
       <button class="btn ghost" id="jbcp">Copy for job card</button>${close}</div>`;
     $('#jbcam').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const ph=$('#jbph');ph.classList.add('has');ph.style.backgroundImage='url('+r.result+')';ph.querySelector('span').textContent='Photo taken';};r.readAsDataURL(f);};
-    $('#jbgo').onclick=()=>{closeSheet();toast('Test only. Nothing was saved or sent.');};
+    let jbPhoto=null;$('#jbcam').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;shrinkPhoto(f,u=>jbPhoto=u);});
+    $('#jbgo').onclick=()=>{
+      const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');
+      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],L:S.own?0:sc.L,km,tel,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
+      JOBS.unshift(j);closeSheet();resetQuote();S.make=null;S.model=null;S.year=null;S.eng=null;S.extras.clear();S.disc=0;
+      S.tab='home';S.sec='jobs';S.job=j.id;render();scrollTo(0,0);toast('Job #'+j.no+' created');};
     $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
   }
+  else if(S.sheet==='stk'){renderStk(el,close);}
   const cb=el.querySelector('[data-close]');if(cb)cb.onclick=closeSheet;
 }
 function saveHist(){
@@ -476,10 +482,10 @@ function renderHome(){
   const m=$('#main');
   if(!S.sec){
     const low=stockRows().filter(r=>r.low).length;
-    const n={stock:low};
+    const n={stock:low,jobs:JOBS.filter(j=>j.stage!=='done').length,remind:REMS.length};
     m.innerHTML=`<div class="nh-hello"><b>Hello ${esc(S.user.name.split(' ')[0])}</b><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Asia/Muscat'})}</span></div>
     <button class="nh-tile wide" data-go-quote><span class="ic" style="--tc:#3a1a1a">🧮</span><div><b>Oil price</b><span>Pick a car, send the price</span></div><span class="n">›</span></button>
-    <div class="nh-tiles">${Object.entries(SECS).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):'coming soon'}</span></div></button>`).join('')}</div>
+    <div class="nh-tiles">${Object.entries(SECS).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):k==='jobs'?(n.jobs?n.jobs+' open':'test · no jobs'):k==='remind'?(REMS.length?REMS.length+' saved':'test · none yet'):'coming soon'}</span></div></button>`).join('')}</div>
     <p class="hint">Test home. Turn it off in Settings to go back.</p>`;
     m.querySelector('[data-go-quote]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
     m.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{deeper();S.sec=b.dataset.sec;render();scrollTo(0,0);});
@@ -492,6 +498,8 @@ function renderHome(){
     m.innerHTML=hd+`<input class="field" id="stq" placeholder="Search oil or filter" value="${esc(S.stq||'')}" autocomplete="off">
     <div class="nh-list">${rows.map(r=>{const max=r.u==='L'?60:20;const p=Math.max(3,Math.min(100,Math.round(r.q/max*100)));const c=r.q<=0?'var(--bad)':r.low?'var(--warn)':'var(--ok)';return `<div class="nh-row"><b>${esc(r.n)}</b><span class="r">${r.q}<small>${r.u}</small></span><span class="m">${r.u==='L'?'by litre':'by piece'}${r.low?` · <span class="tag ${r.q<=0?'t-bad':'t-warn'}">${r.q<=0?'Out':'Low'}</span>`:''}</span><div class="nh-bar"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div>`;
     const i=$('#stq');i.oninput=()=>{S.stq=i.value;const pos=i.value.length;render();const j=$('#stq');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};
+  } else if(S.sec==='jobs'){renderJobs(m,hd);
+  } else if(S.sec==='remind'){renderRems(m,hd);
   } else {
     const what={jobs:'Open jobs by stage, and new jobs built from the car history.',cars:'One search for plate, phone or name, with history and what is due.',check:'Green, yellow and red checks with photos.',remind:'Who is due, with a WhatsApp button and the sticker print.',inv:'Unpaid first, and one tap for cash, card or transfer.'}[S.sec];
     m.innerHTML=hd+`<div class="empty"><span style="font-size:2.4rem">${SECS[S.sec].i}</span><b style="color:#fff;font-size:1.05rem">${SECS[S.sec].t} · coming soon</b>${what}<br>This needs customer data from the system, so it comes after device approval.</div>`;
@@ -501,9 +509,109 @@ function renderHome(){
 
 /* ---------- Android back gesture: step back inside the app ---------- */
 function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
+
+/* ---------- Jobs, sticker, reminders (TEST: kept in memory only, cleared when the app closes) ---------- */
+const JOBS=[];const REMS=[];let JOBNO=1;
+const EMB_B='data:image/png;base64,__EMB_B__';const LOGO_B='data:image/png;base64,__LOGO_B__';
+const STAGES=[['new','New','var(--red)'],['work','Working','var(--orange)'],['ready','Ready','var(--ok)'],['done','Delivered','var(--dim)']];
+const stg=k=>STAGES.find(x=>x[0]===k);
+const hm=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'});
+const fmtD=d=>new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Muscat'});
+const kmf=n=>(+n||0).toLocaleString('en-US');
+const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return d;};
+const testBar='<div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div>';
+function shrinkPhoto(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8));};im.src=r.result;};r.readAsDataURL(f);}
+function jobText(j){return 'Job #'+j.no+': '+j.car+'\n'+j.rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(j.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
+function setStage(j,k){j.stage=k;j.log.push([Date.now(),stg(k)[1]+' · '+S.user.name]);if(k==='done'&&!REMS.some(r=>r.job===j.id))addRem(j,5000,6);}
+function addRem(j,step,months){const n=new Date();n.setMonth(n.getMonth()+months);const old=REMS.find(r=>r.job===j.id);const r={job:j.id,car:j.car,tel:j.tel,oil:j.oil,km:j.km,nextKm:j.km?j.km+step:0,next:n.getTime(),t:Date.now()};if(old)Object.assign(old,r);else REMS.push(r);}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}}
+function renderJobs(m,hd){
+  const j=S.job&&JOBS.find(x=>x.id===S.job);
+  if(!j){
+    S.job=null;const f=S.jf||'open';
+    const cnt=k=>JOBS.filter(x=>k==='open'?x.stage!=='done':x.stage===k).length;
+    const list=JOBS.filter(x=>f==='open'?x.stage!=='done':x.stage===f);
+    m.innerHTML=hd+testBar+`<div class="jb-chips">${[['open','Open']].concat(STAGES.map(x=>[x[0],x[1]])).map(([k,l])=>`<button data-jf="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
+    <button class="btn okb" data-newjob><svg><use href="#i-calc"/></svg>New job from a price</button>
+    ${list.length?`<div class="nh-list">${list.map(x=>{const s=stg(x.stage);return `<button class="jb-item" data-job="${x.id}" style="--sc:${s[2]}"><div class="no">#${x.no}</div><div class="tx"><b>${esc(x.car)}</b><span>${esc(x.oil)}${x.L?' · '+x.L+' L':''}</span><span>${hm(x.t)} · ${esc(x.by)}</span></div><div class="rt"><b>${f3(x.total)}</b><span class="st">${s[1]}</span></div></button>`;}).join('')}</div>`
+      :`<div class="empty"><span style="font-size:2.2rem">🔧</span>${JOBS.length?'Nothing here.':'No jobs yet. Pick a car in Oil price, choose the oil, then tap <b>Start job</b>.'}</div>`}`;
+    m.querySelectorAll('[data-jf]').forEach(b=>b.onclick=()=>{S.jf=b.dataset.jf;render();});
+    m.querySelector('[data-newjob]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
+    m.querySelectorAll('[data-job]').forEach(b=>b.onclick=()=>{deeper();S.job=b.dataset.job;render();scrollTo(0,0);});
+  } else {
+    const si=STAGES.findIndex(x=>x[0]===j.stage);const nx=STAGES[si+1];
+    const act={new:'Start work',work:'Car is ready',ready:'Delivered to customer'}[j.stage];
+    const rem=REMS.find(r=>r.job===j.id);
+    m.innerHTML=`<div class="nh-head"><button class="nh-bk" data-back aria-label="Back">‹</button><b>Job #${j.no}</b><span class="tag" style="margin-left:auto;background:${stg(j.stage)[2]};color:#000">${stg(j.stage)[1]}</span></div>${testBar}
+    <div class="jb-car"><div class="pic">${carPic(j.c)}</div><div><b>${esc(j.car)}</b><span>${j.suv?'SUV':'Sedan'}${j.km?' · '+kmf(j.km)+' km':''}</span></div></div>
+    <div class="jb-steps">${STAGES.map((x,i)=>`<div class="${i<=si?'on':''}" style="--sc:${x[2]}"><i></i><span>${x[1]}</span></div>`).join('')}</div>
+    ${act?`<button class="btn okb" data-next>${act}</button>`:''}
+    ${j.photo?`<img class="jb-photo" src="${j.photo}" alt="ملكية">`:`<label class="jb-ph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam2"><svg><use href="#i-cam"/></svg><span>Add photo of ملكية</span></label>`}
+    <div class="jb-list">${j.rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(j.total)} OMR</b></div></div>
+    <div class="jb-list"><div class="jb-r"><div>Km now</div><input class="jb-kmin" id="jkm" inputmode="numeric" value="${j.km||''}" placeholder="—"></div><div class="jb-r"><div>Phone</div><input class="jb-kmin" id="jtel" inputmode="tel" value="${esc(j.tel||'')}" placeholder="—"></div>${rem?`<div class="jb-r"><div>Next service<small>${kmf(rem.nextKm)} km</small></div><b>${fmtD(rem.next)}</b></div>`:''}</div>
+    <div class="jb-two"><button class="btn ghost" data-stk>🖨 Sticker</button><button class="btn ghost" data-copy>Copy for job card</button></div>
+    ${j.tel&&(j.stage==='ready'||j.stage==='done')?`<button class="btn ghost" data-wa><svg><use href="#i-send"/></svg>WhatsApp: car is ready</button>`:''}
+    <div class="lbl" style="margin-top:4px">Timeline</div>
+    <div class="jb-log">${j.log.slice().reverse().map(l=>`<div><span>${hm(l[0])}</span>${esc(l[1])}</div>`).join('')}</div>
+    <button class="btn ghost jb-del" data-del>Delete job</button>`;
+    m.querySelector('[data-back]').onclick=()=>{S.job=null;render();scrollTo(0,0);};
+    const nb=m.querySelector('[data-next]');if(nb)nb.onclick=()=>{setStage(j,nx[0]);toast(nx[1]);rerender();};
+    const c2=$('#jbcam2');if(c2)c2.onchange=e=>{const f=e.target.files[0];if(f)shrinkPhoto(f,u=>{j.photo=u;j.log.push([Date.now(),'Photo added']);rerender();});};
+    $('#jkm').onchange=e=>{j.km=parseInt(e.target.value.replace(/\D/g,''))||0;const r=REMS.find(x=>x.job===j.id);if(r){r.km=j.km;}rerender();};
+    $('#jtel').onchange=e=>{j.tel=e.target.value.replace(/[^\d+]/g,'');const r=REMS.find(x=>x.job===j.id);if(r)r.tel=j.tel;rerender();};
+    m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:(S.stk&&S.stk.tpl)||'A',step:5000,months:6};S.sheet='stk';renderSheet();};
+    m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
+    const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
+    const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
+  }
+  const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
+}
+const STK_SIZES={A:[62,29,'Small strip'],B:[62,50,'Standard'],C:[62,62,'Square'],D:[29,90,'Tall']};
+function stickerHtml(t,d){
+  const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
+  if(t==='A')return `<div class="stk sA"><img src="${EMB_B}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
+  if(t==='B')return `<div class="stk sB"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div>`;
+  if(t==='C')return `<div class="stk sC"><img src="${EMB_B}" alt=""><div class="h ar">موعد تغيير الزيت القادم<small>NEXT OIL CHANGE</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
+  return `<div class="stk sD"><img src="${EMB_B}" alt=""><div class="bar">NEXT SERVICE</div><div class="ar" style="font-size:2.6mm">الصيانة القادمة</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
+}
+function stkCss(){if(!$('#stkcss')){const st=document.createElement('style');st.id='stkcss';st.textContent=__STKCSS__;document.head.appendChild(st);}}
+function renderStk(el,close){
+  stkCss();const k=S.stk;const j=JOBS.find(x=>x.id===k.job);if(!j){closeSheet();return;}
+  const n=new Date();n.setMonth(n.getMonth()+k.months);
+  const d={oil:j.oil,km:j.km,nextKm:j.km?j.km+k.step:0,next:n.getTime()};
+  const sc={A:1,B:1,C:.9,D:.75}[k.tpl];
+  el.innerHTML=`<div class="pnl"><h3>Service sticker · Job #${j.no}</h3>
+    <div class="stk-pv"><div style="transform:scale(${sc});transform-origin:center">${stickerHtml(k.tpl,d)}</div></div>
+    <div class="jb-chips">${Object.entries(STK_SIZES).map(([t,v])=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${v[0]}×${v[1]}</span></button>`).join('')}</div>
+    ${j.km?'':`<div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now (for the next km)" id="skm"></div>`}
+    <div class="jb-chips">${[5000,7500,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
+    <p class="hint" style="margin:0">Brother QL-820NWB · ${k.tpl==='D'?'needs a 29 mm roll':'DK-22113 · 62 mm roll'}</p>
+    <button class="btn" id="stkgo">🖨 Print sticker</button>${close}</div>`;
+  el.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;renderSheet();});
+  el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{k.step=+b.dataset.step;renderSheet();});
+  el.querySelectorAll('[data-mon]').forEach(b=>b.onclick=()=>{k.months=+b.dataset.mon;renderSheet();});
+  const skm=$('#skm');if(skm)skm.onchange=()=>{j.km=parseInt(skm.value.replace(/\D/g,''))||0;renderSheet();};
+  $('#stkgo').onclick=()=>{
+    addRem(j,k.step,k.months);j.log.push([Date.now(),'Sticker '+k.tpl+' · next '+fmtD(d.next)]);
+    const [w,h]=STK_SIZES[k.tpl];
+    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{size:'+w+'mm '+h+'mm;margin:0}html,body{margin:0;padding:0;background:#fff}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}</style></head><body>'+stickerHtml(k.tpl,d)+'</body></html>';
+    const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
+    if(!P){toast('Reminder saved. Printing needs the new app version.');closeSheet();rerender();return;}
+    P.printHtml({html:doc,widthMm:w,heightMm:h,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+  };
+}
+function renderRems(m,hd){
+  const list=REMS.slice().sort((a,b)=>a.next-b.next);
+  m.innerHTML=hd+testBar+(list.length?`<div class="nh-list">${list.map((r,i)=>`<div class="nh-row"><b>${esc(r.car)}</b><span class="r">${fmtD(r.next).replace(/ \d{4}$/,'')}<small>${r.nextKm?kmf(r.nextKm)+' km':''}</small></span><span class="m">${esc(r.oil)}${r.tel?' · '+esc(r.tel):' · no phone'}</span>${r.tel?`<button class="btn ghost jb-wa" data-rw="${i}"><svg><use href="#i-send"/></svg>Remind on WhatsApp</button>`:''}</div>`).join('')}</div>`
+    :`<div class="empty"><span style="font-size:2.2rem">🔔</span>No reminders yet. A reminder is saved when a job is delivered or a sticker is printed.</div>`);
+  m.querySelectorAll('[data-rw]').forEach(b=>b.onclick=()=>{const r=list[+b.dataset.rw];location.href='https://wa.me/'+waNum(r.tel)+'?text='+encodeURIComponent('السلام عليكم،\nنذكركم بموعد تغيير زيت سيارتكم '+r.car+' بتاريخ '+fmtD(r.next)+(r.nextKm?' أو عند '+kmf(r.nextKm)+' كم':'')+'.\nورشة عالم الخدمات السريعة');});
+  const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
+}
+
 function goBackStep(){
   if(!S.user)return false;
   if(S.sheet){closeSheet();return true;}
+  if(S.tab==='home'&&S.sec==='jobs'&&S.job){S.job=null;render();scrollTo(0,0);return true;}
   if(S.tab==='home'&&S.sec){S.sec=null;render();scrollTo(0,0);return true;}
   const startTab=newHome()?'home':'quote';
   if(S.tab!=='quote'&&S.tab!==startTab){S.tab=startTab;render();scrollTo(0,0);return true;}

@@ -7,7 +7,7 @@ js = None  # built below once the version name is known
 b64 = lambda p: __import__('base64').b64encode((R/p).read_bytes()).decode()
 css = (R/'src/app.css').read_text().replace('__F_MILL__', b64('src/assets/millburn.woff2')).replace('__F_RUBIK__', b64('src/assets/rubik.woff2'))
 (R/'docs/app/app.css').write_text(css)
-src_js = (R/'src/app.js').read_text().replace('__LOGO__', b64('src/assets/logo.png')).replace('__EMBLEM__', b64('src/assets/emblem.png')).replace('__SVG__', json.dumps((R/'src/icons.svg').read_text()))
+src_js = (R/'src/app.js').read_text().replace('__LOGO__', b64('src/assets/logo.png')).replace('__EMBLEM__', b64('src/assets/emblem.png')).replace('__EMB_B__', b64('src/assets/emblem_b.png')).replace('__LOGO_B__', b64('src/assets/logo_b.png')).replace('__STKCSS__', json.dumps((R/'src/sticker.css').read_text())).replace('__SVG__', json.dumps((R/'src/icons.svg').read_text()))
 v = int(time.strftime('%Y%m%d%H%M'))
 # human version: src/VERSION holds MAJOR.MINOR.PATCH; each build bumps PATCH
 maj, mi, pa = (R/'src/VERSION').read_text().strip().split('.')
