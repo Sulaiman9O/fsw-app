@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.5.7";
+window.FSW_APP_NAME="1.5.8";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -347,10 +347,10 @@ function renderSheet(){
   else if(S.sheet==='job'){
     const sc=scenario();const x=selectedLines()[0];if(!x){closeSheet();return;}
     const car=sc.c.mk+' '+sc.c.md+(S.year?' '+S.year:'');
-    const rows=[[x.name+(x.name.includes(x.visc)?'':' '+x.visc),S.own?'Customer oil':sc.L+' L',S.own?0:x.oil],['Oil filter',sc.fi>=0&&D.filters[sc.fi]?filterName(D.filters[sc.fi]):'None',x.fp]];
-    if(x.lab)rows.push(['Labour',S.suv?'SUV':'Sedan',x.lab]);
-    [...S.extras].forEach(i=>{const e=EXTRAS.find(z=>z.id===i);rows.push([e.name,'',e.price[S.suv]]);});
-    if(x.disc)rows.push(['Discount','',-x.disc]);
+    const items=[{d:x.name+(x.name.includes(x.visc)?'':' '+x.visc),sub:S.own?'Customer oil':'',q:S.own?0:sc.L,u:'L',p:x.per,k:'part'},{d:'Oil filter',sub:sc.fi>=0&&D.filters[sc.fi]?filterName(D.filters[sc.fi]):'None',q:1,u:'',p:x.fp,k:'part'}];
+    if(x.lab)items.push({d:'Labour — oil service',sub:S.suv?'SUV':'Sedan',q:1,u:'',p:x.lab,k:'labour'});
+    [...S.extras].forEach(i=>{const e=EXTRAS.find(z=>z.id===i);items.push({d:e.name,sub:'',q:1,u:'',p:e.price[S.suv],k:'labour'});});
+    const disc=x.disc||0;const rows=items.map(it=>[it.d,it.sub||(it.q!==1?it.q+(it.u?' '+it.u:'')+' × '+f3(it.p):''),it.q*it.p]);if(disc)rows.push(['Discount','',-disc]);
     const jt='Job: '+car+'\n'+rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(x.total)+' OMR\nBy: '+S.user.name;
     el.innerHTML=`<div class="pnl"><div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div><h3>New job</h3>
       <div class="jb-car"><svg><use href="#i-car"/></svg><div><b>${esc(car)}</b><span>${sc.L} L oil · ${S.suv?'SUV':'Sedan'}</span></div></div>
@@ -371,13 +371,18 @@ function renderSheet(){
     });});});
     $('#jbgo').onclick=()=>{
       const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');const nm=$('#jbnm').value.trim();const pl=plateFmt($('#jbpl').value);const vin=vinFmt($('#jbvin').value);if(vin&&vin.length!==17){toast('VIN must be 17 characters');return;}
-      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
+      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,items,disc,oil:items[0].d,raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
       JOBS.unshift(j);closeSheet();resetQuote();S.make=null;S.model=null;S.year=null;S.eng=null;S.extras.clear();S.disc=0;
       S.tab='home';S.sec='jobs';S.job=j.id;render();scrollTo(0,0);toast('Job #'+j.no+' created');};
     $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
   }
   else if(S.sheet==='stk'){renderStk(el,close);}
   else if(S.sheet==='inv'){renderInv(el,close);}
+  else if(S.sheet==='eta'){const j=JOBS.find(x=>x.id===S.job);if(!j){closeSheet();return;}
+    el.innerHTML=`<div class="pnl"><h3>How long will it take?</h3><p class="hint" style="margin:0">Shown to the owner and in the WhatsApp message.</p><div class="jb-chips big">${ETAS.map(([m,l])=>`<button data-eta="${m}">${l}</button>`).join('')}</div>${close}</div>`;
+    el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const m=+b.dataset.eta;j.eta=m>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():Date.now()+m*60e3;setStage(j,'work');j.log.push([Date.now(),'ETA '+b.textContent]);closeSheet();toast('Working');rerender();});}
+  else if(S.sheet==='add'){renderAddItem(el,close);}
+  else if(S.sheet==='edit'){renderEditItem(el,close);}
   const cb=el.querySelector('[data-close]');if(cb)cb.onclick=closeSheet;
 }
 function saveHist(){
@@ -609,7 +614,13 @@ const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return
 const plateFmt=v=>(v||'').toUpperCase().replace(/[^A-Z0-9\u0600-\u06FF ]/g,'').replace(/\s+/g,' ').trim();const vinFmt=v=>(v||'').toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g,'');
 const testBar='<div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div>';
 function shrinkPhoto(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8));};im.src=r.result;};r.readAsDataURL(f);}
-function jobText(j){return 'Job #'+j.no+': '+j.car+(j.pl?' · '+j.pl:'')+(j.nm?'\nCustomer: '+j.nm:'')+(j.vin?'\nVIN: '+j.vin:'')+'\n'+j.rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(j.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
+
+function jobTotals(j){let parts=0,labour=0;(j.items||[]).forEach(it=>{if(it.pend)return;const a=(+it.q||0)*(+it.p||0);if(it.k==='labour')labour+=a;else parts+=a;});const sub=parts+labour;const disc=Math.min(+j.disc||0,sub);return {parts,labour,sub,disc,total:Math.max(0,sub-disc)};}
+const itemLine=it=>it.d+(it.sub?' ('+it.sub+')':'')+(it.pend?': price pending':(it.q!==1||it.u?': '+(+it.q)+(it.u?' '+it.u:'')+' × '+f3(it.p)+' = ':': ')+(it.pend?'':f3(it.q*it.p)));
+const COMMON_ITEMS=[['Air filter','part',4.5],['Cabin (AC) filter','part',3.5],['Spark plugs','part',3.5],['Battery','part',30],['Wiper blades (pair)','part',5],['Coolant (L)','part',1.75],['Brake pads front','part',18],['Brake pads rear','part',15],['Brake fluid','part',3],['Gearbox oil (L)','part',3.5],['Power steering oil','part',3],['Tyre','part',25],['Bulb','part',1.5],['Fuse','part',0.5],['Labour — brakes','labour',12],['Labour — spark plugs','labour',8],['Labour — AC service','labour',15],['Labour — diagnosis','labour',5],['Labour — tyre change','labour',2],['Labour — wheel alignment','labour',8],['Labour — battery','labour',2],['Labour — other','labour',5]];
+const ETAS=[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']];
+const etaText=j=>j.eta?(j.eta-Date.now()>12*3600e3?'tomorrow':'~'+hm(j.eta)):'';
+function jobText(j){const T=jobTotals(j);return 'Job #'+j.no+': '+j.car+(j.pl?' · '+j.pl:'')+(j.nm?'\nCustomer: '+j.nm:'')+(j.vin?'\nVIN: '+j.vin:'')+'\n'+(j.items||[]).map(it=>'- '+itemLine(it)).join('\n')+(T.disc?'\nDiscount: −'+f3(T.disc):'')+'\nTotal: '+f3(T.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
 function setStage(j,k){j.stage=k;j.log.push([Date.now(),stg(k)[1]+' · '+S.user.name]);if(k==='done'&&!REMS.some(r=>r.job===j.id))addRem(j,(j.iv||{}).km||7000,6);}
 function addRem(j,step,months){const n=new Date();n.setMonth(n.getMonth()+months);const old=REMS.find(r=>r.job===j.id);const r={job:j.id,car:j.car,tel:j.tel,oil:j.oil,km:j.km,nextKm:j.km?j.km+step:0,next:n.getTime(),t:Date.now()};if(old)Object.assign(old,r);else REMS.push(r);}
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}}
@@ -621,7 +632,7 @@ function renderJobs(m,hd){
     const list=JOBS.filter(x=>f==='open'?x.stage!=='done':x.stage===f);
     m.innerHTML=hd+testBar+`<div class="jb-chips">${[['open','Open']].concat(STAGES.map(x=>[x[0],x[1]])).map(([k,l])=>`<button data-jf="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
     <button class="btn okb" data-newjob><svg><use href="#i-calc"/></svg>New job from a price</button>
-    ${list.length?`<div class="nh-list">${list.map(x=>{const s=stg(x.stage);return `<button class="jb-item" data-job="${x.id}" style="--sc:${s[2]}"><div class="no">#${x.no}</div><div class="tx"><b>${esc(x.car)}${x.pl?` <span class="pl">${esc(x.pl)}</span>`:''}</b><span>${x.nm?esc(x.nm)+' · ':''}${esc(x.oil)}${x.L?' · '+x.L+' L':''}</span><span>${hm(x.t)} · ${esc(x.by)}</span></div><div class="rt"><b>${f3(x.total)}</b><span class="st">${s[1]}</span></div></button>`;}).join('')}</div>`
+    ${list.length?`<div class="nh-list">${list.map(x=>{const s=stg(x.stage);return `<button class="jb-item" data-job="${x.id}" style="--sc:${s[2]}"><div class="no">#${x.no}</div><div class="tx"><b>${esc(x.car)}${x.pl?` <span class="pl">${esc(x.pl)}</span>`:''}</b><span>${x.nm?esc(x.nm)+' · ':''}${esc(x.oil)}${x.L?' · '+x.L+' L':''}</span><span>${hm(x.t)} · ${esc(x.by)}</span></div><div class="rt"><b>${f3(jobTotals(x).total)}</b><span class="st">${s[1]}${x.stage==='work'&&x.eta?' · '+etaText(x):''}</span></div></button>`;}).join('')}</div>`
       :`<div class="empty"><span style="font-size:2.2rem">🔧</span>${JOBS.length?'Nothing here.':'No jobs yet. Pick a car in Oil price, choose the oil, then tap <b>Start job</b>.'}</div>`}`;
     m.querySelectorAll('[data-jf]').forEach(b=>b.onclick=()=>{S.jf=b.dataset.jf;render();});
     m.querySelector('[data-newjob]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
@@ -635,7 +646,10 @@ function renderJobs(m,hd){
     <div class="jb-steps">${STAGES.map((x,i)=>`<div class="${i<=si?'on':''}" style="--sc:${x[2]}"><i></i><span>${x[1]}</span></div>`).join('')}</div>
     ${act?`<button class="btn okb" data-next>${act}</button>`:''}
     ${j.photo?`<img class="jb-photo" src="${j.photo}" alt="ملكية">`:`<label class="jb-ph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam2"><svg><use href="#i-cam"/></svg><span>Add photo of ملكية</span></label>`}
-    <div class="jb-list">${j.rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(j.total)} OMR</b></div></div>
+    ${j.stage==='work'&&j.eta?`<div class="jb-eta">⏱ Ready ${etaText(j)}</div>`:''}
+    ${(()=>{const T=jobTotals(j);return `<div class="jb-list">${(j.items||[]).map((it,i)=>`<button class="jb-r it${it.pend?' pend':''}" data-it="${i}"><div>${esc(it.d)}${it.sub||it.q!==1||it.u?`<small>${esc(it.sub||'')}${it.sub&&(it.q!==1||it.u)?' · ':''}${it.q!==1||it.u?(+it.q)+(it.u?' '+it.u:'')+' × '+f3(it.p):''}</small>`:''}</div><b>${it.pend?'Price?':f3(it.q*it.p)}</b></button>`).join('')}
+      <button class="jb-r add" data-additem><div>＋ Add part or service</div></button>
+      ${T.disc?`<div class="jb-r"><div>Discount</div><b>−${f3(T.disc)}</b></div>`:''}<div class="jb-r tot"><div>Total${T.labour?`<small>Parts ${f3(T.parts)} · Labour ${f3(T.labour)}</small>`:''}</div><b>${f3(T.total)} OMR</b></div></div>`;})()}
     <div class="lbl">Customer</div>
     <div class="jb-list"><div class="jb-r"><div>Name</div><input class="jb-kmin" id="jnm" value="${esc(j.nm||'')}" placeholder="—"></div><div class="jb-r"><div>Phone</div><input class="jb-kmin" id="jtel" inputmode="tel" value="${esc(j.tel||'')}" placeholder="—"></div><div class="jb-r"><div>Plate</div><input class="jb-kmin" id="jpl" value="${esc(j.pl||'')}" placeholder="—" style="text-transform:uppercase"></div><div class="jb-r"><div>VIN</div><input class="jb-kmin mono" id="jvin" maxlength="17" value="${esc(j.vin||'')}" placeholder="—"></div><div class="jb-r"><div>Km now</div><input class="jb-kmin" id="jkm" inputmode="numeric" value="${j.km||''}" placeholder="—"></div>${rem?`<div class="jb-r"><div>Next service<small>${kmf(rem.nextKm)} km</small></div><b>${fmtD(rem.next)}</b></div>`:''}</div>
     ${j.vin&&j.vin.length===17?(()=>{const d=vinDecode(j.vin);const o=j.vinInfo;return `<div class="vin-box"><div class="vh"><b>VIN</b><span class="mono">${esc(j.vin)}</span></div>
@@ -649,7 +663,9 @@ function renderJobs(m,hd){
     ${isAdmin()&&LAST_OCR?`<button class="btn ghost" data-ocrcp>Copy card text (for tuning)</button>`:''}
     <button class="btn ghost jb-del" data-del>Delete job</button>`;
     m.querySelector('[data-back]').onclick=()=>{S.job=null;render();scrollTo(0,0);};
-    const nb=m.querySelector('[data-next]');if(nb)nb.onclick=()=>{setStage(j,nx[0]);toast(nx[1]);rerender();};
+    const nb=m.querySelector('[data-next]');if(nb)nb.onclick=()=>{if(j.stage==='new'){deeper();S.sheet='eta';renderSheet();return;}setStage(j,nx[0]);toast(nx[1]);rerender();};
+    m.querySelector('[data-additem]').onclick=()=>{deeper();S.sheet='add';S.addq='';renderSheet();};
+    m.querySelectorAll('[data-it]').forEach(b=>b.onclick=()=>{deeper();S.sheet='edit';S.editIt=+b.dataset.it;renderSheet();});
     const c2=$('#jbcam2');if(c2)c2.onchange=e=>{const f=e.target.files[0];if(f)shrinkPhoto(f,u=>{j.photo=u;j.log.push([Date.now(),'Photo added']);rerender();});};
     $('#jnm').onchange=e=>{j.nm=e.target.value.trim();rerender();};
     $('#jpl').onchange=e=>{j.pl=plateFmt(e.target.value);rerender();};
@@ -659,7 +675,7 @@ function renderJobs(m,hd){
     $('#jtel').onchange=e=>{j.tel=e.target.value.replace(/[^\d+]/g,'');const r=REMS.find(x=>x.job===j.id);if(r)r.tel=j.tel;rerender();};
     m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:(j.iv||{}).km||7000,months:6};S.sheet='stk';renderSheet();};
     m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
-    const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
+    const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(jobTotals(j).total)+' ر.ع\nورشة عالم الخدمات السريعة');};
     const vd=m.querySelector('[data-vindec]');if(vd)vd.onclick=async()=>{vd.textContent='Decoding…';vd.disabled=true;try{j.vinInfo=await vinOnline(j.vin);j.log.push([Date.now(),'VIN decoded online']);}catch(e){toast('No internet, or the service is down.');vd.textContent='Decode online (free · NHTSA)';vd.disabled=false;return;}rerender();};
     const oc=m.querySelector('[data-ocrcp]');if(oc)oc.onclick=()=>copyText(LAST_OCR.raw||'');
     const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
@@ -710,18 +726,64 @@ function renderStk(el,close){
   };
 }
 
+
+/* ---------- Add / edit job items ---------- */
+function renderAddItem(el,close){
+  const j=JOBS.find(x=>x.id===S.job);if(!j){closeSheet();return;}
+  const q=(S.addq||'').toLowerCase();
+  const stock=[].concat(D.filters.map(f=>({d:filterName(f),sub:f[1],p:f[2],k:'part',u:'',st:f[3]})),D.oils.map(o=>({d:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),sub:'per litre',p:o[2],k:'part',u:'L',st:o[3]})));
+  const common=COMMON_ITEMS.map(([d,k,p])=>({d,k,p,u:d.includes('(L)')?'L':'',sub:''}));
+  const f=list=>list.filter(x=>!q||x.d.toLowerCase().includes(q)||(x.sub||'').toLowerCase().includes(q));
+  const row=(x,src,i)=>`<button class="opt" data-pick="${src}:${i}"><div class="tx"><b>${esc(x.d)}</b>${x.sub||x.st!=null?`<span>${esc(x.sub||'')}${x.st!=null?(x.sub?' · ':'')+(x.st>0?x.st+' in stock':'out of stock'):''}</span>`:''}</div><span class="v">${f3(x.p)}</span></button>`;
+  const cl=f(common),sl=f(stock);
+  el.innerHTML=`<div class="pnl"><h3>Add to job #${j.no}</h3>
+    <input class="field" id="addq" placeholder="Search parts, oils, services" value="${esc(S.addq||'')}" autocomplete="off">
+    <button class="btn ghost" data-custom>✏️ Something else (type name and price)</button>
+    ${cl.length?`<div class="lbl">Common</div>${cl.map((x)=>row(x,'c',common.indexOf(x))).join('')}`:''}
+    ${sl.length?`<div class="lbl">From stock</div>${sl.slice(0,40).map((x)=>row(x,'s',stock.indexOf(x))).join('')}`:''}
+    ${close}</div>`;
+  const inp=$('#addq');inp.oninput=()=>{S.addq=inp.value;const pos=inp.value.length;renderSheet();const i2=$('#addq');i2.focus();try{i2.setSelectionRange(pos,pos);}catch(e){}};
+  el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const [src,i]=b.dataset.pick.split(':');const x=(src==='c'?common:stock)[+i];j.items.push({d:x.d,sub:x.sub||'',q:1,u:x.u||'',p:x.p,k:x.k});S.editIt=j.items.length-1;S.sheet='edit';renderSheet();});
+  el.querySelector('[data-custom]').onclick=()=>{j.items.push({d:'',sub:'',q:1,u:'',p:0,k:'part',neu:1});S.editIt=j.items.length-1;S.sheet='edit';renderSheet();};
+}
+function renderEditItem(el,close){
+  const j=JOBS.find(x=>x.id===S.job);const it=j&&j.items[S.editIt];if(!it){closeSheet();return;}
+  el.innerHTML=`<div class="pnl"><h3>${it.neu?'New item':'Edit item'}</h3>
+    <input class="field" id="eid" placeholder="Name (e.g. Air filter)" value="${esc(it.d)}" autocomplete="off">
+    <input class="field" id="eis" placeholder="Note / part number (optional)" value="${esc(it.sub||'')}" autocomplete="off">
+    <div class="jb-chips"><button data-k="part" aria-pressed="${it.k==='part'}">Part</button><button data-k="labour" aria-pressed="${it.k==='labour'}">Labour / service</button></div>
+    <div class="ed-grid"><label>Qty${it.u?' ('+esc(it.u)+')':''}<div class="stepper"><button data-q="-1">−</button><input id="eiq" inputmode="decimal" value="${+it.q}"><button data-q="1">+</button></div></label>
+      <label>Price each (OMR)<input class="field" id="eip" inputmode="decimal" value="${it.pend?'':f3(it.p)}" placeholder="—"></label></div>
+    <label class="ed-pend"><input type="checkbox" id="eipend" ${it.pend?'checked':''}> Ask the owner for the price</label>
+    <div class="ed-tot">Line total <b id="eit">${it.pend?'—':f3(it.q*it.p)}</b></div>
+    <button class="btn okb" id="eiok">Save</button>
+    <button class="btn ghost jb-del" id="eidel">Remove item</button>${close}</div>`;
+  const upd=()=>{const q=parseFloat($('#eiq').value)||0,p=parseFloat($('#eip').value)||0;$('#eit').textContent=$('#eipend').checked?'—':f3(q*p);};
+  el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{it.k=b.dataset.k;el.querySelectorAll('[data-k]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+  el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const i=$('#eiq');const step=it.u==='L'?0.5:1;i.value=Math.max(step,Math.round(((parseFloat(i.value)||0)+step*(+b.dataset.q))*10)/10);upd();});
+  $('#eiq').oninput=upd;$('#eip').oninput=upd;$('#eipend').onchange=upd;
+  $('#eiok').onclick=()=>{const d=$('#eid').value.trim();if(!d){toast('Type a name');return;}it.d=d;it.sub=$('#eis').value.trim();it.q=parseFloat($('#eiq').value)||1;it.pend=$('#eipend').checked;it.p=it.pend?0:(parseFloat($('#eip').value)||0);const was=it.neu;delete it.neu;j.log.push([Date.now(),(was?'Added ':'Changed ')+it.d+(it.pend?' (price pending)':' '+f3(it.q*it.p))+' · '+S.user.name]);closeSheet();rerender();};
+  $('#eidel').onclick=()=>{j.items.splice(S.editIt,1);j.log.push([Date.now(),'Removed '+(it.d||'item')+' · '+S.user.name]);closeSheet();rerender();};
+  el.querySelector('[data-close]').onclick=()=>{if(it.neu)j.items.splice(S.editIt,1);closeSheet();};
+}
+
 /* ---------- Invoice (test) ---------- */
 const WS_NAME='Fast Service World',WS_AR='ورشة عالم الخدمات السريعة',WS_ADDR='Sanaiya Ibra';
 function invoiceHtml(j,forPrint){
-  const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});
+  const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});const T=jobTotals(j);
   const paid=j.paid?`<div class="inv-paid">PAID · مدفوع${j.payBy?' · '+j.payBy:''}</div>`:'';
+  let n=0;const tr=k=>(j.items||[]).filter(it=>it.k===k&&!it.pend).map(it=>{n++;return `<tr><td class="n">${n}</td><td>${esc(it.d)}${it.sub?`<small>${esc(it.sub)}</small>`:''}</td><td class="q">${+it.q}${it.u?' '+esc(it.u):''}</td><td class="u">${f3(it.p)}</td><td class="a">${f3(it.q*it.p)}</td></tr>`;}).join('');
+  const parts=tr('part'),lab=tr('labour');
+  const rem=REMS.find(r=>r.job===j.id);
   return `<div class="inv${forPrint?' print':''}"><div class="inv-hd"><img src="${forPrint?LOGO_B:LOGO_IMG}" alt=""><div class="inv-ws"><b>${WS_NAME}</b><span class="ar">${WS_AR}</span><span>${WS_ADDR} · ${WS_TEL}</span></div></div>
   <div class="inv-ttl"><b>INVOICE <span class="ar">فاتورة</span></b><span>#${String(j.no).padStart(4,'0')} · ${dt}</span></div>
   <div class="inv-meta"><div><small>Customer</small>${esc(j.nm||'—')}</div><div><small>Phone</small>${esc(j.tel||'—')}</div><div><small>Car</small>${esc(j.car)}</div><div><small>Plate</small>${esc(j.pl||'—')}</div><div><small>Km</small>${j.km?kmf(j.km):'—'}</div><div><small>VIN</small><span class="mono">${esc(j.vin||'—')}</span></div></div>
-  <table class="inv-t"><thead><tr><th>Description</th><th>OMR</th></tr></thead><tbody>${j.rows.map(r=>`<tr><td>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</td><td>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total <span class="ar">المجموع</span></td><td>${f3(j.total)}</td></tr></tfoot></table>
-  ${paid}<div class="inv-ft">Thank you · شكراً لزيارتكم<br>Next oil change: ${(REMS.find(r=>r.job===j.id)||{}).nextKm?kmf(REMS.find(r=>r.job===j.id).nextKm)+' km':'see sticker'}</div></div>`;
+  <table class="inv-t"><thead><tr><th>#</th><th>Description</th><th class="q">Qty</th><th class="u">Unit</th><th class="a">OMR</th></tr></thead><tbody>
+  ${parts?`<tr class="grp"><td colspan="5">Parts · قطع</td></tr>${parts}`:''}${lab?`<tr class="grp"><td colspan="5">Labour · أجرة</td></tr>${lab}`:''}</tbody></table>
+  <div class="inv-sum">${T.labour&&T.parts?`<div><span>Parts</span><span>${f3(T.parts)}</span></div><div><span>Labour</span><span>${f3(T.labour)}</span></div>`:''}${T.disc?`<div class="disc"><span>Discount · خصم</span><span>−${f3(T.disc)}</span></div>`:''}<div class="tot"><span>Total <span class="ar">المجموع</span></span><span>${f3(T.total)} OMR</span></div></div>
+  ${paid}<div class="inv-ft">Thank you · شكراً لزيارتكم<br>Next oil change: ${rem&&rem.nextKm?kmf(rem.nextKm)+' km':'see sticker'}</div></div>`;
 }
-function invoiceText(j){const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});return WS_AR+'\nفاتورة #'+String(j.no).padStart(4,'0')+' · '+dt+'\n'+(j.nm?'العميل: '+j.nm+'\n':'')+'السيارة: '+j.car+(j.pl?' · '+j.pl:'')+'\n'+(j.km?'الكيلومتر: '+kmf(j.km)+'\n':'')+'\n'+j.rows.map(r=>'• '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\n\nالمجموع: '+f3(j.total)+' ر.ع'+(j.paid?'\nمدفوع'+(j.payBy?' · '+j.payBy:''):'')+'\n\nشكراً لزيارتكم · '+WS_TEL;}
+function invoiceText(j){const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});const T=jobTotals(j);return WS_AR+'\nفاتورة #'+String(j.no).padStart(4,'0')+' · '+dt+'\n'+(j.nm?'العميل: '+j.nm+'\n':'')+'السيارة: '+j.car+(j.pl?' · '+j.pl:'')+'\n'+(j.km?'الكيلومتر: '+kmf(j.km)+'\n':'')+'\n'+(j.items||[]).filter(it=>!it.pend).map(it=>'• '+it.d+(it.sub?' ('+it.sub+')':'')+(it.q!==1||it.u?' '+(+it.q)+(it.u?' '+it.u:'')+' × '+f3(it.p):'')+': '+f3(it.q*it.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):'')+'\n\nالمجموع: '+f3(T.total)+' ر.ع'+(j.paid?'\nمدفوع'+(j.payBy?' · '+j.payBy:''):'')+'\n\nشكراً لزيارتكم · '+WS_TEL;}
 function renderInv(el,close){
   const j=JOBS.find(x=>x.id===S.job);if(!j){closeSheet();return;}
   el.innerHTML=`<div class="pnl"><h3>Invoice · Job #${j.no}</h3>${testBar}
@@ -740,7 +802,7 @@ function renderInv(el,close){
     P.printHtml({html:doc,widthMm:210,heightMm:297,name:'FSW invoice '+j.no}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
   };
 }
-const INV_CSS='.inv{background:#fff;color:#000;padding:6mm;font-size:3.4mm;line-height:1.35}.inv .ar{direction:rtl}.inv-hd{display:flex;align-items:center;gap:4mm;border-bottom:.5mm solid #000;padding-bottom:3mm}.inv-hd img{width:40mm;flex:none}.inv-ws{display:grid;gap:.5mm;margin-left:auto;text-align:right;white-space:nowrap}.inv-ws b{font-size:4mm}.inv-ws span{font-size:2.8mm}.inv-ttl{display:flex;justify-content:space-between;align-items:baseline;margin:3mm 0}.inv-ttl b{font-size:5mm;letter-spacing:.1em}.inv-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm 4mm;border:.3mm solid #000;border-radius:1.5mm;padding:2.5mm 3mm;margin-bottom:3mm}.inv-meta small{display:block;font-size:2.4mm;color:#555;text-transform:uppercase;letter-spacing:.08em}.inv .mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}.inv-t{width:100%;border-collapse:collapse}.inv-t th{text-align:left;font-size:2.6mm;letter-spacing:.1em;border-bottom:.4mm solid #000;padding:1.5mm 0}.inv-t td{padding:2mm 0;border-bottom:.2mm solid #bbb;vertical-align:top}.inv-t td small{display:block;color:#555;font-size:2.6mm}.inv-t th:last-child,.inv-t td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.inv-t tfoot td{border-bottom:0;border-top:.5mm solid #000;font-weight:800;font-size:4.2mm;padding-top:2.5mm}.inv-paid{display:inline-block;border:.6mm solid #000;border-radius:1.5mm;padding:1mm 3mm;font-weight:800;letter-spacing:.1em;margin-top:3mm;transform:rotate(-3deg)}.inv-ft{margin-top:6mm;text-align:center;font-size:2.9mm;color:#333}';
+const INV_CSS=".inv{background:#fff;color:#000;font-size:3.3mm;line-height:1.3}.inv .ar{direction:rtl}.inv-hd{display:flex;align-items:center;gap:4mm;border-bottom:.5mm solid #000;padding-bottom:3mm}.inv-hd img{width:40mm;flex:none}.inv-ws{display:grid;gap:.4mm;margin-left:auto;text-align:right;white-space:nowrap}.inv-ws b{font-size:4mm}.inv-ws span{font-size:2.8mm}.inv-ttl{display:flex;justify-content:space-between;align-items:baseline;margin:3mm 0 2.5mm}.inv-ttl b{font-size:5mm;letter-spacing:.1em}.inv-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5mm 4mm;border:.3mm solid #000;border-radius:1.5mm;padding:2mm 3mm;margin-bottom:3mm}.inv-meta small{display:block;font-size:2.3mm;color:#555;text-transform:uppercase;letter-spacing:.08em}.inv .mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}.inv-t{width:100%;border-collapse:collapse}.inv-t th{font-size:2.5mm;letter-spacing:.1em;border-bottom:.4mm solid #000;padding:1.2mm 1mm;text-align:left}.inv-t td{padding:1.4mm 1mm;border-bottom:.2mm solid #ccc;vertical-align:top;page-break-inside:avoid}.inv-t td small{color:#555;font-size:2.5mm;margin-left:1.5mm}.inv-t .n{width:6mm;color:#888;font-size:2.6mm}.inv-t .q,.inv-t .u,.inv-t .a{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.inv-t .q{width:12mm}.inv-t .u{width:18mm;color:#555}.inv-t .a{width:20mm;font-weight:700}.inv-t .grp td{border-bottom:.3mm solid #000;padding-top:3mm;font-size:2.6mm;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#000}.inv-sum{margin-left:auto;width:70mm;margin-top:3mm;border-top:.3mm solid #000;page-break-inside:avoid}.inv-sum div{display:flex;justify-content:space-between;padding:1.2mm 1mm;font-variant-numeric:tabular-nums}.inv-sum .disc{color:#000}.inv-sum .tot{border-top:.5mm solid #000;font-weight:800;font-size:4.4mm;padding-top:2mm;margin-top:1mm}.inv-paid{display:inline-block;border:.6mm solid #000;border-radius:1.5mm;padding:1mm 3mm;font-weight:800;letter-spacing:.1em;margin-top:3mm;transform:rotate(-3deg)}.inv-ft{margin-top:5mm;text-align:center;font-size:2.9mm;color:#333;page-break-inside:avoid}";
 
 function renderRems(m,hd){
   const list=REMS.slice().sort((a,b)=>a.next-b.next);
