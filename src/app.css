@@ -320,3 +320,7 @@ pre.msg{white-space:pre-wrap;direction:rtl;text-align:right;font:15px/1.6 system
 .jb-wa{grid-column:1/-1;min-height:42px;margin-top:6px}
 .stk-pv{background:#2a2a2e;border-radius:14px;min-height:150px;display:grid;place-items:center;padding:14px;overflow:hidden}
 @media (min-width:760px){.stk-pv{min-height:260px}}
+
+.stk-paper{border:1.5px solid var(--orange);background:rgba(242,123,33,.1);border-radius:14px;padding:12px;font-size:.92rem;display:block}
+.stk-paper span{display:block;margin:4px 0;font:400 1.25rem var(--f-brand);color:#fff}
+.stk-paper small{display:block;color:var(--muted);font-size:.78rem}

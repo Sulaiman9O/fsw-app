@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.4.1";
+window.FSW_APP_NAME="1.4.2";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -560,7 +560,7 @@ function renderJobs(m,hd){
     const c2=$('#jbcam2');if(c2)c2.onchange=e=>{const f=e.target.files[0];if(f)shrinkPhoto(f,u=>{j.photo=u;j.log.push([Date.now(),'Photo added']);rerender();});};
     $('#jkm').onchange=e=>{j.km=parseInt(e.target.value.replace(/\D/g,''))||0;const r=REMS.find(x=>x.job===j.id);if(r){r.km=j.km;}rerender();};
     $('#jtel').onchange=e=>{j.tel=e.target.value.replace(/[^\d+]/g,'');const r=REMS.find(x=>x.job===j.id);if(r)r.tel=j.tel;rerender();};
-    m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:(S.stk&&S.stk.tpl)||'A',step:5000,months:6};S.sheet='stk';renderSheet();};
+    m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:5000,months:6};S.sheet='stk';renderSheet();};
     m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
     const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
     const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
@@ -569,7 +569,9 @@ function renderJobs(m,hd){
 }
 const STK_SIZES={A:[62,29,'Small strip'],B:[62,50,'Standard'],C:[62,62,'Square'],D:[29,90,'Tall']};
 /* paper names the Brother print screen offers (inches) */
-const STK_PAPER={A:[2.4,1.1],B:[2.4,3.9],C:[2.4,3.9],D:[1.1,3.5]};
+const STK_PAPER={A:[62,29,'2.4" x 1.1"'],B:[62,100,'2.4" x 3.9"'],C:[62,100,'2.4" x 3.9"'],D:[29,90,'1.1" x 3.5"']};
+const ROLLS={r29:{n:'29 × 90 labels',t:['D']},r62:{n:'62 mm roll',t:['A','B','C']}};
+const roll=()=>ROLLS[store.get('roll','r29')]?store.get('roll','r29'):'r29';
 function stickerHtml(t,d){
   const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
   if(t==='A')return `<div class="stk sA"><img src="${EMB_B}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
@@ -579,29 +581,32 @@ function stickerHtml(t,d){
 }
 function stkCss(){if(!$('#stkcss')){const st=document.createElement('style');st.id='stkcss';st.textContent="/* ---- service reminder stickers (black only, real mm size) ---- */\n\n.stk{background:#fff;color:#000;font-family:\"FSW Rubik\",Tahoma,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.5);border-radius:2mm;overflow:hidden;position:relative;flex:0 0 auto}\n.stk .k{font-family:\"FSW Rubik\",Tahoma,sans-serif;font-weight:800;letter-spacing:0;white-space:nowrap}\n.stk img{display:block}\n.stk .ar{direction:rtl;font-weight:700}\n.sA{width:62mm;height:29mm;display:grid;grid-template-columns:17mm 1fr;align-items:center;gap:2mm;padding:2mm 3mm}\n.sA img{width:16mm}\n.sA .t{font-size:2.1mm;font-weight:700;letter-spacing:.06em;display:flex;justify-content:space-between;white-space:nowrap;gap:1.5mm}\n.sA .d{font-size:5.2mm;line-height:1.05;margin-top:.6mm}\n.sA .km{font-size:4.6mm;line-height:1.05}\n.sA .o{font-size:2.2mm;margin-top:.8mm;border-top:.3mm solid #000;padding-top:.6mm;display:flex;justify-content:space-between}\n.sB{width:62mm;height:50mm;padding:2.5mm 3mm;display:grid;grid-template-rows:auto auto 1fr auto;gap:1.6mm}\n.sB img{width:40mm;justify-self:center}\n.sB .bar{background:#000;color:#fff;text-align:center;font-size:2.8mm;font-weight:700;letter-spacing:.2em;padding:.8mm 0;border-radius:1mm;display:flex;justify-content:center;gap:3mm}\n.sB .two{display:grid;grid-template-columns:1fr 1fr;gap:1.6mm}\n.sB .bx{border:.45mm solid #000;border-radius:1.2mm;padding:1mm 1.6mm;display:grid;align-content:center}\n.sB .bx small{font-size:2mm;font-weight:700;letter-spacing:.1em;display:flex;justify-content:space-between}\n.sB .bx .k{font-size:3.9mm;line-height:1.1}\n.sB .ft{font-size:2.1mm;display:flex;justify-content:space-between;border-top:.3mm dashed #000;padding-top:.8mm}\n.sC{width:62mm;height:62mm;padding:3mm;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:1.4mm;text-align:center}\n.sC img{width:20mm;justify-self:center}\n.sC .h{font-size:3.6mm;font-weight:700}\n.sC .h small{display:block;font-size:2.3mm;letter-spacing:.2em;font-weight:700}\n.sC .big{display:grid;grid-template-columns:1fr .35mm 1fr;align-items:center;border-top:.45mm solid #000;border-bottom:.45mm solid #000;padding:1.6mm 0}\n.sC .big i{background:#000;height:9mm}\n.sC .big .k{font-size:4.2mm;line-height:1}\n.sC .big small{display:block;font-size:2mm;font-weight:700;margin-top:.6mm}\n.sC .o{font-size:2.4mm}\n.sC .nm{font-size:2.6mm;font-weight:700}\n.sC .pl{font-size:2.2mm;letter-spacing:.05em}\n.sD{width:29mm;height:90mm;padding:3mm 2.5mm;display:grid;grid-template-rows:auto auto auto auto 1fr auto;gap:1.8mm;text-align:center}\n.sD img{width:20mm;justify-self:center}\n.sD .bar{background:#000;color:#fff;font-size:2.3mm;font-weight:700;padding:.8mm 0;border-radius:1mm;letter-spacing:.08em}\n.sD .lb{font-size:2mm;font-weight:700;letter-spacing:.12em}\n.sD .k{font-size:3.9mm;line-height:1.05}\n.sD hr{border:0;border-top:.3mm dashed #000;margin:0}\n.sD .o{font-size:2.1mm;align-self:end}\n";document.head.appendChild(st);}}
 function renderStk(el,close){
-  stkCss();const k=S.stk;const j=JOBS.find(x=>x.id===k.job);if(!j){closeSheet();return;}
+  stkCss();const k=S.stk;if(!ROLLS[roll()].t.includes(k.tpl))k.tpl=ROLLS[roll()].t[0];const j=JOBS.find(x=>x.id===k.job);if(!j){closeSheet();return;}
   const n=new Date();n.setMonth(n.getMonth()+k.months);
   const d={oil:j.oil,km:j.km,nextKm:j.km?j.km+k.step:0,next:n.getTime()};
   const sc={A:1,B:1,C:.9,D:.75}[k.tpl];
   el.innerHTML=`<div class="pnl"><h3>Service sticker · Job #${j.no}</h3>
     <div class="stk-pv"><div style="transform:scale(${sc});transform-origin:center">${stickerHtml(k.tpl,d)}</div></div>
-    <div class="jb-chips">${Object.entries(STK_SIZES).map(([t,v])=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${v[0]}×${v[1]}</span></button>`).join('')}</div>
+    <div class="lbl">Roll in the printer</div>
+    <div class="jb-chips">${Object.entries(ROLLS).map(([r,v])=>`<button data-roll="${r}" aria-pressed="${roll()===r}">${v.n}</button>`).join('')}</div>
+    ${ROLLS[roll()].t.length>1?`<div class="jb-chips">${ROLLS[roll()].t.map(t=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${STK_SIZES[t][0]}×${STK_SIZES[t][1]}</span></button>`).join('')}</div>`:''}
     ${j.km?'':`<div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now (for the next km)" id="skm"></div>`}
     <div class="jb-chips">${[5000,7500,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
-    <p class="hint" style="margin:0">Brother QL-820NWB · ${k.tpl==='D'?'needs a 29 mm roll':'DK-22113 · 62 mm roll'}<br>In the print screen pick paper <b style="color:#fff">${STK_PAPER[k.tpl][0]}" x ${STK_PAPER[k.tpl][1]}"</b>${k.tpl==='B'||k.tpl==='C'?' (prints 100 mm long)':''}</p>
+    <div class="stk-paper">In the print screen, set <b>Paper size</b> to <span>${STK_PAPER[k.tpl][2]}</span><small>Only the first time. The tablet remembers it.${k.tpl==='B'||k.tpl==='C'?' This one prints 100 mm long.':''}</small></div>
     <button class="btn" id="stkgo">🖨 Print sticker</button>${close}</div>`;
   el.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;renderSheet();});
+  el.querySelectorAll('[data-roll]').forEach(b=>b.onclick=()=>{store.set('roll',b.dataset.roll);k.tpl=ROLLS[b.dataset.roll].t[0];renderSheet();});
   el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{k.step=+b.dataset.step;renderSheet();});
   el.querySelectorAll('[data-mon]').forEach(b=>b.onclick=()=>{k.months=+b.dataset.mon;renderSheet();});
   const skm=$('#skm');if(skm)skm.onchange=()=>{j.km=parseInt(skm.value.replace(/\D/g,''))||0;renderSheet();};
   $('#stkgo').onclick=()=>{
     addRem(j,k.step,k.months);j.log.push([Date.now(),'Sticker '+k.tpl+' · next '+fmtD(d.next)]);
     const [w,h]=STK_SIZES[k.tpl];const [pw,ph]=STK_PAPER[k.tpl];
-    const z=Math.min(1,(pw*25.4-1)/w,(ph*25.4-1)/h).toFixed(3);
+    const z=Math.min(1,(pw-3)/w,(ph-3)/h).toFixed(3);
     const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+"/* ---- service reminder stickers (black only, real mm size) ---- */\n\n.stk{background:#fff;color:#000;font-family:\"FSW Rubik\",Tahoma,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.5);border-radius:2mm;overflow:hidden;position:relative;flex:0 0 auto}\n.stk .k{font-family:\"FSW Rubik\",Tahoma,sans-serif;font-weight:800;letter-spacing:0;white-space:nowrap}\n.stk img{display:block}\n.stk .ar{direction:rtl;font-weight:700}\n.sA{width:62mm;height:29mm;display:grid;grid-template-columns:17mm 1fr;align-items:center;gap:2mm;padding:2mm 3mm}\n.sA img{width:16mm}\n.sA .t{font-size:2.1mm;font-weight:700;letter-spacing:.06em;display:flex;justify-content:space-between;white-space:nowrap;gap:1.5mm}\n.sA .d{font-size:5.2mm;line-height:1.05;margin-top:.6mm}\n.sA .km{font-size:4.6mm;line-height:1.05}\n.sA .o{font-size:2.2mm;margin-top:.8mm;border-top:.3mm solid #000;padding-top:.6mm;display:flex;justify-content:space-between}\n.sB{width:62mm;height:50mm;padding:2.5mm 3mm;display:grid;grid-template-rows:auto auto 1fr auto;gap:1.6mm}\n.sB img{width:40mm;justify-self:center}\n.sB .bar{background:#000;color:#fff;text-align:center;font-size:2.8mm;font-weight:700;letter-spacing:.2em;padding:.8mm 0;border-radius:1mm;display:flex;justify-content:center;gap:3mm}\n.sB .two{display:grid;grid-template-columns:1fr 1fr;gap:1.6mm}\n.sB .bx{border:.45mm solid #000;border-radius:1.2mm;padding:1mm 1.6mm;display:grid;align-content:center}\n.sB .bx small{font-size:2mm;font-weight:700;letter-spacing:.1em;display:flex;justify-content:space-between}\n.sB .bx .k{font-size:3.9mm;line-height:1.1}\n.sB .ft{font-size:2.1mm;display:flex;justify-content:space-between;border-top:.3mm dashed #000;padding-top:.8mm}\n.sC{width:62mm;height:62mm;padding:3mm;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:1.4mm;text-align:center}\n.sC img{width:20mm;justify-self:center}\n.sC .h{font-size:3.6mm;font-weight:700}\n.sC .h small{display:block;font-size:2.3mm;letter-spacing:.2em;font-weight:700}\n.sC .big{display:grid;grid-template-columns:1fr .35mm 1fr;align-items:center;border-top:.45mm solid #000;border-bottom:.45mm solid #000;padding:1.6mm 0}\n.sC .big i{background:#000;height:9mm}\n.sC .big .k{font-size:4.2mm;line-height:1}\n.sC .big small{display:block;font-size:2mm;font-weight:700;margin-top:.6mm}\n.sC .o{font-size:2.4mm}\n.sC .nm{font-size:2.6mm;font-weight:700}\n.sC .pl{font-size:2.2mm;letter-spacing:.05em}\n.sD{width:29mm;height:90mm;padding:3mm 2.5mm;display:grid;grid-template-rows:auto auto auto auto 1fr auto;gap:1.8mm;text-align:center}\n.sD img{width:20mm;justify-self:center}\n.sD .bar{background:#000;color:#fff;font-size:2.3mm;font-weight:700;padding:.8mm 0;border-radius:1mm;letter-spacing:.08em}\n.sD .lb{font-size:2mm;font-weight:700;letter-spacing:.12em}\n.sD .k{font-size:3.9mm;line-height:1.05}\n.sD hr{border:0;border-top:.3mm dashed #000;margin:0}\n.sD .o{font-size:2.1mm;align-self:end}\n"+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(k.tpl,d)+'</div></div></body></html>';
     const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
     if(!P){toast('Reminder saved. Printing needs the new app version.');closeSheet();rerender();return;}
-    P.printHtml({html:doc,widthMm:pw*25.4,heightMm:ph*25.4,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+    P.printHtml({html:doc,widthMm:pw,heightMm:ph,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
   };
 }
 function renderRems(m,hd){
