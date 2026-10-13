@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.5.6";
+window.FSW_APP_NAME="1.5.7";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -577,6 +577,24 @@ async function readMulkiya(dataUrl,onDone){
 }
 let LAST_OCR=null;
 
+
+/* ---------- VIN decode: offline (maker + year) and optional online (NHTSA, free) ---------- */
+const WMI=[['JT','Toyota','Japan'],['JTD','Toyota','Japan'],['JTE','Toyota','Japan'],['JTM','Toyota','Japan'],['JTN','Toyota','Japan'],['JTH','Lexus','Japan'],['JTJ','Lexus','Japan'],['MR0','Toyota','Thailand'],['MHF','Toyota','Indonesia'],['SB1','Toyota','UK'],['4T1','Toyota','USA'],['5TD','Toyota','USA'],['JN1','Nissan','Japan'],['JN8','Nissan','Japan'],['JNK','Infiniti','Japan'],['MNT','Nissan','Thailand'],['1N4','Nissan','USA'],['JHM','Honda','Japan'],['JHL','Honda','Japan'],['1HG','Honda','USA'],['2HG','Honda','Canada'],['JM','Mazda','Japan'],['JMZ','Mazda','Japan'],['JS','Suzuki','Japan'],['JSA','Suzuki','Japan'],['JF1','Subaru','Japan'],['JF2','Subaru','Japan'],['JA','Mitsubishi','Japan'],['JMB','Mitsubishi','Japan'],['MMB','Mitsubishi','Thailand'],['JAA','Isuzu','Japan'],['JAC','Isuzu','Japan'],['KMH','Hyundai','Korea'],['KMF','Hyundai','Korea'],['KM8','Hyundai','Korea'],['KNA','Kia','Korea'],['KND','Kia','Korea'],['KNM','Renault Samsung','Korea'],['KL','GM Korea','Korea'],['MAL','Hyundai','India'],['MAJ','Ford','India'],['1FA','Ford','USA'],['1FM','Ford','USA'],['1FT','Ford','USA'],['2FM','Ford','Canada'],['3FA','Ford','Mexico'],['1G1','Chevrolet','USA'],['1GC','Chevrolet','USA'],['1GN','Chevrolet','USA'],['2G1','Chevrolet','Canada'],['3G','GM','Mexico'],['1GY','Cadillac','USA'],['1GK','GMC','USA'],['1C4','Chrysler/Jeep','USA'],['1C6','Ram','USA'],['3C4','Chrysler','Mexico'],['2C3','Chrysler','Canada'],['1J4','Jeep','USA'],['1J8','Jeep','USA'],['WBA','BMW','Germany'],['WBS','BMW M','Germany'],['WBY','BMW','Germany'],['WDD','Mercedes-Benz','Germany'],['WDC','Mercedes-Benz','Germany'],['W1K','Mercedes-Benz','Germany'],['W1N','Mercedes-Benz','Germany'],['WAU','Audi','Germany'],['WVW','Volkswagen','Germany'],['WVG','Volkswagen','Germany'],['WP0','Porsche','Germany'],['WP1','Porsche','Germany'],['SAL','Land Rover','UK'],['SAJ','Jaguar','UK'],['SCA','Rolls-Royce','UK'],['SCC','Lotus','UK'],['ZFF','Ferrari','Italy'],['ZAR','Alfa Romeo','Italy'],['ZFA','Fiat','Italy'],['VF1','Renault','France'],['VF3','Peugeot','France'],['VF7','Citroën','France'],['YV1','Volvo','Sweden'],['LVS','Changan Ford','China'],['LGB','Dongfeng Nissan','China'],['LFV','FAW-VW','China'],['LSG','SAIC GM','China'],['LZW','SAIC-GM-Wuling','China'],['LGX','BYD','China'],['LC0','BYD','China'],['LJ1','JAC','China'],['LVV','Chery','China'],['L6T','Geely','China'],['LB3','Geely','China'],['LGW','Great Wall','China'],['LZY','Yutong','China'],['NM','Turkey','Turkey'],['MA','India','India'],['MA3','Suzuki Maruti','India'],['TMB','Škoda','Czechia'],['XTA','Lada','Russia'],['5YJ','Tesla','USA'],['7SA','Tesla','USA'],['LRW','Tesla','China']];
+const VIN_YEAR='ABCDEFGHJKLMNPRSTVWXY123456789';
+function vinDecode(v){
+  if(!v||v.length!==17)return null;
+  let w=WMI.find(x=>v.startsWith(x[0])&&x[0].length===3)||WMI.find(x=>v.startsWith(x[0]));
+  const i=VIN_YEAR.indexOf(v[9]);let year=null;
+  if(i>=0){const y1=1980+i,y2=2010+i;year=(y2<=new Date().getFullYear()+1)?y2:y1;} // letters repeat every 30 years
+  return {make:w?w[1]:null,country:w?w[2]:null,year,check:vinCheck(v)};
+}
+async function vinOnline(v){
+  const r=await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/'+encodeURIComponent(v)+'?format=json');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=(await r.json()).Results[0];const g=k=>(d[k]||'').trim();
+  return {make:g('Make'),model:g('Model'),year:g('ModelYear'),engine:[g('DisplacementL')&&g('DisplacementL')+' L',g('EngineCylinders')&&g('EngineCylinders')+'-cyl',g('EngineModel')].filter(Boolean).join(' · '),fuel:g('FuelTypePrimary'),body:g('BodyClass'),plant:[g('PlantCity'),g('PlantCountry')].filter(Boolean).join(', '),maker:g('Manufacturer'),err:g('ErrorCode')!=='0'?g('ErrorText'):''};
+}
+
 /* ---------- Jobs, sticker, reminders (TEST: kept in memory only, cleared when the app closes) ---------- */
 /* service interval by oil type (Sulaiman's rule): full synthetic 10,000 · semi 7,000 · 20W-50 or mineral 5,000 */
 function oilInterval(raw,visc){const n=(raw||'').toUpperCase();if(/20W-?50/.test(visc||'')||/20W-?50/.test(n)||/MINERAL|\bS\/L\b/.test(n))return {km:5000,t:'Mineral / 20W-50'};if(/\bS\/S\b|SEMI/.test(n))return {km:7000,t:'Semi synthetic'};if(/\bF\/S\b|FULL|SYNTH/.test(n))return {km:10000,t:'Full synthetic'};return {km:7000,t:'Type unknown'};}
@@ -620,6 +638,10 @@ function renderJobs(m,hd){
     <div class="jb-list">${j.rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(j.total)} OMR</b></div></div>
     <div class="lbl">Customer</div>
     <div class="jb-list"><div class="jb-r"><div>Name</div><input class="jb-kmin" id="jnm" value="${esc(j.nm||'')}" placeholder="—"></div><div class="jb-r"><div>Phone</div><input class="jb-kmin" id="jtel" inputmode="tel" value="${esc(j.tel||'')}" placeholder="—"></div><div class="jb-r"><div>Plate</div><input class="jb-kmin" id="jpl" value="${esc(j.pl||'')}" placeholder="—" style="text-transform:uppercase"></div><div class="jb-r"><div>VIN</div><input class="jb-kmin mono" id="jvin" maxlength="17" value="${esc(j.vin||'')}" placeholder="—"></div><div class="jb-r"><div>Km now</div><input class="jb-kmin" id="jkm" inputmode="numeric" value="${j.km||''}" placeholder="—"></div>${rem?`<div class="jb-r"><div>Next service<small>${kmf(rem.nextKm)} km</small></div><b>${fmtD(rem.next)}</b></div>`:''}</div>
+    ${j.vin&&j.vin.length===17?(()=>{const d=vinDecode(j.vin);const o=j.vinInfo;return `<div class="vin-box"><div class="vh"><b>VIN</b><span class="mono">${esc(j.vin)}</span></div>
+      <div class="vr"><span>Offline</span><b>${d.make?esc(d.make)+' · '+esc(d.country):'Maker not in our table'}${d.year?' · '+d.year:''}</b></div>
+      ${d.make&&j.c&&d.make.toLowerCase()!==j.c.mk.toLowerCase()&&!/\//.test(d.make)?`<div class="vr warn"><span>Check</span><b>Card says ${esc(j.c.mk)}, VIN says ${esc(d.make)}</b></div>`:''}
+      ${o?(o.err?`<div class="vr warn"><span>Online</span><b>${esc(o.err)}</b></div>`:`<div class="vr"><span>Online</span><b>${esc([o.make,o.model,o.year].filter(Boolean).join(' '))||'No match'}</b></div>${o.engine?`<div class="vr"><span>Engine</span><b>${esc(o.engine)}${o.fuel?' · '+esc(o.fuel):''}</b></div>`:''}${o.body?`<div class="vr"><span>Body</span><b>${esc(o.body)}</b></div>`:''}${o.plant?`<div class="vr"><span>Plant</span><b>${esc(o.plant)}</b></div>`:''}`):`<button class="btn ghost sm" data-vindec>Decode online (free · NHTSA)</button>`}</div>`;})():''}
     <div class="jb-two"><button class="btn ghost" data-inv>🧾 Invoice</button><button class="btn ghost" data-stk>🖨 Sticker</button></div><button class="btn ghost" data-copy>Copy for job card</button>
     ${j.tel&&(j.stage==='ready'||j.stage==='done')?`<button class="btn ghost" data-wa><svg><use href="#i-send"/></svg>WhatsApp: car is ready</button>`:''}
     <div class="lbl" style="margin-top:4px">Timeline</div>
@@ -638,6 +660,7 @@ function renderJobs(m,hd){
     m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:(j.iv||{}).km||7000,months:6};S.sheet='stk';renderSheet();};
     m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
     const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
+    const vd=m.querySelector('[data-vindec]');if(vd)vd.onclick=async()=>{vd.textContent='Decoding…';vd.disabled=true;try{j.vinInfo=await vinOnline(j.vin);j.log.push([Date.now(),'VIN decoded online']);}catch(e){toast('No internet, or the service is down.');vd.textContent='Decode online (free · NHTSA)';vd.disabled=false;return;}rerender();};
     const oc=m.querySelector('[data-ocrcp]');if(oc)oc.onclick=()=>copyText(LAST_OCR.raw||'');
     const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
   }

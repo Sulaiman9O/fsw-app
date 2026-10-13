@@ -335,3 +335,9 @@ pre.msg{white-space:pre-wrap;direction:rtl;text-align:right;font:15px/1.6 system
 
 .jb-in input.ocr{border-color:var(--ok);background:rgba(60,207,125,.08)}
 .jb-ocr{color:var(--ok)}
+
+.vin-box{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:10px 12px;display:grid;gap:6px}
+.vin-box .vh{display:flex;justify-content:space-between;align-items:center;gap:8px}.vin-box .vh b{font-size:.72rem;letter-spacing:.14em;color:var(--muted)}.vin-box .mono{font:600 .9rem ui-monospace,Menlo,monospace;letter-spacing:.06em}
+.vin-box .vr{display:grid;grid-template-columns:62px 1fr;gap:8px;font-size:.85rem;align-items:baseline}.vin-box .vr span{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.1em}.vin-box .vr b{font-weight:600}
+.vin-box .vr.warn b{color:var(--warn)}
+.btn.sm{min-height:42px;font-size:.88rem}
