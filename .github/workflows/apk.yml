@@ -12,6 +12,7 @@ on:
       - '.github/workflows/apk.yml'
 permissions:
   contents: write
+  issues: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,6 +33,7 @@ jobs:
           cp native/FswPrintPlugin.java native/FswOcrPlugin.java native/MainActivity.java android/app/src/main/java/om/fsw/workshop/
           sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"\n    implementation "cz.adaptech.tesseract4android:tesseract4android:4.7.0"/' android/app/build.gradle
           grep -n "mlkit\|tesseract" android/app/build.gradle
+          sed -i '0,/^android {/s//android {\n    packagingOptions { jniLibs { pickFirsts += ["**\/libc++_shared.so"] } }/' android/app/build.gradle
           mkdir -p android/app/src/main/assets/tessdata
           curl -sSL -o android/app/src/main/assets/tessdata/ara.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/ara.traineddata
           ls -la android/app/src/main/assets/tessdata
@@ -44,7 +46,16 @@ jobs:
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
       - name: Build
-        run: npx cap sync android && cd android && ./gradlew assembleRelease --no-daemon
+        run: |
+          npx cap sync android
+          cd android
+          ./gradlew assembleRelease --no-daemon > ../build.log 2>&1 || { tail -c 6000 ../build.log > ../err.txt; echo BUILD_FAILED > ../failed; }
+          tail -5 ../build.log
+      - name: Report build error as an issue (so it can be read from anywhere)
+        if: always()
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          if [ -f failed ]; then printf '```\n%s\n```' "$(grep -v '^$' err.txt | grep -i -B2 -A12 'error\|FAILED\|What went wrong' | head -120)" > body.md; gh issue create --title "Build failed: run ${{ github.run_number }}" --body-file body.md; exit 1; fi
       - name: Sign
         run: |
           BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
