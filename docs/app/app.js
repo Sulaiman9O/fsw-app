@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.5.5";
+window.FSW_APP_NAME="1.5.6";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -356,13 +356,19 @@ function renderSheet(){
       <div class="jb-car"><svg><use href="#i-car"/></svg><div><b>${esc(car)}</b><span>${sc.L} L oil · ${S.suv?'SUV':'Sedan'}</span></div></div>
       <div class="jb-list">${rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(x.total)} OMR</b></div></div>
       <label class="jb-ph" id="jbph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam"><svg><use href="#i-cam"/></svg><span>Photo of ملكية</span></label>
+      <p class="hint jb-ocr" id="jbocr" hidden></p>
       <div class="jb-in"><input placeholder="Customer name" id="jbnm" autocomplete="off"><input inputmode="tel" placeholder="Phone" id="jbtel"></div>
       <div class="jb-in"><input placeholder="Plate (e.g. 12345 A)" id="jbpl" autocomplete="off" style="text-transform:uppercase"><input inputmode="numeric" placeholder="Km now" id="jbkm"></div>
       <div class="jb-in" style="grid-template-columns:1fr"><input placeholder="VIN (17 characters, optional)" id="jbvin" autocomplete="off" maxlength="17" style="text-transform:uppercase;letter-spacing:.06em"></div>
       <button class="btn okb" id="jbgo"><svg><use href="#i-check"/></svg>Create job</button>
       <button class="btn ghost" id="jbcp">Copy for job card</button>${close}</div>`;
     $('#jbcam').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const ph=$('#jbph');ph.classList.add('has');ph.style.backgroundImage='url('+r.result+')';ph.querySelector('span').textContent='Photo taken';};r.readAsDataURL(f);};
-    let jbPhoto=null;$('#jbcam').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;shrinkPhoto(f,u=>jbPhoto=u);});
+    let jbPhoto=null;$('#jbcam').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;shrinkPhoto(f,u=>{jbPhoto=u;readMulkiya(u,o=>{
+      const set=(id,v)=>{const i=$(id);if(i&&v&&!i.value){i.value=v;i.classList.add('ocr');}};
+      set('#jbvin',o.vin);set('#jbpl',o.plate);set('#jbnm',o.name);
+      const got=['vin','plate','name'].filter(k=>o[k]);
+      const w=$('#jbocr');if(w){w.hidden=false;w.innerHTML=got.length?`Read from the card: <b>${got.join(', ')}</b>${o.make?' · car: '+esc(o.make+(o.model?' '+o.model:''))+(o.year?' '+o.year:''):''}. Please check.`:'Could not read the card. Type the details.';}
+    });});});
     $('#jbgo').onclick=()=>{
       const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');const nm=$('#jbnm').value.trim();const pl=plateFmt($('#jbpl').value);const vin=vinFmt($('#jbvin').value);if(vin&&vin.length!==17){toast('VIN must be 17 characters');return;}
       const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
@@ -514,6 +520,63 @@ function renderHome(){
 /* ---------- Android back gesture: step back inside the app ---------- */
 function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
 
+
+/* ---------- Read the ملكية (registration card) with on-device OCR ---------- */
+const VIN_FIX={O:'0',Q:'0',I:'1',L:'1',S:'5',B:'8',Z:'2',G:'6'};
+function vinCandidates(text){
+  const out=[];const T=(text||'').toUpperCase().replace(/[^A-Z0-9\n ]/g,' ');
+  (T.match(/[A-Z0-9]{15,20}/g)||[]).forEach(w=>{
+    let v=w.replace(/[OQ]/g,'0').replace(/I/g,'1');
+    if(v.length===17)out.push(v);
+    else if(v.length>17){for(let i=0;i+17<=v.length;i++)out.push(v.slice(i,i+17));}
+  });
+  // sometimes the VIN is split by a space: join pairs
+  const parts=T.split(/\s+/);
+  for(let i=0;i<parts.length-1;i++){const j=(parts[i]+parts[i+1]).replace(/[OQ]/g,'0').replace(/I/g,'1');if(j.length===17&&/^[A-HJ-NPR-Z0-9]{17}$/.test(j))out.push(j);}
+  return [...new Set(out.filter(v=>/^[A-HJ-NPR-Z0-9]{17}$/.test(v)&&/\d/.test(v)))];
+}
+function vinCheck(v){ // North-American style check digit; many Asian/EU VINs do not use it, so this is only a hint
+  const map={A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+  const wt=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];let sum=0;
+  for(let i=0;i<17;i++){const c=v[i];sum+=(/\d/.test(c)?+c:map[c]||0)*wt[i];}
+  const r=sum%11;return v[8]===(r===10?'X':String(r));
+}
+const AR_PLATE=/[ء-ي]/;
+function parseMulkiya(res){
+  const lat=(res.latin||[]).map(l=>l.t);const all=lat.join('\n');const ar=res.arabic||'';
+  const o={raw:all+'\n---\n'+ar};
+  // VIN
+  const vins=vinCandidates(all);if(vins.length){vins.sort((a,b)=>vinCheck(b)-vinCheck(a));o.vin=vins[0];}
+  // year
+  const noDates=all.replace(/\d{1,2}[\/.-]\d{1,2}[\/.-](19|20)\d\d/g,' ');
+  const yrs=(noDates.match(/\b(19[89]\d|20[0-4]\d)\b/g)||[]).map(Number);
+  const yl=lat.find(l=>/YEAR|سنة الصنع/i.test(l)&&!/EXP|ISSUE|انتهاء|اصدار|إصدار/i.test(l));const ym=yl&&yl.replace(/\d{1,2}[\/.-]\d{1,2}[\/.-](19|20)\d\d/g,' ').match(/\b(19[89]\d|20[0-4]\d)\b/);
+  if(ym)o.year=+ym[1];else if(yrs.length)o.year=Math.max(...yrs.filter(y=>y<=new Date().getFullYear()+1));
+  // make / model: match against our car list
+  const U=all.toUpperCase();let best=null;
+  Object.values(CARS).forEach(c=>{const mk=c.mk.toUpperCase(),md=c.md.toUpperCase();const hit=(U.includes(md)?2:0)+(U.includes(mk)?1:0);if(hit>(best?best.hit:0))best={hit,c};});
+  if(best){o.make=best.c.mk;if(best.hit>=2)o.model=best.c.md;}
+  // plate: digits (1-5) + Arabic letter(s). Digits from the Latin pass, letters from the Arabic pass.
+  const pl=lat.find(l=>/PLATE|REG|رقم/i.test(l))||'';
+  const digs=(pl.match(/\b\d{1,5}\b/)||all.match(/\b\d{3,5}\b(?![\d,.])/)||[])[0];
+  const arLines=ar.split('\n').map(x=>x.trim()).filter(Boolean);
+  let letters='';
+  for(const L of arLines){const m=L.match(/(\d{1,5})\s*([ء-ي]{1,2})(?![ء-ي])/)||L.match(/([ء-ي]{1,2})\s*(\d{1,5})/);if(m){const d=m[1].match(/\d/)?m[1]:m[2];const a=m[1].match(/\d/)?m[2]:m[1];if(!digs||d===digs){o.plate=d+' '+a;letters=a;break;}}}
+  if(!o.plate&&digs)o.plate=digs;
+  // owner name: the longest Arabic-only line that is not a known label
+  const names=arLines.filter(L=>AR_PLATE.test(L)&&!/\d/.test(L)&&L.length>=6&&!/سلطنة|شرطة|عمان|مركبة|ملكية|رقم|اللوحة|الشاصي|المالك|النوع|الموديل|اللون|السنة|تاريخ|الانتهاء|الجنسية/.test(L));
+  if(names.length)o.name=names.sort((a,b)=>b.length-a.length)[0];
+  return o;
+}
+async function readMulkiya(dataUrl,onDone){
+  const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswOcr;
+  if(!P){toast('Reading the card needs the new app version.');return;}
+  toast('Reading the card…');
+  try{const res=await P.read({image:dataUrl,arabic:true});const o=parseMulkiya(res);LAST_OCR=o;onDone(o);}
+  catch(e){toast('Could not read: '+(e&&e.message||e));}
+}
+let LAST_OCR=null;
+
 /* ---------- Jobs, sticker, reminders (TEST: kept in memory only, cleared when the app closes) ---------- */
 /* service interval by oil type (Sulaiman's rule): full synthetic 10,000 · semi 7,000 · 20W-50 or mineral 5,000 */
 function oilInterval(raw,visc){const n=(raw||'').toUpperCase();if(/20W-?50/.test(visc||'')||/20W-?50/.test(n)||/MINERAL|\bS\/L\b/.test(n))return {km:5000,t:'Mineral / 20W-50'};if(/\bS\/S\b|SEMI/.test(n))return {km:7000,t:'Semi synthetic'};if(/\bF\/S\b|FULL|SYNTH/.test(n))return {km:10000,t:'Full synthetic'};return {km:7000,t:'Type unknown'};}
@@ -561,6 +624,7 @@ function renderJobs(m,hd){
     ${j.tel&&(j.stage==='ready'||j.stage==='done')?`<button class="btn ghost" data-wa><svg><use href="#i-send"/></svg>WhatsApp: car is ready</button>`:''}
     <div class="lbl" style="margin-top:4px">Timeline</div>
     <div class="jb-log">${j.log.slice().reverse().map(l=>`<div><span>${hm(l[0])}</span>${esc(l[1])}</div>`).join('')}</div>
+    ${isAdmin()&&LAST_OCR?`<button class="btn ghost" data-ocrcp>Copy card text (for tuning)</button>`:''}
     <button class="btn ghost jb-del" data-del>Delete job</button>`;
     m.querySelector('[data-back]').onclick=()=>{S.job=null;render();scrollTo(0,0);};
     const nb=m.querySelector('[data-next]');if(nb)nb.onclick=()=>{setStage(j,nx[0]);toast(nx[1]);rerender();};
@@ -574,6 +638,7 @@ function renderJobs(m,hd){
     m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:(j.iv||{}).km||7000,months:6};S.sheet='stk';renderSheet();};
     m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
     const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
+    const oc=m.querySelector('[data-ocrcp]');if(oc)oc.onclick=()=>copyText(LAST_OCR.raw||'');
     const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
   }
   const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};

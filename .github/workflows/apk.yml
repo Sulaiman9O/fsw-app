@@ -27,9 +27,14 @@ jobs:
         run: mkdir -p www && cp -r docs/* www/
       - name: Android project
         run: npx cap add android
-      - name: Print plugin + camera permission
+      - name: Native plugins (print, OCR) + camera permission
         run: |
-          cp native/FswPrintPlugin.java native/MainActivity.java android/app/src/main/java/om/fsw/workshop/
+          cp native/FswPrintPlugin.java native/FswOcrPlugin.java native/MainActivity.java android/app/src/main/java/om/fsw/workshop/
+          sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"\n    implementation "cz.adaptech.tesseract4android:tesseract4android:4.7.0"/' android/app/build.gradle
+          grep -n "mlkit\|tesseract" android/app/build.gradle
+          mkdir -p android/app/src/main/assets/tessdata
+          curl -sSL -o android/app/src/main/assets/tessdata/ara.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/ara.traineddata
+          ls -la android/app/src/main/assets/tessdata
           sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
       - name: Icons
         continue-on-error: true
