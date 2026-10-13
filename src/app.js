@@ -566,15 +566,16 @@ function renderJobs(m,hd){
   }
   const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
 }
+const WS_TEL='9470 2061';
 const STK_SIZES={A:[62,29,'Small strip'],B:[62,50,'Standard'],C:[62,62,'Square'],D:[29,90,'Tall']};
 /* paper names the Brother print screen offers (inches) */
 const STK_PAPER={A:[62,990,'2.4" x 39"'],B:[62,990,'2.4" x 39"'],C:[62,990,'2.4" x 39"'],D:[29,90,'1.1" x 3.5"']};
-const ROLLS={r62:{n:'62 mm black',t:['A','B','C']},r62rb:{n:'62 mm red & black',t:['A','B','C'],rb:1},r29:{n:'29 × 90 labels',t:['D']}};
+const ROLLS={r62:{n:'62 mm roll',t:['B','A','C']},r29:{n:'29 × 90 labels',t:['D']}};
 const roll=()=>ROLLS[store.get('roll2','r62')]?store.get('roll2','r62'):'r62';
 function stickerHtml(t,d,rb){
   const EMB=rb?EMB_RB:EMB_B,X=rb?' rb':'';const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
   if(t==='A')return `<div class="stk sA${X}"><img src="${EMB}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
-  if(t==='B')return `<div class="stk sB${X}"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div>`;
+  if(t==='B')return `<div class="stk sB${X}"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><span class="or"><b>أو</b><small>OR</small></span><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div><div class="tel"><svg viewBox="0 0 24 24"><path fill="#000" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>${WS_TEL}</div></div>`;
   if(t==='C')return `<div class="stk sC${X}"><img src="${EMB}" alt=""><div class="h ar">موعد تغيير الزيت القادم<small>NEXT OIL CHANGE</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
   return `<div class="stk sD${X}"><img src="${EMB}" alt=""><div class="bar">NEXT SERVICE</div><div class="ar" style="font-size:2.6mm">الصيانة القادمة</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
 }
