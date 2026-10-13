@@ -364,7 +364,7 @@ function renderSheet(){
     let jbPhoto=null;$('#jbcam').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;shrinkPhoto(f,u=>jbPhoto=u);});
     $('#jbgo').onclick=()=>{
       const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');const nm=$('#jbnm').value.trim();const pl=plateFmt($('#jbpl').value);const vin=vinFmt($('#jbvin').value);if(vin&&vin.length!==17){toast('VIN must be 17 characters');return;}
-      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
+      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
       JOBS.unshift(j);closeSheet();resetQuote();S.make=null;S.model=null;S.year=null;S.eng=null;S.extras.clear();S.disc=0;
       S.tab='home';S.sec='jobs';S.job=j.id;render();scrollTo(0,0);toast('Job #'+j.no+' created');};
     $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
@@ -514,6 +514,8 @@ function renderHome(){
 function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
 
 /* ---------- Jobs, sticker, reminders (TEST: kept in memory only, cleared when the app closes) ---------- */
+/* service interval by oil type (Sulaiman's rule): full synthetic 10,000 · semi 7,000 · 20W-50 or mineral 5,000 */
+function oilInterval(raw,visc){const n=(raw||'').toUpperCase();if(/20W-?50/.test(visc||'')||/20W-?50/.test(n)||/MINERAL|\bS\/L\b/.test(n))return {km:5000,t:'Mineral / 20W-50'};if(/\bS\/S\b|SEMI/.test(n))return {km:7000,t:'Semi synthetic'};if(/\bF\/S\b|FULL|SYNTH/.test(n))return {km:10000,t:'Full synthetic'};return {km:7000,t:'Type unknown'};}
 const JOBS=[];const REMS=[];let JOBNO=1;
 const EMB_B='data:image/png;base64,__EMB_B__';const LOGO_B='data:image/png;base64,__LOGO_B__';const EMB_RB='data:image/png;base64,__EMB_RB__';
 const STAGES=[['new','New','var(--red)'],['work','Working','var(--orange)'],['ready','Ready','var(--ok)'],['done','Delivered','var(--dim)']];
@@ -526,7 +528,7 @@ const plateFmt=v=>(v||'').toUpperCase().replace(/[^A-Z0-9\u0600-\u06FF ]/g,'').r
 const testBar='<div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div>';
 function shrinkPhoto(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8));};im.src=r.result;};r.readAsDataURL(f);}
 function jobText(j){return 'Job #'+j.no+': '+j.car+(j.pl?' · '+j.pl:'')+(j.nm?'\nCustomer: '+j.nm:'')+(j.vin?'\nVIN: '+j.vin:'')+'\n'+j.rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(j.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
-function setStage(j,k){j.stage=k;j.log.push([Date.now(),stg(k)[1]+' · '+S.user.name]);if(k==='done'&&!REMS.some(r=>r.job===j.id))addRem(j,5000,6);}
+function setStage(j,k){j.stage=k;j.log.push([Date.now(),stg(k)[1]+' · '+S.user.name]);if(k==='done'&&!REMS.some(r=>r.job===j.id))addRem(j,(j.iv||{}).km||7000,6);}
 function addRem(j,step,months){const n=new Date();n.setMonth(n.getMonth()+months);const old=REMS.find(r=>r.job===j.id);const r={job:j.id,car:j.car,tel:j.tel,oil:j.oil,km:j.km,nextKm:j.km?j.km+step:0,next:n.getTime(),t:Date.now()};if(old)Object.assign(old,r);else REMS.push(r);}
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}}
 function renderJobs(m,hd){
@@ -547,7 +549,7 @@ function renderJobs(m,hd){
     const act={new:'Start work',work:'Car is ready',ready:'Delivered to customer'}[j.stage];
     const rem=REMS.find(r=>r.job===j.id);
     m.innerHTML=`<div class="nh-head"><button class="nh-bk" data-back aria-label="Back">‹</button><b>Job #${j.no}</b><span class="tag" style="margin-left:auto;background:${stg(j.stage)[2]};color:#000">${stg(j.stage)[1]}</span></div>${testBar}
-    <div class="jb-car"><div class="pic">${carPic(j.c)}</div><div><b>${esc(j.car)}</b><span>${j.suv?'SUV':'Sedan'}${j.km?' · '+kmf(j.km)+' km':''}</span></div></div>
+    <div class="jb-car"><div class="pic">${carPic(j.c)}</div><div><b>${esc(j.car)}</b><span>${j.suv?'SUV':'Sedan'}${j.km?' · '+kmf(j.km)+' km':''}${j.iv?' · next +'+kmf(j.iv.km):''}</span></div></div>
     <div class="jb-steps">${STAGES.map((x,i)=>`<div class="${i<=si?'on':''}" style="--sc:${x[2]}"><i></i><span>${x[1]}</span></div>`).join('')}</div>
     ${act?`<button class="btn okb" data-next>${act}</button>`:''}
     ${j.photo?`<img class="jb-photo" src="${j.photo}" alt="ملكية">`:`<label class="jb-ph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam2"><svg><use href="#i-cam"/></svg><span>Add photo of ملكية</span></label>`}
@@ -568,7 +570,7 @@ function renderJobs(m,hd){
     m.querySelector('[data-inv]').onclick=()=>{deeper();S.sheet='inv';renderSheet();};
     $('#jkm').onchange=e=>{j.km=parseInt(e.target.value.replace(/\D/g,''))||0;const r=REMS.find(x=>x.job===j.id);if(r){r.km=j.km;}rerender();};
     $('#jtel').onchange=e=>{j.tel=e.target.value.replace(/[^\d+]/g,'');const r=REMS.find(x=>x.job===j.id);if(r)r.tel=j.tel;rerender();};
-    m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:5000,months:6};S.sheet='stk';renderSheet();};
+    m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:(j.iv||{}).km||7000,months:6};S.sheet='stk';renderSheet();};
     m.querySelector('[data-copy]').onclick=()=>copyText(jobText(j));
     const wa=m.querySelector('[data-wa]');if(wa)wa.onclick=()=>{location.href='https://wa.me/'+waNum(j.tel)+'?text='+encodeURIComponent('السلام عليكم،\nسيارتكم '+j.car+' جاهزة للاستلام.\nالمبلغ: '+f3(j.total)+' ر.ع\nورشة عالم الخدمات السريعة');};
     const d=m.querySelector('[data-del]');d.onclick=()=>{if(d.dataset.armed){JOBS.splice(JOBS.indexOf(j),1);S.job=null;render();toast('Job deleted');}else{d.dataset.armed=1;d.textContent='Tap again to delete';}};
@@ -600,7 +602,7 @@ function renderStk(el,close){
     <div class="jb-chips">${Object.entries(ROLLS).map(([r,v])=>`<button data-roll="${r}" aria-pressed="${roll()===r}">${v.n}</button>`).join('')}</div>
     ${ROLLS[roll()].t.length>1?`<div class="jb-chips">${ROLLS[roll()].t.map(t=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${STK_SIZES[t][0]}×${STK_SIZES[t][1]}</span></button>`).join('')}</div>`:''}
     ${j.km?'':`<div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now (for the next km)" id="skm"></div>`}
-    <div class="jb-chips">${[5000,7500,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
+    <div class="jb-chips">${[5000,7000,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km${j.iv&&j.iv.km===v?' ★':''}</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
     <div class="stk-paper">In the print screen, set <b>Paper size</b> to <span>${STK_PAPER[k.tpl][2]}${ROLLS[roll()].rb?' Black & Red':''}</span>${ROLLS[roll()].rb?'<small>Needs the red & black roll (DK-22251) in the printer.</small>':''}<small>Only the first time. The tablet remembers it.</small></div>
     <button class="btn" id="stkgo">🖨 Print sticker</button>${close}</div>`;
   el.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;renderSheet();});
