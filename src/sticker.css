@@ -36,3 +36,11 @@
 .sD .k{font-size:3.9mm;line-height:1.05}
 .sD hr{border:0;border-top:.3mm dashed #000;margin:0}
 .sD .o{font-size:2.1mm;align-self:end}
+
+/* two colours: pure red + black (DK-22251) */
+.stk{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rb .t,.rb .h,.rb .h small{color:#f00}
+.sA.rb .d{color:#f00}.sA.rb .o{border-top-color:#f00}
+.sB.rb .bar,.sD.rb .bar{background:#f00}.sB.rb .bx{border-color:#f00}.sB.rb .ft{border-top-color:#f00}
+.sC.rb .big{border-color:#f00}.sC.rb .big i{background:#f00}.sC.rb .nm{color:#f00}
+.sD.rb hr{border-top-color:#f00}

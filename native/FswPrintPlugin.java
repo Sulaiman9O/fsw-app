@@ -23,6 +23,7 @@ public class FswPrintPlugin extends Plugin {
         final double w = call.getDouble("widthMm", 62.0);
         final double h = call.getDouble("heightMm", 50.0);
         final String name = call.getString("name", "FSW sticker");
+        final boolean color = Boolean.TRUE.equals(call.getBoolean("color", false));
         getActivity().runOnUiThread(() -> {
             try {
                 printView = new WebView(getContext());
@@ -41,7 +42,7 @@ public class FswPrintPlugin extends Plugin {
                         PrintAttributes attrs = new PrintAttributes.Builder()
                                 .setMediaSize(size)
                                 .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                                .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
+                                .setColorMode(color ? PrintAttributes.COLOR_MODE_COLOR : PrintAttributes.COLOR_MODE_MONOCHROME)
                                 .build();
                         pm.print(name, adapter, attrs);
                         call.resolve();

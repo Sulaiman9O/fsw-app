@@ -512,7 +512,7 @@ function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}c
 
 /* ---------- Jobs, sticker, reminders (TEST: kept in memory only, cleared when the app closes) ---------- */
 const JOBS=[];const REMS=[];let JOBNO=1;
-const EMB_B='data:image/png;base64,__EMB_B__';const LOGO_B='data:image/png;base64,__LOGO_B__';
+const EMB_B='data:image/png;base64,__EMB_B__';const LOGO_B='data:image/png;base64,__LOGO_B__';const EMB_RB='data:image/png;base64,__EMB_RB__';
 const STAGES=[['new','New','var(--red)'],['work','Working','var(--orange)'],['ready','Ready','var(--ok)'],['done','Delivered','var(--dim)']];
 const stg=k=>STAGES.find(x=>x[0]===k);
 const hm=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'});
@@ -569,14 +569,14 @@ function renderJobs(m,hd){
 const STK_SIZES={A:[62,29,'Small strip'],B:[62,50,'Standard'],C:[62,62,'Square'],D:[29,90,'Tall']};
 /* paper names the Brother print screen offers (inches) */
 const STK_PAPER={A:[62,990,'2.4" x 39"'],B:[62,990,'2.4" x 39"'],C:[62,990,'2.4" x 39"'],D:[29,90,'1.1" x 3.5"']};
-const ROLLS={r62:{n:'62 mm roll',t:['A','B','C']},r29:{n:'29 × 90 labels',t:['D']}};
+const ROLLS={r62:{n:'62 mm black',t:['A','B','C']},r62rb:{n:'62 mm red & black',t:['A','B','C'],rb:1},r29:{n:'29 × 90 labels',t:['D']}};
 const roll=()=>ROLLS[store.get('roll2','r62')]?store.get('roll2','r62'):'r62';
-function stickerHtml(t,d){
-  const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
-  if(t==='A')return `<div class="stk sA"><img src="${EMB_B}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
-  if(t==='B')return `<div class="stk sB"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div>`;
-  if(t==='C')return `<div class="stk sC"><img src="${EMB_B}" alt=""><div class="h ar">موعد تغيير الزيت القادم<small>NEXT OIL CHANGE</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
-  return `<div class="stk sD"><img src="${EMB_B}" alt=""><div class="bar">NEXT SERVICE</div><div class="ar" style="font-size:2.6mm">الصيانة القادمة</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
+function stickerHtml(t,d,rb){
+  const EMB=rb?EMB_RB:EMB_B,X=rb?' rb':'';const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
+  if(t==='A')return `<div class="stk sA${X}"><img src="${EMB}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
+  if(t==='B')return `<div class="stk sB${X}"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div>`;
+  if(t==='C')return `<div class="stk sC${X}"><img src="${EMB}" alt=""><div class="h ar">موعد تغيير الزيت القادم<small>NEXT OIL CHANGE</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
+  return `<div class="stk sD${X}"><img src="${EMB}" alt=""><div class="bar">NEXT SERVICE</div><div class="ar" style="font-size:2.6mm">الصيانة القادمة</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
 }
 function stkCss(){if(!$('#stkcss')){const st=document.createElement('style');st.id='stkcss';st.textContent=__STKCSS__;document.head.appendChild(st);}}
 function renderStk(el,close){
@@ -585,13 +585,13 @@ function renderStk(el,close){
   const d={oil:j.oil,km:j.km,nextKm:j.km?j.km+k.step:0,next:n.getTime()};
   const sc={A:1,B:1,C:.9,D:.75}[k.tpl];
   el.innerHTML=`<div class="pnl"><h3>Service sticker · Job #${j.no}</h3>
-    <div class="stk-pv"><div style="transform:scale(${sc});transform-origin:center">${stickerHtml(k.tpl,d)}</div></div>
+    <div class="stk-pv"><div style="transform:scale(${sc});transform-origin:center">${stickerHtml(k.tpl,d,ROLLS[roll()].rb)}</div></div>
     <div class="lbl">Roll in the printer</div>
     <div class="jb-chips">${Object.entries(ROLLS).map(([r,v])=>`<button data-roll="${r}" aria-pressed="${roll()===r}">${v.n}</button>`).join('')}</div>
     ${ROLLS[roll()].t.length>1?`<div class="jb-chips">${ROLLS[roll()].t.map(t=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${STK_SIZES[t][0]}×${STK_SIZES[t][1]}</span></button>`).join('')}</div>`:''}
     ${j.km?'':`<div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now (for the next km)" id="skm"></div>`}
     <div class="jb-chips">${[5000,7500,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
-    <div class="stk-paper">In the print screen, set <b>Paper size</b> to <span>${STK_PAPER[k.tpl][2]}</span><small>Only the first time. The tablet remembers it.</small></div>
+    <div class="stk-paper">In the print screen, set <b>Paper size</b> to <span>${STK_PAPER[k.tpl][2]}${ROLLS[roll()].rb?' Black & Red':''}</span>${ROLLS[roll()].rb?'<small>Needs the red & black roll (DK-22251) in the printer.</small>':''}<small>Only the first time. The tablet remembers it.</small></div>
     <button class="btn" id="stkgo">🖨 Print sticker</button>${close}</div>`;
   el.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;renderSheet();});
   el.querySelectorAll('[data-roll]').forEach(b=>b.onclick=()=>{store.set('roll2',b.dataset.roll);k.tpl=ROLLS[b.dataset.roll].t[0];renderSheet();});
@@ -602,10 +602,10 @@ function renderStk(el,close){
     addRem(j,k.step,k.months);j.log.push([Date.now(),'Sticker '+k.tpl+' · next '+fmtD(d.next)]);
     const [w,h]=STK_SIZES[k.tpl];const [pw,ph]=STK_PAPER[k.tpl];
     const z=Math.min(1,(pw-3)/w,(ph-3)/h).toFixed(3);
-    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;'+(ph>h+20?'height:'+h+'mm':'bottom:0')+';display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(k.tpl,d)+'</div></div></body></html>';
+    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;'+(ph>h+20?'height:'+h+'mm':'bottom:0')+';display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(k.tpl,d,ROLLS[roll()].rb)+'</div></div></body></html>';
     const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
     if(!P){toast('Reminder saved. Printing needs the new app version.');closeSheet();rerender();return;}
-    P.printHtml({html:doc,widthMm:pw,heightMm:ph,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+    P.printHtml({html:doc,widthMm:pw,heightMm:ph,color:!!ROLLS[roll()].rb,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
   };
 }
 function renderRems(m,hd){
