@@ -31,8 +31,11 @@ jobs:
       - name: Native plugins (print, OCR) + camera permission
         run: |
           cp native/FswPrintPlugin.java native/FswOcrPlugin.java native/MainActivity.java android/app/src/main/java/om/fsw/workshop/
-          sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"\n    implementation "cz.adaptech.tesseract4android:tesseract4android:4.7.0"/' android/app/build.gradle
+          sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"\n    implementation "cz.adaptech.tesseract4android:tesseract4android:4.9.0"/' android/app/build.gradle
           grep -n "mlkit\|tesseract" android/app/build.gradle
+          # Tesseract4Android lives on JitPack
+          if grep -q "dependencyResolutionManagement" android/settings.gradle; then sed -i '0,/repositories {/s//repositories {\n        maven { url "https:\/\/jitpack.io" }/' android/settings.gradle; else sed -i '0,/allprojects {\n    repositories {/s//&/' android/build.gradle; sed -i '/allprojects {/,/}/ s/repositories {/repositories {\n        maven { url "https:\/\/jitpack.io" }/' android/build.gradle; fi
+          grep -n "jitpack" android/settings.gradle android/build.gradle || true
           sed -i '0,/^android {/s//android {\n    packagingOptions { jniLibs { pickFirsts += ["**\/libc++_shared.so"] } }/' android/app/build.gradle
           mkdir -p android/app/src/main/assets/tessdata
           curl -sSL -o android/app/src/main/assets/tessdata/ara.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/ara.traineddata
