@@ -31,7 +31,7 @@ function saveUsers(list){
 
 /* ---------- extra services ---------- */
 const EXTRAS=[{id:'insp',name:'Maintenance check',ar:'فحص الصيانة',icon:'i-check',price:{0:5,1:5}}];
-const LOGOS=()=>Object.assign({},store.get('logos',{}),MEM.logos||{});
+const LOGOS=()=>Object.assign({},MEM.logos||store.get('logos_cache',{}),store.get('logos',{}));
 const VCOL={'0W-16':'--v016','0W-20':'--v020','5W-30':'--v530','5W-40':'--v540','10W-40':'--v1040','20W-50':'--v2050','15W-40':'--v1540'};
 const vc=v=>'var('+(VCOL[v]||'--vx')+')';
 const MONO={Toyota:'#c8102e',Lexus:'#1f2937',Nissan:'#4b5563',Honda:'#b91c1c',Chevrolet:'#b8860b',GMC:'#9f1239',Ford:'#1e40af',Hyundai:'#0c4a6e',Kia:'#334155',Mazda:'#374151',Mitsubishi:'#dc2626',Subaru:'#1d4ed8',BYD:'#0f766e','Mercedes-Benz':'#111827',MG:'#7f1d1d',Jeep:'#3f6212',RAM:'#18181b',Infiniti:'#44403c',Genesis:'#292524',Suzuki:'#1e3a8a'};
@@ -452,10 +452,12 @@ else window.addEventListener('popstate',()=>{goBackStep();});
 /* ---------- sync engine ---------- */
 function putPic(col,key,url){
   const loc=store.get(col,{});
+  if(col==='logos'){const lc=store.get('logos_cache',{});lc[key]=url;store.set('logos_cache',lc);}
   if(SYNC.db){SYNC.db.collection(col).doc(enc(key)).set({img:url,t:Date.now(),by:S.user?S.user.name:''}).catch(()=>{});MEM[col]=Object.assign({},MEM[col]||{},{[key]:url});if(loc[key]){delete loc[key];store.set(col,loc);}}
   else{loc[key]=url;try{localStorage.setItem('fsw_'+col,JSON.stringify(loc));}catch(e){toast('Storage full. Connect to the internet to share pictures.');}}
 }
 function delPic(col,key){
+  if(col==='logos'){const lc=store.get('logos_cache',{});if(lc[key]){delete lc[key];store.set('logos_cache',lc);}}
   const loc=store.get(col,{});if(loc[key]){delete loc[key];store.set(col,loc);}
   if(MEM[col]&&MEM[col][key]){const m=Object.assign({},MEM[col]);delete m[key];MEM[col]=m;}
   if(SYNC.db)SYNC.db.collection(col).doc(enc(key)).delete().catch(()=>{});
@@ -487,10 +489,11 @@ async function startSync(){
 }
 function attach(db){
   if(SYNC.attached)return;SYNC.attached=true;
-  const picCol=col=>db.collection(col).onSnapshot(s=>{const m={};s.forEach(d=>{m[dec(d.id)]=d.data().img;});MEM[col]=m;
+  const picCol=col=>db.collection(col).onSnapshot(s=>{const m={};s.forEach(d=>{m[dec(d.id)]=d.data().img;});MEM[col]=m;if(col==='logos')store.set('logos_cache',m);
       if(!s.metadata.fromCache){const loc=store.get(col,{});let ch=false;Object.keys(loc).forEach(k=>{if(!(k in m)){db.collection(col).doc(enc(k)).set({img:loc[k],t:Date.now(),by:S.user?S.user.name:''}).then(()=>{const l2=store.get(col,{});delete l2[k];store.set(col,l2);}).catch(()=>{});}else{delete loc[k];ch=true;}});if(ch)store.set(col,loc);}
       liveRender();},()=>{});
   picCol('logos');picCol('carpics');
+  /* keep a copy of the logos on this device so they show instantly at start */
   db.collection('users').onSnapshot(s=>{
     const list=[];s.forEach(d=>list.push(d.data()));
     if(!s.metadata.fromCache&&!SYNC.usersLoaded){SYNC.usersLoaded=true;
