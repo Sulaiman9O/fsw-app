@@ -193,21 +193,26 @@ function renderLogin(){
 }
 
 /* ---------- app shell ---------- */
-const TABS=[['quote','i-calc','Oil price'],['rem','i-bell','Reminders'],['hist','i-list','History'],['set','i-gear','Settings']];
-function navButtons(){return TABS.map(([k,ic,l])=>`<button class="navb" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}><svg><use href="#${ic}"/></svg>${l}${k==='rem'?'<span class="soon">SOON</span>':''}</button>`).join('');}
+const TABS_OLD=[['quote','i-calc','Oil price'],['rem','i-bell','Reminders'],['hist','i-list','History'],['set','i-gear','Settings']];
+const TABS_NEW=[['home','i-home','Home'],['quote','i-calc','Oil price'],['hist','i-list','History'],['set','i-gear','Settings']];
+/* "New home (test)": owner turns it on per device in Settings. Off = the app as before. */
+const newHome=()=>store.get('newhome',false);
+const TABS_NOW=()=>newHome()?TABS_NEW:TABS_OLD;
+function navButtons(){return TABS_NOW().map(([k,ic,l])=>`<button class="navb" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}><svg><use href="#${ic}"/></svg>${l}${k==='rem'?'<span class="soon">SOON</span>':''}</button>`).join('');}
 function render(){
   if(!S.user){renderLogin();return;}
   if(!D){$('#root').innerHTML='<div class="empty" style="padding-top:80px">No prices on this device yet. Connect to the internet and open the app again.</div>';return;}
   const when=new Date(D.asof).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Asia/Muscat'});
-  const title={quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
+  if(S.tab==='home'&&!newHome())S.tab='quote';
+  const title={home:S.sec?SECS[S.sec].t:'FSW',quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
   const y=window.scrollY;
   $('#root').innerHTML=`<div class="shell">
     <header class="top"><img class="em" src="${EMBLEM_IMG}" alt=""><span class="t">${title}</span><div class="me"><span>Prices<br>${when}</span><span class="av me">${initials(S.user.name)}</span></div></header>
     <nav class="rail"><img class="em" src="${EMBLEM_IMG}" alt="FSW">${navButtons()}<span class="av me" title="${esc(S.user.name)}">${initials(S.user.name)}</span></nav>
     <main id="main"></main>
     <nav class="bottom"><div class="in">${navButtons()}</div></nav></div>`;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;render();scrollTo(0,0);});
-  ({quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;if(S.tab==='home')S.sec=null;render();scrollTo(0,0);});
+  ({home:renderHome,quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
   if(S.keepScroll){scrollTo(0,y);S.keepScroll=false;}
   if(S.sheet)renderSheet();
 }
@@ -395,10 +400,12 @@ function renderSet(){
   </div>
   <div class="lbl">Car make pictures</div>
   <div class="card">${[...new Set(Object.values(CARS).map(x=>x.mk))].sort().map(k=>{const lg=LOGOS()[k];return jr(lg?`<span class="badge sm"><img src="${lg}" alt=""></span>`:`<span class="num" style="font-size:.8rem">${esc(k.slice(0,3).toUpperCase())}</span>`,esc(k),lg?'Picture added':'No picture',`<label class="small-btn">${lg?'Change':'Add'}<input type="file" accept="image/*" data-logo="${esc(k)}" hidden></label>${lg?`<button class="small-btn" data-rmlogo="${esc(k)}" aria-label="Remove">✕</button>`:''}`);}).join('')}</div>`:''}
+  ${isAdmin()?`<div class="lbl">Try new things</div><div class="card"><div class="jr"><span class="ic"><svg><use href="#i-home"/></svg></span><div class="k">New home (test)<small>Section tiles. Only on this device. Turn off to go back.</small></div><button class="sw" role="switch" aria-checked="${newHome()}" aria-label="New home test" id="nhSw"></button></div></div>`:''}
   ${pinCh?pinBox():''}
   <button class="btn ghost" id="mypin">Change my PIN</button>
   <button class="btn ghost" id="logout">Change user</button>`;
   bindPinChange();
+  const nh=$('#nhSw');if(nh)nh.onclick=()=>{const v=!newHome();store.set('newhome',v);S.sec=null;toast(v?'New home on':'New home off');render();};
   $('#pricesRow').onclick=()=>{tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>tapCount=0,1500);if(tapCount>=5){$('#hiddenRefresh').hidden=false;tapCount=0;}};
   $('#refresh').onclick=async()=>{toast('Checking…');const r=await syncData(true);toast(r===true?'Prices updated':r==='same'?'Prices already up to date':'No internet. Try later.');if(r===true)render();};
   $('#logout').onclick=()=>{S.user=null;store.set('user',null);pickUser=null;render();};
@@ -431,12 +438,56 @@ window.addEventListener('fsw-update',e=>{
   };
 });
 
+/* ---------- New home (test): section tiles ---------- */
+const SECS={
+ jobs:{t:'Jobs',i:'🔧',c:'#3a1a1a',g:'rgba(238,58,57,.25)'},
+ cars:{t:'Cars',i:'🚗',c:'#1a2a3a',g:'rgba(37,99,201,.28)'},
+ check:{t:'Check',i:'✅',c:'#1a3a26',g:'rgba(60,207,125,.22)'},
+ stock:{t:'Stock',i:'🛢',c:'#3a2a10',g:'rgba(242,123,33,.25)'},
+ remind:{t:'Reminders',i:'🔔',c:'#2a1a3a',g:'rgba(90,69,196,.28)'},
+ inv:{t:'Invoices',i:'🧾',c:'#3a3410',g:'rgba(201,138,0,.25)'}
+};
+function stockRows(){
+  const oils=D.oils.map(o=>({n:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),v:o[1],q:o[3],u:'L',low:o[3]<10}));
+  const fil=D.filters.map(f=>({n:filterName(f),v:'',q:f[3],u:'pcs',low:f[3]<3}));
+  return oils.concat(fil);
+}
+function renderHome(){
+  const m=$('#main');
+  if(!S.sec){
+    const low=stockRows().filter(r=>r.low).length;
+    const n={stock:low};
+    m.innerHTML=`<div class="nh-hello"><b>Hello ${esc(S.user.name.split(' ')[0])}</b><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Asia/Muscat'})}</span></div>
+    <button class="nh-tile wide" data-go-quote><span class="ic" style="--tc:#3a1a1a">🧮</span><div><b>Oil price</b><span>Pick a car, send the price</span></div><span class="n">›</span></button>
+    <div class="nh-tiles">${Object.entries(SECS).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):'coming soon'}</span></div></button>`).join('')}</div>
+    <p class="hint">Test home. Turn it off in Settings to go back.</p>`;
+    m.querySelector('[data-go-quote]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
+    m.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{deeper();S.sec=b.dataset.sec;render();scrollTo(0,0);});
+    return;
+  }
+  const hd=`<div class="nh-head"><button class="nh-bk" data-home aria-label="Home">‹</button><b>${SECS[S.sec].t}</b></div>`;
+  if(S.sec==='stock'){
+    const q=(S.stq||'').toLowerCase();
+    const rows=stockRows().filter(r=>!q||r.n.toLowerCase().includes(q)).sort((a,b)=>(b.low-a.low)||a.n.localeCompare(b.n));
+    m.innerHTML=hd+`<input class="field" id="stq" placeholder="Search oil or filter" value="${esc(S.stq||'')}" autocomplete="off">
+    <div class="nh-list">${rows.map(r=>{const max=r.u==='L'?60:20;const p=Math.max(3,Math.min(100,Math.round(r.q/max*100)));const c=r.q<=0?'var(--bad)':r.low?'var(--warn)':'var(--ok)';return `<div class="nh-row"><b>${esc(r.n)}</b><span class="r">${r.q}<small>${r.u}</small></span><span class="m">${r.u==='L'?'by litre':'by piece'}${r.low?` · <span class="tag ${r.q<=0?'t-bad':'t-warn'}">${r.q<=0?'Out':'Low'}</span>`:''}</span><div class="nh-bar"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div>`;
+    const i=$('#stq');i.oninput=()=>{S.stq=i.value;const pos=i.value.length;render();const j=$('#stq');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};
+  } else {
+    const what={jobs:'Open jobs by stage, and new jobs built from the car history.',cars:'One search for plate, phone or name, with history and what is due.',check:'Green, yellow and red checks with photos.',remind:'Who is due, with a WhatsApp button and the sticker print.',inv:'Unpaid first, and one tap for cash, card or transfer.'}[S.sec];
+    m.innerHTML=hd+`<div class="empty"><span style="font-size:2.4rem">${SECS[S.sec].i}</span><b style="color:#fff;font-size:1.05rem">${SECS[S.sec].t} · coming soon</b>${what}<br>This needs customer data from the system, so it comes after device approval.</div>`;
+  }
+  const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
+}
+
 /* ---------- Android back gesture: step back inside the app ---------- */
 function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
 function goBackStep(){
   if(!S.user)return false;
   if(S.sheet){closeSheet();return true;}
-  if(S.tab!=='quote'){S.tab='quote';render();scrollTo(0,0);return true;}
+  if(S.tab==='home'&&S.sec){S.sec=null;render();scrollTo(0,0);return true;}
+  const startTab=newHome()?'home':'quote';
+  if(S.tab!=='quote'&&S.tab!==startTab){S.tab=startTab;render();scrollTo(0,0);return true;}
+  if(S.tab==='quote'&&newHome()&&!S.make){S.tab='home';render();scrollTo(0,0);return true;}
   const c=car();
   if(S.year!=null&&c&&enginesFor(c).length>=2&&S.eng!=null){S.eng=null;resetQuote();}
   else if(S.year!=null){S.year=null;S.eng=null;resetQuote();}
@@ -539,6 +590,7 @@ setInterval(checkAppUpdate,10*60e3);
 
 /* ---------- start ---------- */
 startSync();
+if(newHome())S.tab='home';
 (async()=>{
   await loadData();
   const saved=store.get('user',null);S.user=users().find(u=>u.id===saved)||null;

@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.2.4";
+window.FSW_APP_NAME="1.3.0";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -8,7 +8,7 @@ const f3=n=>(Math.round(n*1000)/1000).toFixed(3);
 const nrm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const store={get(k,d){try{const v=localStorage.getItem('fsw_'+k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem('fsw_'+k,JSON.stringify(v));}catch(e){}}};
 
-document.body.insertAdjacentHTML('beforeend',"<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\">\n  <defs>\n    <linearGradient id=\"paint\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#d9d9de\"/><stop offset=\".55\" stop-color=\"#8d8d95\"/><stop offset=\"1\" stop-color=\"#3b3b41\"/></linearGradient>\n    <linearGradient id=\"paintR\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ff6b5f\"/><stop offset=\".55\" stop-color=\"#c2201f\"/><stop offset=\"1\" stop-color=\"#5a0d0d\"/></linearGradient>\n    <linearGradient id=\"glass\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b3340\"/><stop offset=\"1\" stop-color=\"#0c0f14\"/></linearGradient>\n  </defs>\n  <symbol id=\"suvR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"86\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"30\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/><rect x=\"146\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M50 16 H150 L164 50 H36 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M56 21 H144 L155 48 H45 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M24 50 H176 Q184 52 184 62 V92 Q184 98 176 98 H24 Q16 98 16 92 V62 Q16 52 24 50 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"10\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"174\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <rect x=\"70\" y=\"60\" width=\"60\" height=\"22\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M74 66 H126 M74 71 H126 M74 76 H126\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\"/><path d=\"M176 60 H138 L140 70 H174 Z\" fill=\"#fff\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\" opacity=\".5\" style=\"filter:blur(3px)\"/>\n    <rect x=\"80\" y=\"86\" width=\"40\" height=\"7\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n    <rect x=\"22\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/><rect x=\"162\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/>\n  </symbol>\n  <symbol id=\"sedanR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"90\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"28\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/><rect x=\"150\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M58 30 Q100 22 142 30 L162 60 H38 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M63 34 Q100 27 137 34 L152 58 H48 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M22 60 Q100 52 178 60 Q188 63 188 74 V92 Q188 99 180 99 H20 Q12 99 12 92 V74 Q12 63 22 60 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"14\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"170\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <path d=\"M74 70 H126 L122 86 H78 Z\" fill=\"#111\"/>\n    <path d=\"M80 75 H120 M80 80 H120\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M20 68 Q40 66 64 70 L60 77 H24 Z\" fill=\"#fff\"/><path d=\"M180 68 Q160 66 136 70 L140 77 H176 Z\" fill=\"#fff\"/>\n    <rect x=\"84\" y=\"89\" width=\"32\" height=\"6\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n  </symbol>\n  <symbol id=\"i-cam\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 8h3l2-3h6l2 3h3v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-calc\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0\"/></symbol>\n  <symbol id=\"i-bell\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 16V11a6 6 0 0 1 12 0v5l2 2H4z\"/><path d=\"M10 21h4\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1\"/><circle cx=\"4.5\" cy=\"12\" r=\"1\"/><circle cx=\"4.5\" cy=\"18\" r=\"1\"/></symbol>\n  <symbol id=\"i-gear\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1\"/></symbol>\n  <symbol id=\"i-filter\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"6\" y=\"4\" width=\"12\" height=\"16\" rx=\"3\"/><path d=\"M6 8h12M9 4v16M12 4v16M15 4v16\"/></symbol>\n  <symbol id=\"i-wrench\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 4h6v3H9z\"/><rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><path d=\"M9 13l2 2 4-4\"/></symbol>\n  <symbol id=\"i-air\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7\"/></symbol>\n  <symbol id=\"i-gearbox\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 4v16M12 4v16M18 4v8H6\"/></symbol>\n  <symbol id=\"i-brake\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12a8 8 0 0 1 4-7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 2v4M9 6h6v5H9zM10 11v6l2 3 2-3v-6\"/></symbol>\n  <symbol id=\"i-belt\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"7\" cy=\"12\" r=\"4\"/><circle cx=\"18\" cy=\"8\" r=\"3\"/><path d=\"M7 8l11-3M7 16l11-5\"/></symbol>\n  <symbol id=\"i-send\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M21 3L3 10.5l7 2.5 2.5 7z\"/><path d=\"M10 13l11-10\"/></symbol>\n  <symbol id=\"i-can\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M7 5h7l3 3v12H7z\"/><path d=\"M14 5V3h-4v2M10 12h4\"/></symbol>\n  <symbol id=\"i-car\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M3 15l2-6h14l2 6v4H3z\"/><circle cx=\"7.5\" cy=\"16.5\" r=\"1\"/><circle cx=\"16.5\" cy=\"16.5\" r=\"1\"/></symbol>\n</svg>"+'<div id="root"></div><div class="toast" id="toast" hidden></div>');
+document.body.insertAdjacentHTML('beforeend',"<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\">\n  <defs>\n    <linearGradient id=\"paint\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#d9d9de\"/><stop offset=\".55\" stop-color=\"#8d8d95\"/><stop offset=\"1\" stop-color=\"#3b3b41\"/></linearGradient>\n    <linearGradient id=\"paintR\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ff6b5f\"/><stop offset=\".55\" stop-color=\"#c2201f\"/><stop offset=\"1\" stop-color=\"#5a0d0d\"/></linearGradient>\n    <linearGradient id=\"glass\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b3340\"/><stop offset=\"1\" stop-color=\"#0c0f14\"/></linearGradient>\n  </defs>\n  <symbol id=\"suvR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"86\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"30\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/><rect x=\"146\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M50 16 H150 L164 50 H36 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M56 21 H144 L155 48 H45 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M24 50 H176 Q184 52 184 62 V92 Q184 98 176 98 H24 Q16 98 16 92 V62 Q16 52 24 50 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"10\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"174\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <rect x=\"70\" y=\"60\" width=\"60\" height=\"22\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M74 66 H126 M74 71 H126 M74 76 H126\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\"/><path d=\"M176 60 H138 L140 70 H174 Z\" fill=\"#fff\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\" opacity=\".5\" style=\"filter:blur(3px)\"/>\n    <rect x=\"80\" y=\"86\" width=\"40\" height=\"7\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n    <rect x=\"22\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/><rect x=\"162\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/>\n  </symbol>\n  <symbol id=\"sedanR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"90\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"28\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/><rect x=\"150\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M58 30 Q100 22 142 30 L162 60 H38 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M63 34 Q100 27 137 34 L152 58 H48 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M22 60 Q100 52 178 60 Q188 63 188 74 V92 Q188 99 180 99 H20 Q12 99 12 92 V74 Q12 63 22 60 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"14\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"170\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <path d=\"M74 70 H126 L122 86 H78 Z\" fill=\"#111\"/>\n    <path d=\"M80 75 H120 M80 80 H120\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M20 68 Q40 66 64 70 L60 77 H24 Z\" fill=\"#fff\"/><path d=\"M180 68 Q160 66 136 70 L140 77 H176 Z\" fill=\"#fff\"/>\n    <rect x=\"84\" y=\"89\" width=\"32\" height=\"6\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n  </symbol>\n  <symbol id=\"i-cam\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 8h3l2-3h6l2 3h3v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-calc\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0\"/></symbol>\n  <symbol id=\"i-bell\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 16V11a6 6 0 0 1 12 0v5l2 2H4z\"/><path d=\"M10 21h4\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1\"/><circle cx=\"4.5\" cy=\"12\" r=\"1\"/><circle cx=\"4.5\" cy=\"18\" r=\"1\"/></symbol>\n  <symbol id=\"i-gear\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1\"/></symbol>\n  <symbol id=\"i-filter\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"6\" y=\"4\" width=\"12\" height=\"16\" rx=\"3\"/><path d=\"M6 8h12M9 4v16M12 4v16M15 4v16\"/></symbol>\n  <symbol id=\"i-wrench\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 4h6v3H9z\"/><rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><path d=\"M9 13l2 2 4-4\"/></symbol>\n  <symbol id=\"i-air\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7\"/></symbol>\n  <symbol id=\"i-gearbox\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 4v16M12 4v16M18 4v8H6\"/></symbol>\n  <symbol id=\"i-brake\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12a8 8 0 0 1 4-7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 2v4M9 6h6v5H9zM10 11v6l2 3 2-3v-6\"/></symbol>\n  <symbol id=\"i-belt\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"7\" cy=\"12\" r=\"4\"/><circle cx=\"18\" cy=\"8\" r=\"3\"/><path d=\"M7 8l11-3M7 16l11-5\"/></symbol>\n  <symbol id=\"i-send\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M21 3L3 10.5l7 2.5 2.5 7z\"/><path d=\"M10 13l11-10\"/></symbol>\n  <symbol id=\"i-can\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M7 5h7l3 3v12H7z\"/><path d=\"M14 5V3h-4v2M10 12h4\"/></symbol>\n  <symbol id=\"i-car\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M3 15l2-6h14l2 6v4H3z\"/><circle cx=\"7.5\" cy=\"16.5\" r=\"1\"/><circle cx=\"16.5\" cy=\"16.5\" r=\"1\"/></symbol>\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 11l8-7 8 7v9H4z\"/><path d=\"M10 20v-6h4v6\"/></symbol>\n</svg>"+'<div id="root"></div><div class="toast" id="toast" hidden></div>');
 const bootEl=document.getElementById('boot');if(bootEl)bootEl.remove();
 
 /* ---------- users: stored on this device only ---------- */
@@ -194,21 +194,26 @@ function renderLogin(){
 }
 
 /* ---------- app shell ---------- */
-const TABS=[['quote','i-calc','Oil price'],['rem','i-bell','Reminders'],['hist','i-list','History'],['set','i-gear','Settings']];
-function navButtons(){return TABS.map(([k,ic,l])=>`<button class="navb" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}><svg><use href="#${ic}"/></svg>${l}${k==='rem'?'<span class="soon">SOON</span>':''}</button>`).join('');}
+const TABS_OLD=[['quote','i-calc','Oil price'],['rem','i-bell','Reminders'],['hist','i-list','History'],['set','i-gear','Settings']];
+const TABS_NEW=[['home','i-home','Home'],['quote','i-calc','Oil price'],['hist','i-list','History'],['set','i-gear','Settings']];
+/* "New home (test)": owner turns it on per device in Settings. Off = the app as before. */
+const newHome=()=>store.get('newhome',false);
+const TABS_NOW=()=>newHome()?TABS_NEW:TABS_OLD;
+function navButtons(){return TABS_NOW().map(([k,ic,l])=>`<button class="navb" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}><svg><use href="#${ic}"/></svg>${l}${k==='rem'?'<span class="soon">SOON</span>':''}</button>`).join('');}
 function render(){
   if(!S.user){renderLogin();return;}
   if(!D){$('#root').innerHTML='<div class="empty" style="padding-top:80px">No prices on this device yet. Connect to the internet and open the app again.</div>';return;}
   const when=new Date(D.asof).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Asia/Muscat'});
-  const title={quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
+  if(S.tab==='home'&&!newHome())S.tab='quote';
+  const title={home:S.sec?SECS[S.sec].t:'FSW',quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
   const y=window.scrollY;
   $('#root').innerHTML=`<div class="shell">
     <header class="top"><img class="em" src="${EMBLEM_IMG}" alt=""><span class="t">${title}</span><div class="me"><span>Prices<br>${when}</span><span class="av me">${initials(S.user.name)}</span></div></header>
     <nav class="rail"><img class="em" src="${EMBLEM_IMG}" alt="FSW">${navButtons()}<span class="av me" title="${esc(S.user.name)}">${initials(S.user.name)}</span></nav>
     <main id="main"></main>
     <nav class="bottom"><div class="in">${navButtons()}</div></nav></div>`;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;render();scrollTo(0,0);});
-  ({quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(S.tab!==b.dataset.tab)deeper();S.tab=b.dataset.tab;if(S.tab==='home')S.sec=null;render();scrollTo(0,0);});
+  ({home:renderHome,quote:renderQuote,rem:renderRem,hist:renderHist,set:renderSet})[S.tab]();
   if(S.keepScroll){scrollTo(0,y);S.keepScroll=false;}
   if(S.sheet)renderSheet();
 }
@@ -396,10 +401,12 @@ function renderSet(){
   </div>
   <div class="lbl">Car make pictures</div>
   <div class="card">${[...new Set(Object.values(CARS).map(x=>x.mk))].sort().map(k=>{const lg=LOGOS()[k];return jr(lg?`<span class="badge sm"><img src="${lg}" alt=""></span>`:`<span class="num" style="font-size:.8rem">${esc(k.slice(0,3).toUpperCase())}</span>`,esc(k),lg?'Picture added':'No picture',`<label class="small-btn">${lg?'Change':'Add'}<input type="file" accept="image/*" data-logo="${esc(k)}" hidden></label>${lg?`<button class="small-btn" data-rmlogo="${esc(k)}" aria-label="Remove">✕</button>`:''}`);}).join('')}</div>`:''}
+  ${isAdmin()?`<div class="lbl">Try new things</div><div class="card"><div class="jr"><span class="ic"><svg><use href="#i-home"/></svg></span><div class="k">New home (test)<small>Section tiles. Only on this device. Turn off to go back.</small></div><button class="sw" role="switch" aria-checked="${newHome()}" aria-label="New home test" id="nhSw"></button></div></div>`:''}
   ${pinCh?pinBox():''}
   <button class="btn ghost" id="mypin">Change my PIN</button>
   <button class="btn ghost" id="logout">Change user</button>`;
   bindPinChange();
+  const nh=$('#nhSw');if(nh)nh.onclick=()=>{const v=!newHome();store.set('newhome',v);S.sec=null;toast(v?'New home on':'New home off');render();};
   $('#pricesRow').onclick=()=>{tapCount++;clearTimeout(tapTimer);tapTimer=setTimeout(()=>tapCount=0,1500);if(tapCount>=5){$('#hiddenRefresh').hidden=false;tapCount=0;}};
   $('#refresh').onclick=async()=>{toast('Checking…');const r=await syncData(true);toast(r===true?'Prices updated':r==='same'?'Prices already up to date':'No internet. Try later.');if(r===true)render();};
   $('#logout').onclick=()=>{S.user=null;store.set('user',null);pickUser=null;render();};
@@ -432,12 +439,56 @@ window.addEventListener('fsw-update',e=>{
   };
 });
 
+/* ---------- New home (test): section tiles ---------- */
+const SECS={
+ jobs:{t:'Jobs',i:'🔧',c:'#3a1a1a',g:'rgba(238,58,57,.25)'},
+ cars:{t:'Cars',i:'🚗',c:'#1a2a3a',g:'rgba(37,99,201,.28)'},
+ check:{t:'Check',i:'✅',c:'#1a3a26',g:'rgba(60,207,125,.22)'},
+ stock:{t:'Stock',i:'🛢',c:'#3a2a10',g:'rgba(242,123,33,.25)'},
+ remind:{t:'Reminders',i:'🔔',c:'#2a1a3a',g:'rgba(90,69,196,.28)'},
+ inv:{t:'Invoices',i:'🧾',c:'#3a3410',g:'rgba(201,138,0,.25)'}
+};
+function stockRows(){
+  const oils=D.oils.map(o=>({n:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),v:o[1],q:o[3],u:'L',low:o[3]<10}));
+  const fil=D.filters.map(f=>({n:filterName(f),v:'',q:f[3],u:'pcs',low:f[3]<3}));
+  return oils.concat(fil);
+}
+function renderHome(){
+  const m=$('#main');
+  if(!S.sec){
+    const low=stockRows().filter(r=>r.low).length;
+    const n={stock:low};
+    m.innerHTML=`<div class="nh-hello"><b>Hello ${esc(S.user.name.split(' ')[0])}</b><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Asia/Muscat'})}</span></div>
+    <button class="nh-tile wide" data-go-quote><span class="ic" style="--tc:#3a1a1a">🧮</span><div><b>Oil price</b><span>Pick a car, send the price</span></div><span class="n">›</span></button>
+    <div class="nh-tiles">${Object.entries(SECS).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):'coming soon'}</span></div></button>`).join('')}</div>
+    <p class="hint">Test home. Turn it off in Settings to go back.</p>`;
+    m.querySelector('[data-go-quote]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
+    m.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{deeper();S.sec=b.dataset.sec;render();scrollTo(0,0);});
+    return;
+  }
+  const hd=`<div class="nh-head"><button class="nh-bk" data-home aria-label="Home">‹</button><b>${SECS[S.sec].t}</b></div>`;
+  if(S.sec==='stock'){
+    const q=(S.stq||'').toLowerCase();
+    const rows=stockRows().filter(r=>!q||r.n.toLowerCase().includes(q)).sort((a,b)=>(b.low-a.low)||a.n.localeCompare(b.n));
+    m.innerHTML=hd+`<input class="field" id="stq" placeholder="Search oil or filter" value="${esc(S.stq||'')}" autocomplete="off">
+    <div class="nh-list">${rows.map(r=>{const max=r.u==='L'?60:20;const p=Math.max(3,Math.min(100,Math.round(r.q/max*100)));const c=r.q<=0?'var(--bad)':r.low?'var(--warn)':'var(--ok)';return `<div class="nh-row"><b>${esc(r.n)}</b><span class="r">${r.q}<small>${r.u}</small></span><span class="m">${r.u==='L'?'by litre':'by piece'}${r.low?` · <span class="tag ${r.q<=0?'t-bad':'t-warn'}">${r.q<=0?'Out':'Low'}</span>`:''}</span><div class="nh-bar"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div>`;
+    const i=$('#stq');i.oninput=()=>{S.stq=i.value;const pos=i.value.length;render();const j=$('#stq');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};
+  } else {
+    const what={jobs:'Open jobs by stage, and new jobs built from the car history.',cars:'One search for plate, phone or name, with history and what is due.',check:'Green, yellow and red checks with photos.',remind:'Who is due, with a WhatsApp button and the sticker print.',inv:'Unpaid first, and one tap for cash, card or transfer.'}[S.sec];
+    m.innerHTML=hd+`<div class="empty"><span style="font-size:2.4rem">${SECS[S.sec].i}</span><b style="color:#fff;font-size:1.05rem">${SECS[S.sec].t} · coming soon</b>${what}<br>This needs customer data from the system, so it comes after device approval.</div>`;
+  }
+  const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
+}
+
 /* ---------- Android back gesture: step back inside the app ---------- */
 function deeper(){if(CapApp)return;try{history.pushState({fsw:Date.now()},'');}catch(e){}}
 function goBackStep(){
   if(!S.user)return false;
   if(S.sheet){closeSheet();return true;}
-  if(S.tab!=='quote'){S.tab='quote';render();scrollTo(0,0);return true;}
+  if(S.tab==='home'&&S.sec){S.sec=null;render();scrollTo(0,0);return true;}
+  const startTab=newHome()?'home':'quote';
+  if(S.tab!=='quote'&&S.tab!==startTab){S.tab=startTab;render();scrollTo(0,0);return true;}
+  if(S.tab==='quote'&&newHome()&&!S.make){S.tab='home';render();scrollTo(0,0);return true;}
   const c=car();
   if(S.year!=null&&c&&enginesFor(c).length>=2&&S.eng!=null){S.eng=null;resetQuote();}
   else if(S.year!=null){S.year=null;S.eng=null;resetQuote();}
@@ -540,6 +591,7 @@ setInterval(checkAppUpdate,10*60e3);
 
 /* ---------- start ---------- */
 startSync();
+if(newHome())S.tab='home';
 (async()=>{
   await loadData();
   const saved=store.get('user',null);S.user=users().find(u=>u.id===saved)||null;
