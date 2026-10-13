@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.3.0";
+window.FSW_APP_NAME="1.3.1";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -292,7 +292,7 @@ function sideBody(sc){
     ${EXTRAS.map(e=>`<button class="svc${S.extras.has(e.id)?' sel':''}" data-ex="${e.id}"><svg><use href="#${e.icon}"/></svg>${esc(e.name)}<span class="v">${S.extras.has(e.id)?'✓ ':'+'}${f3(e.price[S.suv])}</span></button>`).join('')}
     ${isAdmin()?`<div class="disc"><div style="display:flex;align-items:center;gap:10px"><span class="lbl" style="flex:1">Discount</span><div class="seg"><button data-dm="amt" aria-pressed="${S.discMode==='amt'}">OMR</button><button data-dm="pct" aria-pressed="${S.discMode==='pct'}">%</button></div></div>
       <div class="row">${(S.discMode==='amt'?[0,0.5,1,2,3]:[0,5,10,15,20]).map(d=>`<button data-d="${d}" aria-pressed="${S.disc===d}">${d?(S.discMode==='amt'?'−'+f3(d):'−'+d+'%'):'None'}</button>`).join('')}</div></div>`:''}
-    ${sel.length?`<div class="total"><div><div class="l">${one?'Total':sel.length+' options'}</div><div class="big">${one?f3(sel[0].total):f3(Math.min(...sel.map(s=>s.total)))+'+'}<small>OMR</small></div></div><button class="send" id="send"><svg><use href="#i-send"/></svg>Send</button></div>`:''}`;
+    ${sel.length?`<div class="total"><div><div class="l">${one?'Total':sel.length+' options'}</div><div class="big">${one?f3(sel[0].total):f3(Math.min(...sel.map(s=>s.total)))+'+'}<small>OMR</small></div></div>${one&&newHome()?`<button class="send job" id="job"><svg><use href="#i-wrench"/></svg>Start job</button>`:''}<button class="send" id="send"><svg><use href="#i-send"/></svg>Send</button></div>`:''}`;
 }
 function bindQuote(){
   const m=$('#main');
@@ -308,6 +308,7 @@ function bindQuote(){
   m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{S.disc=+b.dataset.d;rerender();});
   m.querySelectorAll('[data-sheet]').forEach(b=>{b.onclick=()=>{deeper();S.sheet=b.dataset.sheet;renderSheet();};b.onkeydown=e=>{if(e.key==='Enter')b.click();};});
   const s=$('#send');if(s)s.onclick=()=>{deeper();S.sheet='msg';renderSheet();};
+  const j=$('#job');if(j)j.onclick=()=>{deeper();S.sheet='job';renderSheet();};
 }
 function selectedLines(){const sc=scenario();if(!sc||!sc.L)return [];return oilList(sc).filter(x=>S.picked.has(x.i));}
 function message(){
@@ -342,6 +343,25 @@ function renderSheet(){
       <button class="btn ghost" id="cp">Copy text</button>${close}</div>`;
     $('#wa').onclick=()=>{saveHist();location.href='https://wa.me/?text='+encodeURIComponent(msg);};
     $('#cp').onclick=async()=>{saveHist();try{await navigator.clipboard.writeText(msg);toast('Copied. Paste in WhatsApp.');}catch(e){const r=document.createRange();r.selectNodeContents($('#msgtx'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Select and copy the text');}};
+  }
+  else if(S.sheet==='job'){
+    const sc=scenario();const x=selectedLines()[0];if(!x){closeSheet();return;}
+    const car=sc.c.mk+' '+sc.c.md+(S.year?' '+S.year:'');
+    const rows=[[x.name+(x.name.includes(x.visc)?'':' '+x.visc),S.own?'Customer oil':sc.L+' L',S.own?0:x.oil],['Oil filter',sc.fi>=0&&D.filters[sc.fi]?filterName(D.filters[sc.fi]):'None',x.fp]];
+    if(x.lab)rows.push(['Labour',S.suv?'SUV':'Sedan',x.lab]);
+    [...S.extras].forEach(i=>{const e=EXTRAS.find(z=>z.id===i);rows.push([e.name,'',e.price[S.suv]]);});
+    if(x.disc)rows.push(['Discount','',-x.disc]);
+    const jt='Job: '+car+'\n'+rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(x.total)+' OMR\nBy: '+S.user.name;
+    el.innerHTML=`<div class="pnl"><div class="jb-test">TEST · NOTHING IS SAVED</div><h3>New job</h3>
+      <div class="jb-car"><svg><use href="#i-car"/></svg><div><b>${esc(car)}</b><span>${sc.L} L oil · ${S.suv?'SUV':'Sedan'}</span></div></div>
+      <div class="jb-list">${rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(x.total)} OMR</b></div></div>
+      <label class="jb-ph" id="jbph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam"><svg><use href="#i-cam"/></svg><span>Photo of ملكية</span></label>
+      <div class="jb-in"><input inputmode="numeric" placeholder="Km now" id="jbkm"><input inputmode="tel" placeholder="Customer phone" id="jbtel"></div>
+      <button class="btn okb" id="jbgo"><svg><use href="#i-check"/></svg>Send to owner</button>
+      <button class="btn ghost" id="jbcp">Copy for job card</button>${close}</div>`;
+    $('#jbcam').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const ph=$('#jbph');ph.classList.add('has');ph.style.backgroundImage='url('+r.result+')';ph.querySelector('span').textContent='Photo taken';};r.readAsDataURL(f);};
+    $('#jbgo').onclick=()=>{closeSheet();toast('Test only. Nothing was saved or sent.');};
+    $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
   }
   const cb=el.querySelector('[data-close]');if(cb)cb.onclick=closeSheet;
 }
