@@ -355,19 +355,22 @@ function renderSheet(){
       <div class="jb-car"><svg><use href="#i-car"/></svg><div><b>${esc(car)}</b><span>${sc.L} L oil · ${S.suv?'SUV':'Sedan'}</span></div></div>
       <div class="jb-list">${rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(x.total)} OMR</b></div></div>
       <label class="jb-ph" id="jbph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam"><svg><use href="#i-cam"/></svg><span>Photo of ملكية</span></label>
-      <div class="jb-in"><input inputmode="numeric" placeholder="Km now" id="jbkm"><input inputmode="tel" placeholder="Customer phone" id="jbtel"></div>
+      <div class="jb-in"><input placeholder="Customer name" id="jbnm" autocomplete="off"><input inputmode="tel" placeholder="Phone" id="jbtel"></div>
+      <div class="jb-in"><input placeholder="Plate (e.g. 12345 A)" id="jbpl" autocomplete="off" style="text-transform:uppercase"><input inputmode="numeric" placeholder="Km now" id="jbkm"></div>
+      <div class="jb-in" style="grid-template-columns:1fr"><input placeholder="VIN (17 characters, optional)" id="jbvin" autocomplete="off" maxlength="17" style="text-transform:uppercase;letter-spacing:.06em"></div>
       <button class="btn okb" id="jbgo"><svg><use href="#i-check"/></svg>Create job</button>
       <button class="btn ghost" id="jbcp">Copy for job card</button>${close}</div>`;
     $('#jbcam').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const ph=$('#jbph');ph.classList.add('has');ph.style.backgroundImage='url('+r.result+')';ph.querySelector('span').textContent='Photo taken';};r.readAsDataURL(f);};
     let jbPhoto=null;$('#jbcam').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;shrinkPhoto(f,u=>jbPhoto=u);});
     $('#jbgo').onclick=()=>{
-      const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');
-      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],L:S.own?0:sc.L,km,tel,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
+      const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');const nm=$('#jbnm').value.trim();const pl=plateFmt($('#jbpl').value);const vin=vinFmt($('#jbvin').value);if(vin&&vin.length!==17){toast('VIN must be 17 characters');return;}
+      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,rows,total:x.total,oil:rows[0][0],L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
       JOBS.unshift(j);closeSheet();resetQuote();S.make=null;S.model=null;S.year=null;S.eng=null;S.extras.clear();S.disc=0;
       S.tab='home';S.sec='jobs';S.job=j.id;render();scrollTo(0,0);toast('Job #'+j.no+' created');};
     $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
   }
   else if(S.sheet==='stk'){renderStk(el,close);}
+  else if(S.sheet==='inv'){renderInv(el,close);}
   const cb=el.querySelector('[data-close]');if(cb)cb.onclick=closeSheet;
 }
 function saveHist(){
@@ -519,9 +522,10 @@ const hm=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-dig
 const fmtD=d=>new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Muscat'});
 const kmf=n=>(+n||0).toLocaleString('en-US');
 const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return d;};
+const plateFmt=v=>(v||'').toUpperCase().replace(/[^A-Z0-9\u0600-\u06FF ]/g,'').replace(/\s+/g,' ').trim();const vinFmt=v=>(v||'').toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g,'');
 const testBar='<div class="jb-test">TEST · CLEARED WHEN THE APP CLOSES</div>';
 function shrinkPhoto(f,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.8));};im.src=r.result;};r.readAsDataURL(f);}
-function jobText(j){return 'Job #'+j.no+': '+j.car+'\n'+j.rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(j.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
+function jobText(j){return 'Job #'+j.no+': '+j.car+(j.pl?' · '+j.pl:'')+(j.nm?'\nCustomer: '+j.nm:'')+(j.vin?'\nVIN: '+j.vin:'')+'\n'+j.rows.map(r=>'- '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\nTotal: '+f3(j.total)+' OMR'+(j.km?'\nKm: '+kmf(j.km):'')+(j.tel?'\nPhone: '+j.tel:'')+'\nBy: '+j.by;}
 function setStage(j,k){j.stage=k;j.log.push([Date.now(),stg(k)[1]+' · '+S.user.name]);if(k==='done'&&!REMS.some(r=>r.job===j.id))addRem(j,5000,6);}
 function addRem(j,step,months){const n=new Date();n.setMonth(n.getMonth()+months);const old=REMS.find(r=>r.job===j.id);const r={job:j.id,car:j.car,tel:j.tel,oil:j.oil,km:j.km,nextKm:j.km?j.km+step:0,next:n.getTime(),t:Date.now()};if(old)Object.assign(old,r);else REMS.push(r);}
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}}
@@ -533,7 +537,7 @@ function renderJobs(m,hd){
     const list=JOBS.filter(x=>f==='open'?x.stage!=='done':x.stage===f);
     m.innerHTML=hd+testBar+`<div class="jb-chips">${[['open','Open']].concat(STAGES.map(x=>[x[0],x[1]])).map(([k,l])=>`<button data-jf="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
     <button class="btn okb" data-newjob><svg><use href="#i-calc"/></svg>New job from a price</button>
-    ${list.length?`<div class="nh-list">${list.map(x=>{const s=stg(x.stage);return `<button class="jb-item" data-job="${x.id}" style="--sc:${s[2]}"><div class="no">#${x.no}</div><div class="tx"><b>${esc(x.car)}</b><span>${esc(x.oil)}${x.L?' · '+x.L+' L':''}</span><span>${hm(x.t)} · ${esc(x.by)}</span></div><div class="rt"><b>${f3(x.total)}</b><span class="st">${s[1]}</span></div></button>`;}).join('')}</div>`
+    ${list.length?`<div class="nh-list">${list.map(x=>{const s=stg(x.stage);return `<button class="jb-item" data-job="${x.id}" style="--sc:${s[2]}"><div class="no">#${x.no}</div><div class="tx"><b>${esc(x.car)}${x.pl?` <span class="pl">${esc(x.pl)}</span>`:''}</b><span>${x.nm?esc(x.nm)+' · ':''}${esc(x.oil)}${x.L?' · '+x.L+' L':''}</span><span>${hm(x.t)} · ${esc(x.by)}</span></div><div class="rt"><b>${f3(x.total)}</b><span class="st">${s[1]}</span></div></button>`;}).join('')}</div>`
       :`<div class="empty"><span style="font-size:2.2rem">🔧</span>${JOBS.length?'Nothing here.':'No jobs yet. Pick a car in Oil price, choose the oil, then tap <b>Start job</b>.'}</div>`}`;
     m.querySelectorAll('[data-jf]').forEach(b=>b.onclick=()=>{S.jf=b.dataset.jf;render();});
     m.querySelector('[data-newjob]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
@@ -548,8 +552,9 @@ function renderJobs(m,hd){
     ${act?`<button class="btn okb" data-next>${act}</button>`:''}
     ${j.photo?`<img class="jb-photo" src="${j.photo}" alt="ملكية">`:`<label class="jb-ph"><input type="file" accept="image/*" capture="environment" hidden id="jbcam2"><svg><use href="#i-cam"/></svg><span>Add photo of ملكية</span></label>`}
     <div class="jb-list">${j.rows.map(r=>`<div class="jb-r"><div>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</div><b>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</b></div>`).join('')}<div class="jb-r tot"><div>Total</div><b>${f3(j.total)} OMR</b></div></div>
-    <div class="jb-list"><div class="jb-r"><div>Km now</div><input class="jb-kmin" id="jkm" inputmode="numeric" value="${j.km||''}" placeholder="—"></div><div class="jb-r"><div>Phone</div><input class="jb-kmin" id="jtel" inputmode="tel" value="${esc(j.tel||'')}" placeholder="—"></div>${rem?`<div class="jb-r"><div>Next service<small>${kmf(rem.nextKm)} km</small></div><b>${fmtD(rem.next)}</b></div>`:''}</div>
-    <div class="jb-two"><button class="btn ghost" data-stk>🖨 Sticker</button><button class="btn ghost" data-copy>Copy for job card</button></div>
+    <div class="lbl">Customer</div>
+    <div class="jb-list"><div class="jb-r"><div>Name</div><input class="jb-kmin" id="jnm" value="${esc(j.nm||'')}" placeholder="—"></div><div class="jb-r"><div>Phone</div><input class="jb-kmin" id="jtel" inputmode="tel" value="${esc(j.tel||'')}" placeholder="—"></div><div class="jb-r"><div>Plate</div><input class="jb-kmin" id="jpl" value="${esc(j.pl||'')}" placeholder="—" style="text-transform:uppercase"></div><div class="jb-r"><div>VIN</div><input class="jb-kmin mono" id="jvin" maxlength="17" value="${esc(j.vin||'')}" placeholder="—"></div><div class="jb-r"><div>Km now</div><input class="jb-kmin" id="jkm" inputmode="numeric" value="${j.km||''}" placeholder="—"></div>${rem?`<div class="jb-r"><div>Next service<small>${kmf(rem.nextKm)} km</small></div><b>${fmtD(rem.next)}</b></div>`:''}</div>
+    <div class="jb-two"><button class="btn ghost" data-inv>🧾 Invoice</button><button class="btn ghost" data-stk>🖨 Sticker</button></div><button class="btn ghost" data-copy>Copy for job card</button>
     ${j.tel&&(j.stage==='ready'||j.stage==='done')?`<button class="btn ghost" data-wa><svg><use href="#i-send"/></svg>WhatsApp: car is ready</button>`:''}
     <div class="lbl" style="margin-top:4px">Timeline</div>
     <div class="jb-log">${j.log.slice().reverse().map(l=>`<div><span>${hm(l[0])}</span>${esc(l[1])}</div>`).join('')}</div>
@@ -557,6 +562,10 @@ function renderJobs(m,hd){
     m.querySelector('[data-back]').onclick=()=>{S.job=null;render();scrollTo(0,0);};
     const nb=m.querySelector('[data-next]');if(nb)nb.onclick=()=>{setStage(j,nx[0]);toast(nx[1]);rerender();};
     const c2=$('#jbcam2');if(c2)c2.onchange=e=>{const f=e.target.files[0];if(f)shrinkPhoto(f,u=>{j.photo=u;j.log.push([Date.now(),'Photo added']);rerender();});};
+    $('#jnm').onchange=e=>{j.nm=e.target.value.trim();rerender();};
+    $('#jpl').onchange=e=>{j.pl=plateFmt(e.target.value);rerender();};
+    $('#jvin').onchange=e=>{const v=vinFmt(e.target.value);if(v&&v.length!==17){toast('VIN must be 17 characters');}j.vin=v;rerender();};
+    m.querySelector('[data-inv]').onclick=()=>{deeper();S.sheet='inv';renderSheet();};
     $('#jkm').onchange=e=>{j.km=parseInt(e.target.value.replace(/\D/g,''))||0;const r=REMS.find(x=>x.job===j.id);if(r){r.km=j.km;}rerender();};
     $('#jtel').onchange=e=>{j.tel=e.target.value.replace(/[^\d+]/g,'');const r=REMS.find(x=>x.job===j.id);if(r)r.tel=j.tel;rerender();};
     m.querySelector('[data-stk]').onclick=()=>{deeper();S.stk={job:j.id,tpl:ROLLS[roll()].t[0],step:5000,months:6};S.sheet='stk';renderSheet();};
@@ -609,6 +618,39 @@ function renderStk(el,close){
     P.printHtml({html:doc,widthMm:pw,heightMm:ph,color:!!ROLLS[roll()].rb,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
   };
 }
+
+/* ---------- Invoice (test) ---------- */
+const WS_NAME='Fast Service World',WS_AR='ورشة عالم الخدمات السريعة',WS_ADDR='Sanaiya Ibra';
+function invoiceHtml(j,forPrint){
+  const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});
+  const paid=j.paid?`<div class="inv-paid">PAID · مدفوع${j.payBy?' · '+j.payBy:''}</div>`:'';
+  return `<div class="inv${forPrint?' print':''}"><div class="inv-hd"><img src="${forPrint?LOGO_B:LOGO_IMG}" alt=""><div class="inv-ws"><b>${WS_NAME}</b><span class="ar">${WS_AR}</span><span>${WS_ADDR} · ${WS_TEL}</span></div></div>
+  <div class="inv-ttl"><b>INVOICE <span class="ar">فاتورة</span></b><span>#${String(j.no).padStart(4,'0')} · ${dt}</span></div>
+  <div class="inv-meta"><div><small>Customer</small>${esc(j.nm||'—')}</div><div><small>Phone</small>${esc(j.tel||'—')}</div><div><small>Car</small>${esc(j.car)}</div><div><small>Plate</small>${esc(j.pl||'—')}</div><div><small>Km</small>${j.km?kmf(j.km):'—'}</div><div><small>VIN</small><span class="mono">${esc(j.vin||'—')}</span></div></div>
+  <table class="inv-t"><thead><tr><th>Description</th><th>OMR</th></tr></thead><tbody>${j.rows.map(r=>`<tr><td>${esc(r[0])}${r[1]?`<small>${esc(r[1])}</small>`:''}</td><td>${r[2]<0?'−'+f3(-r[2]):f3(r[2])}</td></tr>`).join('')}</tbody><tfoot><tr><td>Total <span class="ar">المجموع</span></td><td>${f3(j.total)}</td></tr></tfoot></table>
+  ${paid}<div class="inv-ft">Thank you · شكراً لزيارتكم<br>Next oil change: ${(REMS.find(r=>r.job===j.id)||{}).nextKm?kmf(REMS.find(r=>r.job===j.id).nextKm)+' km':'see sticker'}</div></div>`;
+}
+function invoiceText(j){const dt=new Date(j.t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Muscat'});return WS_AR+'\nفاتورة #'+String(j.no).padStart(4,'0')+' · '+dt+'\n'+(j.nm?'العميل: '+j.nm+'\n':'')+'السيارة: '+j.car+(j.pl?' · '+j.pl:'')+'\n'+(j.km?'الكيلومتر: '+kmf(j.km)+'\n':'')+'\n'+j.rows.map(r=>'• '+r[0]+(r[1]?' ('+r[1]+')':'')+': '+f3(r[2])).join('\n')+'\n\nالمجموع: '+f3(j.total)+' ر.ع'+(j.paid?'\nمدفوع'+(j.payBy?' · '+j.payBy:''):'')+'\n\nشكراً لزيارتكم · '+WS_TEL;}
+function renderInv(el,close){
+  const j=JOBS.find(x=>x.id===S.job);if(!j){closeSheet();return;}
+  el.innerHTML=`<div class="pnl"><h3>Invoice · Job #${j.no}</h3>${testBar}
+    <div class="inv-pv">${invoiceHtml(j,true)}</div>
+    <div class="lbl">Payment</div>
+    <div class="jb-chips">${[['Cash','💵'],['Card','💳'],['Transfer','🏦']].map(([k,i])=>`<button data-pay="${k}" aria-pressed="${j.paid&&j.payBy===k}">${i} ${k}</button>`).join('')}${j.paid?`<button data-pay="">Not paid</button>`:''}</div>
+    <div class="jb-two"><button class="btn" id="invwa"><svg><use href="#i-send"/></svg>WhatsApp</button><button class="btn ghost" id="invpr">🖨 Print A4</button></div>
+    <button class="btn ghost" id="invcp">Copy text</button>${close}</div>`;
+  el.querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{const k=b.dataset.pay;if(k){j.paid=Date.now();j.payBy=k;j.log.push([Date.now(),'Paid · '+k+' · '+S.user.name]);}else{j.paid=0;j.payBy='';}renderSheet();});
+  $('#invwa').onclick=()=>{location.href='https://wa.me/'+(j.tel?waNum(j.tel):'')+'?text='+encodeURIComponent(invoiceText(j));};
+  $('#invcp').onclick=()=>copyText(invoiceText(j));
+  $('#invpr').onclick=()=>{
+    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Rubik,Arial,sans-serif;color:#000}'+INV_CSS+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>';
+    const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
+    if(!P){toast('Printing works in the installed app.');return;}
+    P.printHtml({html:doc,widthMm:210,heightMm:297,name:'FSW invoice '+j.no}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+  };
+}
+const INV_CSS='.inv{background:#fff;color:#000;padding:6mm;font-size:3.4mm;line-height:1.35}.inv .ar{direction:rtl}.inv-hd{display:flex;align-items:center;gap:4mm;border-bottom:.5mm solid #000;padding-bottom:3mm}.inv-hd img{width:40mm;flex:none}.inv-ws{display:grid;gap:.5mm;margin-left:auto;text-align:right;white-space:nowrap}.inv-ws b{font-size:4mm}.inv-ws span{font-size:2.8mm}.inv-ttl{display:flex;justify-content:space-between;align-items:baseline;margin:3mm 0}.inv-ttl b{font-size:5mm;letter-spacing:.1em}.inv-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm 4mm;border:.3mm solid #000;border-radius:1.5mm;padding:2.5mm 3mm;margin-bottom:3mm}.inv-meta small{display:block;font-size:2.4mm;color:#555;text-transform:uppercase;letter-spacing:.08em}.inv .mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em}.inv-t{width:100%;border-collapse:collapse}.inv-t th{text-align:left;font-size:2.6mm;letter-spacing:.1em;border-bottom:.4mm solid #000;padding:1.5mm 0}.inv-t td{padding:2mm 0;border-bottom:.2mm solid #bbb;vertical-align:top}.inv-t td small{display:block;color:#555;font-size:2.6mm}.inv-t th:last-child,.inv-t td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.inv-t tfoot td{border-bottom:0;border-top:.5mm solid #000;font-weight:800;font-size:4.2mm;padding-top:2.5mm}.inv-paid{display:inline-block;border:.6mm solid #000;border-radius:1.5mm;padding:1mm 3mm;font-weight:800;letter-spacing:.1em;margin-top:3mm;transform:rotate(-3deg)}.inv-ft{margin-top:6mm;text-align:center;font-size:2.9mm;color:#333}';
+
 function renderRems(m,hd){
   const list=REMS.slice().sort((a,b)=>a.next-b.next);
   m.innerHTML=hd+testBar+(list.length?`<div class="nh-list">${list.map((r,i)=>`<div class="nh-row"><b>${esc(r.car)}</b><span class="r">${fmtD(r.next).replace(/ \d{4}$/,'')}<small>${r.nextKm?kmf(r.nextKm)+' km':''}</small></span><span class="m">${esc(r.oil)}${r.tel?' · '+esc(r.tel):' · no phone'}</span>${r.tel?`<button class="btn ghost jb-wa" data-rw="${i}"><svg><use href="#i-send"/></svg>Remind on WhatsApp</button>`:''}</div>`).join('')}</div>`
