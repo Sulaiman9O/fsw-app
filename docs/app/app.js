@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.5.8";
+window.FSW_APP_NAME="1.5.9";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -65,13 +65,17 @@ async function loadData(){
   try{bundled=await fetch('data/prices.json',{cache:'no-store'}).then(r=>r.json());}catch(e){}
   const pick=[saved,bundled].filter(Boolean).sort((a,b)=>new Date(b.asof)-new Date(a.asof))[0];
   if(pick)useData(pick);
+  let cs=store.get('catalog',null),cb=null;try{cb=await fetch('data/catalog.json',{cache:'no-store'}).then(r=>r.json());}catch(e){}
+  CAT=[cs,cb].filter(Boolean).sort((a,b)=>new Date(b.asof)-new Date(a.asof))[0]||{services:[],parts:[]};
 }
+let CAT={services:[],parts:[]};
+async function syncCatalog(){try{const c=await fetch(BASE+'data/catalog.json?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json();});if(!CAT.asof||new Date(c.asof)>new Date(CAT.asof)){store.set('catalog',c);CAT=c;}}catch(e){}}
 async function syncData(force){
   const last=store.get('lastCheck',0);
   if(!force&&Date.now()-last<3*3600e3)return false;
   try{
     const d=await fetch(BASE+'data/prices.json?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json();});
-    store.set('lastCheck',Date.now());
+    store.set('lastCheck',Date.now());syncCatalog();
     if(!D||new Date(d.asof)>new Date(D.asof)){store.set('data',d);useData(d);return true;}
     return 'same';
   }catch(e){return null;}
@@ -371,7 +375,7 @@ function renderSheet(){
     });});});
     $('#jbgo').onclick=()=>{
       const km=parseInt(($('#jbkm').value||'').replace(/\D/g,''))||0;const tel=($('#jbtel').value||'').replace(/[^\d+]/g,'');const nm=$('#jbnm').value.trim();const pl=plateFmt($('#jbpl').value);const vin=vinFmt($('#jbvin').value);if(vin&&vin.length!==17){toast('VIN must be 17 characters');return;}
-      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,items,disc,oil:items[0].d,raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
+      const now=Date.now();const j={id:'j'+now,no:JOBNO++,car,c:sc.c,suv:S.suv,items,disc,oil:items[0].d,raw:x.o[0],visc:x.visc,iv:oilInterval(x.o[0],x.visc),engName:sc.eng?String(sc.eng[0]):'',L:S.own?0:sc.L,km,tel,nm,pl,vin,photo:jbPhoto,by:S.user.name,t:now,stage:'new',log:[[now,'Created by '+S.user.name]]};
       JOBS.unshift(j);closeSheet();resetQuote();S.make=null;S.model=null;S.year=null;S.eng=null;S.extras.clear();S.disc=0;
       S.tab='home';S.sec='jobs';S.job=j.id;render();scrollTo(0,0);toast('Job #'+j.no+' created');};
     $('#jbcp').onclick=async()=>{const km=$('#jbkm').value.trim();const t=jt+(km?'\nKm: '+km:'');try{await navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast('Could not copy');}};
@@ -727,23 +731,59 @@ function renderStk(el,close){
 }
 
 
+
+/* ---------- Smart suggestions: what usually goes with a service, for this car ---------- */
+const partsByCat=c=>(CAT.parts||[]).filter(p=>p[5].toLowerCase().includes(c));
+const brandOf=j=>(j.c&&j.c.mk||'').toLowerCase();
+const isV6=j=>/v6|3\.5|3\.0|4\.0/i.test((j.engName||''));
+function suggestFor(j,svcName){
+  const n=svcName.toLowerCase();const mk=brandOf(j);const out=[];
+  const add=(p,q,why)=>{if(p&&!out.some(x=>x[0]===p[0]))out.push([p[0],p[1],p[2],q,p[4],why]);};
+  const md=(j.c&&j.c.md||'').toLowerCase();
+  const score=p=>{const d=p[1].toLowerCase();let sc=0;if(md&&d.includes(md))sc+=2;if(d.includes(mk)||(mk==='lexus'&&d.includes('toyota'))||(mk==='toyota'&&d.includes('lexus'))||(mk==='hyundai'&&d.includes('kia'))||(mk==='kia'&&d.includes('hyundai'))||(/chevrolet|gmc|cadillac/.test(mk)&&/\bgm\b|acdelco/.test(d)))sc+=1;if(sc===1&&md&&/camry|corolla|lexus|v6/.test(d)&&!d.includes(md))sc=0.5;return sc;};
+  const best=list=>{const sc=list.map(p=>[score(p),p]).filter(x=>x[0]>0);if(!sc.length)return [];const m=Math.max(...sc.map(x=>x[0]));return sc.filter(x=>x[0]===m).map(x=>x[1]);};
+  const brandMatch=p=>score(p)>0;
+  if(/transmission fluid|gear|a\/t|cvt|differential/.test(n)){
+    const fl=best(partsByCat('transmission fluid'));const fi=best(partsByCat('transmission filter'));const ga=best(partsByCat('gasket'));
+    const L=j.suv?6:4;
+    fl.forEach(p=>add(p,p[4]==='L'?L:(/4ltrs/i.test(p[1])?1:L),'fluid'));
+    if(/filter/.test(n)){fi.forEach(p=>add(p,1,'filter'));ga.forEach(p=>add(p,1,'gasket'));}
+    if(/differential|gear/.test(n))partsByCat('gear and differential').forEach(p=>add(p,2,'gear oil'));
+  }
+  if(/coolant|cooling/.test(n)){const c=best(partsByCat('coolant'));(c.length?c:partsByCat('cooling system')).forEach(p=>add(p,j.suv?2:1,'coolant'));}
+  if(/brake fluid/.test(n))partsByCat('brake fluid').filter(p=>/DOT-4/.test(p[1])).forEach(p=>add(p,2,'DOT-4'));
+  if(/brake/.test(n)&&!/fluid/.test(n))partsByCat('additives').filter(p=>/brake cleaner/i.test(p[1])).forEach(p=>add(p,1,'cleaner'));
+  if(/throttle|intake/.test(n))partsByCat('additives').filter(p=>/intake/i.test(p[1])).forEach(p=>add(p,1,'cleaner'));
+  if(/oil change/.test(n)){const codes=Object.keys(j.c&&j.c.fil||{}).map(k=>k.toUpperCase());let f=partsByCat('oil filter').filter(p=>codes.some(c=>p[0].toUpperCase().includes(c)||p[1].toUpperCase().includes(c)));if(!f.length)f=best(partsByCat('oil filter')).slice(0,2);f.forEach(p=>add(p,1,'oil filter'));}
+  if(/spark/.test(n))partsByCat('additives').filter(p=>/injector|fuel system/i.test(p[1])).slice(0,1).forEach(p=>add(p,1,'optional'));
+  return out;
+}
+
 /* ---------- Add / edit job items ---------- */
 function renderAddItem(el,close){
   const j=JOBS.find(x=>x.id===S.job);if(!j){closeSheet();return;}
   const q=(S.addq||'').toLowerCase();
-  const stock=[].concat(D.filters.map(f=>({d:filterName(f),sub:f[1],p:f[2],k:'part',u:'',st:f[3]})),D.oils.map(o=>({d:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),sub:'per litre',p:o[2],k:'part',u:'L',st:o[3]})));
-  const common=COMMON_ITEMS.map(([d,k,p])=>({d,k,p,u:d.includes('(L)')?'L':'',sub:''}));
+  const svc=(CAT.services||[]).map(x=>({d:x[1],sub:x[0],p:x[2],k:'labour',u:'',sv:1}));
+  const inv=(CAT.parts||[]).map(x=>({d:x[1],sub:x[0]+' · '+x[5],p:x[2],k:'part',u:x[4],st:x[3],id:x[0]}));
+  const stockOld=inv.length?[]:[].concat(D.filters.map(f=>({d:filterName(f),sub:f[1],p:f[2],k:'part',u:'',st:f[3]})),D.oils.map(o=>({d:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),sub:'per litre',p:o[2],k:'part',u:'L',st:o[3]})));
+  const common=COMMON_ITEMS.map(([d,k,p])=>({d,k,p,u:d.includes('(L)')?'L':'',sub:'not in the system'}));
   const f=list=>list.filter(x=>!q||x.d.toLowerCase().includes(q)||(x.sub||'').toLowerCase().includes(q));
-  const row=(x,src,i)=>`<button class="opt" data-pick="${src}:${i}"><div class="tx"><b>${esc(x.d)}</b>${x.sub||x.st!=null?`<span>${esc(x.sub||'')}${x.st!=null?(x.sub?' · ':'')+(x.st>0?x.st+' in stock':'out of stock'):''}</span>`:''}</div><span class="v">${f3(x.p)}</span></button>`;
-  const cl=f(common),sl=f(stock);
+  const row=(x,src,i)=>`<button class="opt" data-pick="${src}:${i}"><div class="tx"><b>${esc(x.d)}</b>${x.sub||x.st!=null?`<span>${esc(x.sub||'')}${x.st!=null?(x.sub?' · ':'')+(x.st>0?(+x.st)+(x.u==='L'?' L':'')+' in stock':'out of stock'):''}</span>`:''}</div><span class="v">${f3(x.p)}${x.u==='L'?'<small>/L</small>':''}</span></button>`;
+  const sugg=[];(j.items||[]).filter(it=>it.k==='labour').forEach(it=>suggestFor(j,it.d).forEach(sg=>{if(!(j.items||[]).some(x=>x.id===sg[0])&&!sugg.some(x=>x[0]===sg[0]))sugg.push(sg);}));
+  const sl=f(svc),il=f(inv),ol=f(stockOld),cl=f(common);
   el.innerHTML=`<div class="pnl"><h3>Add to job #${j.no}</h3>
-    <input class="field" id="addq" placeholder="Search parts, oils, services" value="${esc(S.addq||'')}" autocomplete="off">
+    <input class="field" id="addq" placeholder="Search services, parts, oils" value="${esc(S.addq||'')}" autocomplete="off">
+    ${!q&&sugg.length?`<div class="lbl">Suggested for ${esc(j.car)}</div>${sugg.map((g,i)=>`<button class="opt sg" data-sug="${i}"><div class="tx"><b>${esc(g[1])}</b><span>${esc(g[0])} · ${esc(g[5])} · ×${g[3]}${g[4]==='L'?' L':''}</span></div><span class="v">${f3(g[2]*g[3])}</span></button>`).join('')}`:''}
     <button class="btn ghost" data-custom>✏️ Something else (type name and price)</button>
-    ${cl.length?`<div class="lbl">Common</div>${cl.map((x)=>row(x,'c',common.indexOf(x))).join('')}`:''}
-    ${sl.length?`<div class="lbl">From stock</div>${sl.slice(0,40).map((x)=>row(x,'s',stock.indexOf(x))).join('')}`:''}
+    ${sl.length?`<div class="lbl">Services · from the system</div>${sl.slice(0,q?50:12).map(x=>row(x,'v',svc.indexOf(x))).join('')}${!q&&sl.length>12?`<p class="hint">Search to see all ${sl.length} services</p>`:''}`:''}
+    ${il.length?`<div class="lbl">Parts · from the system</div>${il.slice(0,q?60:10).map(x=>row(x,'i',inv.indexOf(x))).join('')}${!q&&il.length>10?`<p class="hint">Search to see all ${il.length} parts</p>`:''}`:''}
+    ${ol.length?`<div class="lbl">From stock</div>${ol.slice(0,40).map(x=>row(x,'s',stockOld.indexOf(x))).join('')}`:''}
+    ${cl.length?`<div class="lbl">Other common items</div>${cl.map(x=>row(x,'c',common.indexOf(x))).join('')}`:''}
     ${close}</div>`;
   const inp=$('#addq');inp.oninput=()=>{S.addq=inp.value;const pos=inp.value.length;renderSheet();const i2=$('#addq');i2.focus();try{i2.setSelectionRange(pos,pos);}catch(e){}};
-  el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const [src,i]=b.dataset.pick.split(':');const x=(src==='c'?common:stock)[+i];j.items.push({d:x.d,sub:x.sub||'',q:1,u:x.u||'',p:x.p,k:x.k});S.editIt=j.items.length-1;S.sheet='edit';renderSheet();});
+  const lists={v:svc,i:inv,s:stockOld,c:common};
+  el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{const [src,i]=b.dataset.pick.split(':');const x=lists[src][+i];j.items.push({d:x.d,sub:x.sv?'':(x.id||x.sub||''),q:1,u:x.u||'',p:x.p,k:x.k,id:x.id||''});S.editIt=j.items.length-1;S.sheet='edit';renderSheet();});
+  el.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>{const g=sugg[+b.dataset.sug];j.items.push({d:g[1],sub:g[0],q:g[3],u:g[4],p:g[2],k:'part',id:g[0]});j.log.push([Date.now(),'Added '+g[1]+' (suggested) · '+S.user.name]);S.addq='';renderSheet();rerender();});
   el.querySelector('[data-custom]').onclick=()=>{j.items.push({d:'',sub:'',q:1,u:'',p:0,k:'part',neu:1});S.editIt=j.items.length-1;S.sheet='edit';renderSheet();};
 }
 function renderEditItem(el,close){

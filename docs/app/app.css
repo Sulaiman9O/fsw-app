@@ -346,3 +346,6 @@ pre.msg{white-space:pre-wrap;direction:rtl;text-align:right;font:15px/1.6 system
 .stepper{display:grid;grid-template-columns:44px 1fr 44px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#111113}.stepper button{background:var(--panel2);font-size:1.3rem;min-height:46px}.stepper input{text-align:center;background:transparent;border:0;color:#fff;font:600 1.05rem var(--f-body);width:100%}
 .ed-pend{display:flex;align-items:center;gap:10px;font-size:.9rem;padding:4px 2px}.ed-pend input{width:20px;height:20px;accent-color:var(--orange)}
 .ed-tot{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;color:var(--muted);padding:2px 4px}.ed-tot b{font:400 1.3rem var(--f-brand);color:#fff}
+
+.opt.sg{border-color:rgba(60,207,125,.45);background:rgba(60,207,125,.07)}
+.opt .v small{font-size:.65rem;color:var(--muted)}
