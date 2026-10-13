@@ -567,6 +567,8 @@ function renderJobs(m,hd){
   const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
 }
 const STK_SIZES={A:[62,29,'Small strip'],B:[62,50,'Standard'],C:[62,62,'Square'],D:[29,90,'Tall']};
+/* paper names the Brother print screen offers (inches) */
+const STK_PAPER={A:[2.4,1.1],B:[2.4,3.9],C:[2.4,3.9],D:[1.1,3.5]};
 function stickerHtml(t,d){
   const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
   if(t==='A')return `<div class="stk sA"><img src="${EMB_B}" alt=""><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k d">${next}</div><div class="k km">${d.nextKm?nk+' km':'—'}</div><div class="o"><span>${oil}</span><span>Done ${done}</span></div></div></div>`;
@@ -585,7 +587,7 @@ function renderStk(el,close){
     <div class="jb-chips">${Object.entries(STK_SIZES).map(([t,v])=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${v[0]}×${v[1]}</span></button>`).join('')}</div>
     ${j.km?'':`<div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now (for the next km)" id="skm"></div>`}
     <div class="jb-chips">${[5000,7500,10000].map(v=>`<button data-step="${v}" aria-pressed="${k.step===v}">+${kmf(v)} km</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${k.months===v}">${v} months</button>`).join('')}</div>
-    <p class="hint" style="margin:0">Brother QL-820NWB · ${k.tpl==='D'?'needs a 29 mm roll':'DK-22113 · 62 mm roll'}</p>
+    <p class="hint" style="margin:0">Brother QL-820NWB · ${k.tpl==='D'?'needs a 29 mm roll':'DK-22113 · 62 mm roll'}<br>In the print screen pick paper <b style="color:#fff">${STK_PAPER[k.tpl][0]}" x ${STK_PAPER[k.tpl][1]}"</b>${k.tpl==='B'||k.tpl==='C'?' (prints 100 mm long)':''}</p>
     <button class="btn" id="stkgo">🖨 Print sticker</button>${close}</div>`;
   el.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;renderSheet();});
   el.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{k.step=+b.dataset.step;renderSheet();});
@@ -593,11 +595,12 @@ function renderStk(el,close){
   const skm=$('#skm');if(skm)skm.onchange=()=>{j.km=parseInt(skm.value.replace(/\D/g,''))||0;renderSheet();};
   $('#stkgo').onclick=()=>{
     addRem(j,k.step,k.months);j.log.push([Date.now(),'Sticker '+k.tpl+' · next '+fmtD(d.next)]);
-    const [w,h]=STK_SIZES[k.tpl];
-    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{size:'+w+'mm '+h+'mm;margin:0}html,body{margin:0;padding:0;background:#fff}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}</style></head><body>'+stickerHtml(k.tpl,d)+'</body></html>';
+    const [w,h]=STK_SIZES[k.tpl];const [pw,ph]=STK_PAPER[k.tpl];
+    const z=Math.min(1,(pw*25.4-1)/w,(ph*25.4-1)/h).toFixed(3);
+    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(k.tpl,d)+'</div></div></body></html>';
     const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
     if(!P){toast('Reminder saved. Printing needs the new app version.');closeSheet();rerender();return;}
-    P.printHtml({html:doc,widthMm:w,heightMm:h,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+    P.printHtml({html:doc,widthMm:pw*25.4,heightMm:ph*25.4,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
   };
 }
 function renderRems(m,hd){
