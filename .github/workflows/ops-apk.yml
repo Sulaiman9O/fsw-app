@@ -22,8 +22,10 @@ jobs:
         with: { node-version: '20' }
       - name: Install
         run: npm install --no-audit --no-fund
+      - name: Latest prices and catalog into the bundle
+        run: mkdir -p www/data && cp ../docs/data/*.json www/data/
       - name: Android project
-        run: npx cap add android
+        run: npx cap add android && sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
       - name: Icons
         continue-on-error: true
         run: npx capacitor-assets generate --android --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'

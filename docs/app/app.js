@@ -1,4 +1,4 @@
-window.FSW_APP_NAME="1.5.9";
+window.FSW_APP_NAME="1.5.10";
 (function(){
 "use strict";
 const BASE=window.FSW_BASE||'https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/';
@@ -201,7 +201,8 @@ function renderLogin(){
 const TABS_OLD=[['quote','i-calc','Oil price'],['rem','i-bell','Reminders'],['hist','i-list','History'],['set','i-gear','Settings']];
 const TABS_NEW=[['home','i-home','Home'],['quote','i-calc','Oil price'],['hist','i-list','History'],['set','i-gear','Settings']];
 /* "New home (test)": owner turns it on per device in Settings. Off = the app as before. */
-const newHome=()=>store.get('newhome',false);
+const DEF=window.FSW_DEFAULTS||{};
+const newHome=()=>store.get('newhome',!!DEF.newhome);
 const TABS_NOW=()=>newHome()?TABS_NEW:TABS_OLD;
 function navButtons(){return TABS_NOW().map(([k,ic,l])=>`<button class="navb" data-tab="${k}" ${S.tab===k?'aria-current="page"':''}><svg><use href="#${ic}"/></svg>${l}${k==='rem'?'<span class="soon">SOON</span>':''}</button>`).join('');}
 function render(){
@@ -209,7 +210,7 @@ function render(){
   if(!D){$('#root').innerHTML='<div class="empty" style="padding-top:80px">No prices on this device yet. Connect to the internet and open the app again.</div>';return;}
   const when=new Date(D.asof).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Asia/Muscat'});
   if(S.tab==='home'&&!newHome())S.tab='quote';
-  const title={home:S.sec?SECS[S.sec].t:'FSW',quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
+  const title={home:S.sec?((SECS[S.sec]||(window.FSW_EXTRA||{})[S.sec]||{}).t||'FSW'):'FSW',quote:'Oil Price',rem:'Reminders',hist:'History',set:'Settings'}[S.tab];
   const y=window.scrollY;
   $('#root').innerHTML=`<div class="shell">
     <header class="top"><img class="em" src="${EMBLEM_IMG}" alt=""><span class="t">${title}</span><div class="me"><span>Prices<br>${when}</span><span class="av me">${initials(S.user.name)}</span></div></header>
@@ -504,19 +505,20 @@ function renderHome(){
     const n={stock:low,jobs:JOBS.filter(j=>j.stage!=='done').length,remind:REMS.length};
     m.innerHTML=`<div class="nh-hello"><b>Hello ${esc(S.user.name.split(' ')[0])}</b><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'Asia/Muscat'})}</span></div>
     <button class="nh-tile wide" data-go-quote><span class="ic" style="--tc:#3a1a1a">🧮</span><div><b>Oil price</b><span>Pick a car, send the price</span></div><span class="n">›</span></button>
-    <div class="nh-tiles">${Object.entries(SECS).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):k==='jobs'?(n.jobs?n.jobs+' open':'test · no jobs'):k==='remind'?(REMS.length?REMS.length+' saved':'test · none yet'):'coming soon'}</span></div></button>`).join('')}</div>
+    <div class="nh-tiles">${Object.entries(Object.assign({},(isAdmin()&&window.FSW_EXTRA)||{},SECS)).map(([k,s])=>`<button class="nh-tile" data-sec="${k}" style="--tc:${s.c};--glow:${s.g}"><span class="ic">${s.i}</span>${n[k]?`<span class="n">${n[k]}</span>`:''}<div><b>${s.t}</b><span>${k==='stock'?(low?low+' low':'all good'):k==='jobs'?(n.jobs?n.jobs+' open':'test · no jobs'):k==='remind'?(REMS.length?REMS.length+' saved':'test · none yet'):s.sub||'coming soon'}</span></div></button>`).join('')}</div>
     <p class="hint">Test home. Turn it off in Settings to go back.</p>`;
     m.querySelector('[data-go-quote]').onclick=()=>{deeper();S.tab='quote';render();scrollTo(0,0);};
     m.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{deeper();S.sec=b.dataset.sec;render();scrollTo(0,0);});
     return;
   }
-  const hd=`<div class="nh-head"><button class="nh-bk" data-home aria-label="Home">‹</button><b>${SECS[S.sec].t}</b></div>`;
+  const hd=`<div class="nh-head"><button class="nh-bk" data-home aria-label="Home">‹</button><b>${(SECS[S.sec]||(window.FSW_EXTRA||{})[S.sec]||{}).t||""}</b></div>`;
   if(S.sec==='stock'){
     const q=(S.stq||'').toLowerCase();
     const rows=stockRows().filter(r=>!q||r.n.toLowerCase().includes(q)).sort((a,b)=>(b.low-a.low)||a.n.localeCompare(b.n));
     m.innerHTML=hd+`<input class="field" id="stq" placeholder="Search oil or filter" value="${esc(S.stq||'')}" autocomplete="off">
     <div class="nh-list">${rows.map(r=>{const max=r.u==='L'?60:20;const p=Math.max(3,Math.min(100,Math.round(r.q/max*100)));const c=r.q<=0?'var(--bad)':r.low?'var(--warn)':'var(--ok)';return `<div class="nh-row"><b>${esc(r.n)}</b><span class="r">${r.q}<small>${r.u}</small></span><span class="m">${r.u==='L'?'by litre':'by piece'}${r.low?` · <span class="tag ${r.q<=0?'t-bad':'t-warn'}">${r.q<=0?'Out':'Low'}</span>`:''}</span><div class="nh-bar"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div>`;
     const i=$('#stq');i.oninput=()=>{S.stq=i.value;const pos=i.value.length;render();const j=$('#stq');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};
+  } else if(window.FSW_SEC&&window.FSW_SEC[S.sec]){window.FSW_SEC[S.sec](m,hd);
   } else if(S.sec==='jobs'){renderJobs(m,hd);
   } else if(S.sec==='remind'){renderRems(m,hd);
   } else {
@@ -961,6 +963,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkAppU
 setInterval(checkAppUpdate,10*60e3);
 
 /* ---------- start ---------- */
+if(window.FSW_HOOK)try{window.FSW_HOOK({S,render,rerender,store,toast,esc,f3,kmf,deeper,isAdmin,closeSheet});}catch(e){console.error(e);}
 startSync();
 if(newHome())S.tab='home';
 (async()=>{
