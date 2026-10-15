@@ -49,3 +49,15 @@
 .pin .dots{display:flex;gap:12px}.pin .dots i{width:14px;height:14px;border-radius:50%;border:2px solid #44444b}.pin .dots i.on{background:var(--red);border-color:var(--red)}
 .pin .pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}.pin .pad button{height:64px;border-radius:50%;background:var(--panel);border:1px solid var(--line);font:400 1.5rem var(--f-brand);color:#fff}
 .rem.off,.ord.off{opacity:.55}.btn.sm{min-height:42px;font-size:.88rem}.btn.okb{background:#1f8f4e}
+
+.lang{border:1px solid var(--line);background:var(--panel);color:#fff;border-radius:999px;padding:5px 11px;font-weight:700;font-size:.78rem;min-height:30px}
+nav.rail .lang{margin-top:auto}
+[dir="rtl"] .top .me{margin-left:0;margin-right:auto;text-align:left}
+[dir="rtl"] .task,[dir="rtl"] .oi{border-left:1px solid var(--line);border-right:4px solid var(--sc,var(--line))}
+[dir="rtl"] .cnt{border-left:1px solid var(--line);border-right:4px solid var(--orange)}[dir="rtl"] .cnt.done{border-right-color:var(--ok)}
+[dir="rtl"] .tbl .r span:not(:first-child){text-align:left}
+[dir="rtl"] .money-row .v{text-align:left}
+[dir="rtl"] .nh-row .r{text-align:left}
+[dir="rtl"] .shell{padding-left:0;padding-right:var(--rail,0)}
+@media (min-width:760px){[dir="rtl"] nav.rail{left:auto;right:0;border-right:0;border-left:1px solid var(--line2)}}
+.kpi b,.nh-row .r,.money-row .v,.oi .st em,.ord .tot b,.tbl .r span:not(:first-child){direction:ltr;unicode-bidi:isolate}
