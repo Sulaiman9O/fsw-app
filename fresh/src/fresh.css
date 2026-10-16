@@ -171,3 +171,15 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .cpl .row{min-height:50px}
 .ygrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ygrid button{min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:600}.ygrid button.on{background:var(--red);border-color:var(--red)}
 .cpo summary{color:var(--muted);font-size:.85rem;padding:8px 0;cursor:pointer}
+/* smart services */
+.ctx2{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:9px 12px;font-size:.84rem;color:var(--muted);line-height:1.5}.ctx2 b{color:var(--text)}
+.qrow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--panel)}
+.qrow>span{font-weight:600}.qrow small{font-weight:400;color:var(--muted)}.qrow .st{display:flex;gap:6px;align-items:center}.qrow .st button{width:38px;height:38px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:1.1rem}
+.oc{display:grid;gap:5px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:12px;position:relative;color:inherit;margin-top:6px}
+.oc.last{border-color:rgba(60,207,125,.5)}.oc.on{border-color:var(--red);box-shadow:0 0 0 2px var(--red) inset;background:linear-gradient(160deg,rgba(238,58,57,.1),var(--panel))}
+.oc .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.oc .t b{font-weight:600;font-size:.92rem}.oc .t em{font-style:normal;font:400 1.3rem var(--f-brand);white-space:nowrap}
+.oc .l{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted)}.oc .l span:last-child{color:var(--text)}
+.oc .ft{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.oc .km{font-size:.7rem;font-weight:700;border-radius:8px;padding:3px 8px;background:#1f2a3a;color:#8db8ff}.oc .km.ok{background:rgba(60,207,125,.15);color:var(--ok)}
+.oc .pf{font-size:.72rem;color:var(--ok);margin-left:auto}
+.oc .bd{position:absolute;top:-9px;right:12px;background:var(--ok);color:#000;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:8px}.oc .bd.bk{background:#8db8ff}
+.btn:disabled{opacity:.5}

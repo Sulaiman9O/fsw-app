@@ -97,6 +97,7 @@ const MSGS=[
  ['invoice','🧾','Invoice','Customer',['name','car','plate','no','date','items','total','paid','due','warranty','workshop','phone'],'{workshop}\nفاتورة رقم {no} · {date}\nالعميل: {name}\nالسيارة: {car} {plate}\n\n{items}\n\nالمجموع: {total}\nالمدفوع: {paid}\nالمتبقي: {due}\n\n{warranty}\n{phone}'],
  ['remind','🔔','Service reminder','Customer',['name','car','plate','service','workshop','phone'],'السلام عليكم {name}،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}'],
  ['hello','👋','WhatsApp a customer','Customer',['name','workshop','phone'],'السلام عليكم {name}،\n'],
+ ['options','🛢','Service options (compare)','Customer',['name','car','plate','service','items','workshop','phone'],'السلام عليكم {name}،\nخيارات {service} لسيارتكم {car}:\n\n{items}\n\nالسعر شامل القطع والأجرة.\nرد برقم الخيار 👍\n{workshop}'],
  ['po','🚚','Order to a supplier','Supplier',['supplier','no','items','workshop','phone'],'السلام عليكم {supplier}،\nنرجو توفير الطلب رقم {no}:\n{items}\n\n{workshop} · {phone}']];
 const VAR_L={name:'customer name',car:'car',plate:'plate',total:'total',paid:'paid',due:'left to pay',workshop:'workshop name',phone:'workshop phone',no:'number',date:'date',items:'list of items',warranty:'warranty text',service:'service',supplier:'supplier name',km:'km'};
 function msgTpl(k){const m=DB.ws.msgs||{};if(m[k]!=null&&m[k]!=='')return m[k];if(k==='remind'&&DB.ws.remMsg)return DB.ws.remMsg;return (MSGS.find(x=>x[0]===k)||[])[5]||'';}

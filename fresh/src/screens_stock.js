@@ -1,5 +1,6 @@
 /* ---------- STOCK (10 extra tools, each can be turned off in Stock tools) ---------- */
-const SX=[['moves','📜','Part history','Every in and out for each part: invoice, return, supplier, count'],
+const SX=[['smart','✨','Smart services','Oil change, plugs, pads, battery: compare options side by side and add the right parts'],
+ ['moves','📜','Part history','Every in and out for each part: invoice, return, supplier, count'],
  ['scan','📷','Barcode scan','Scan with the camera in stock, jobs and the part form'],
  ['markup','💹','Price from cost','Profit % per category; suggests the selling price'],
  ['vprices','🚚','Prices per supplier','Remembers each supplier\'s price; shows the cheapest'],
@@ -54,6 +55,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(w.name||'')}">
    <div class="in2"><div class="srow"><input class="field" id="pnum" placeholder="Part number / barcode" value="${esc(w.num||'')}">${sx('scan')?'<button class="scanb" id="pnsc">📷</button>':''}</div><select class="field" id="pcat">${DB.pcats.map(c=>`<option ${w.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
    <div class="chips">${DB.units.map(k=>[k,unitName(k)]).map(([k,l])=>`<button data-u="${k}" aria-pressed="${w.unit===k}">${l}</button>`).join('')}</div>
+   <div id="pgr"></div>
    <div class="in2"><label class="field-l">Selling price<input class="field" id="ppr" inputmode="decimal" value="${w.price?f3(w.price):''}"></label>${can.cost()?`<label class="field-l">Cost (owner only)<input class="field" id="pco" inputmode="decimal" value="${w.cost?f3(w.cost):''}"></label>`:'<span></span>'}</div>
    ${sx('markup')&&can.cost()?'<div id="psug"></div>':''}
    <div class="in2"><label class="field-l">In stock<input class="field" id="pst" inputmode="decimal" value="${w.stock||''}" ${isNew||can.del()?'':'disabled'}></label><label class="field-l">Reorder at<input class="field" id="pro" inputmode="decimal" value="${w.reorder||''}"></label></div>
@@ -67,8 +69,9 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
    ${!isNew&&can.del()?'<button class="btn ghost jb-del" id="pdel">Delete part</button>':''}`,el=>{
    let unit=w.unit;el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{unit=b.dataset.u;el.querySelectorAll('[data-u]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
    const sc=el.querySelector('#pnsc');if(sc)sc.onclick=()=>{const g=id=>{const e=el.querySelector(id);return e?e.value:undefined;};const d=Object.assign({},w,{name:g('#pn'),cat:g('#pcat'),unit,price:num(g('#ppr')),stock:num(g('#pst')),reorder:num(g('#pro'))});if(g('#pco')!==undefined)d.cost=num(g('#pco'));if(g('#ploc')!==undefined)d.loc=g('#ploc');if(g('#pfit')!==undefined)d.fits=g('#pfit');scanSheet(c=>{d.num=c;partSheet(p,onSaved,isNew,d);});};
+   let grade=w.grade||gradeOf(w);const drawG=()=>{const b=el.querySelector('#pgr');if(!b)return;if(!sx('smart')||$('#pcat').value!=='Engine oil'){b.innerHTML='';return;}if(!w.grade&&!grade)grade=gradeOf({name:$('#pn').value});b.innerHTML=`<div class="field-l">Oil type (for the oil change compare)</div><div class="chips">${Object.entries(GRADE).map(([k,[n,km]])=>`<button data-gr="${k}" aria-pressed="${grade===k}">${n} · ${kmf(km)} km</button>`).join('')}</div>`;b.querySelectorAll('[data-gr]').forEach(x=>x.onclick=()=>{grade=x.dataset.gr;drawG();});};drawG();el.querySelector('#pcat').addEventListener('change',drawG);el.querySelector('#pn').addEventListener('change',drawG);
    const sug=el.querySelector('#psug');const drawSug=()=>{if(!sug)return;const cat=$('#pcat').value,co=num($('#pco').value),mk=markOf(cat);if(!mk||!co){sug.innerHTML=mk?'':`<p class="hint">Set a profit % for ${esc(cat)} in Stock tools to get a suggested price.</p>`;return;}const s=Math.round(co*(1+mk/100)*10)/10;sug.innerHTML=`<button class="btn ghost sm" id="psug2">💹 Use ${f3(s)} (cost + ${mk}%)</button>`;el.querySelector('#psug2').onclick=()=>{$('#ppr').value=f3(s);};};
-   if(sug){$('#pco').oninput=drawSug;$('#pcat').onchange=drawSug;drawSug();}
+   if(sug){$('#pco').oninput=drawSug;$('#pcat').addEventListener('change',drawSug);drawSug();}
    const drawAlt=()=>{const b=el.querySelector('#palt');if(!b)return;b.innerHTML=w.alts.map(id=>{const x=byId('parts',id);return x?`<div class="row"><div><b>${esc(x.name)}</b><span>stock ${+x.stock||0}</span></div><button class="lnk" data-ax="${id}">✕</button></div>`:'';}).join('')||'<p class="hint">None.</p>';b.querySelectorAll('[data-ax]').forEach(x=>x.onclick=()=>{w.alts=w.alts.filter(i=>i!==x.dataset.ax);drawAlt();});};drawAlt();
    const aa=el.querySelector('#paltadd');if(aa)aa.onchange=()=>{if(aa.value&&!w.alts.includes(aa.value))w.alts.push(aa.value);aa.value='';drawAlt();};
    const drawVp=()=>{const b=el.querySelector('#pvp');if(!b)return;const best=bestVendor(w);b.innerHTML=Object.entries(w.vprices).filter(([v])=>byId('vendors',v)).sort((a,c)=>a[1].cost-c[1].cost).map(([v,x])=>`<div class="row"><div><b>${esc(byId('vendors',v).name)}${best&&best.v===v?' <span class="tg tgr">cheapest</span>':''}</b><span>${fmtD(x.t)}</span></div><span class="v">${f3(x.cost)}</span><button class="lnk" data-vx="${v}">✕</button></div>`).join('')||'<p class="hint">Fills in by itself when you receive orders.</p>';b.querySelectorAll('[data-vx]').forEach(x=>x.onclick=()=>{delete w.vprices[x.dataset.vx];drawVp();});};drawVp();
@@ -77,7 +80,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
      const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||(nm&&x.num===nm)));if(dup){toast('This part already exists: '+dup.name);return;}
      let t=p;if(isNew){t={id:uid('p'),t:now(),stock:0};DB.parts.push(t);}
      const ns=num($('#pst').value),os=+t.stock||0;
-     Object.assign(t,{name:n,num:nm,cat:$('#pcat').value,unit,price:num($('#ppr').value),reorder:num($('#pro').value)});const co=$('#pco');if(co)t.cost=num(co.value);
+     Object.assign(t,{grade:$('#pcat').value==='Engine oil'?grade:t.grade,name:n,num:nm,cat:$('#pcat').value,unit,price:num($('#ppr').value),reorder:num($('#pro').value)});const co=$('#pco');if(co)t.cost=num(co.value);
      const g=id=>{const e=el.querySelector(id);return e?e.value.trim():undefined;};if(g('#ploc')!==undefined)t.loc=g('#ploc');if(g('#pfit')!==undefined)t.fits=g('#pfit');
      if(el.querySelector('#palt')){const old=t.alts||[];t.alts=w.alts;old.filter(i=>!w.alts.includes(i)).forEach(i=>{const x=byId('parts',i);if(x)x.alts=(x.alts||[]).filter(y=>y!==t.id);});w.alts.forEach(i=>{const x=byId('parts',i);if(x){x.alts=x.alts||[];if(!x.alts.includes(t.id))x.alts.push(t.id);}});}
      if(el.querySelector('#pvp'))t.vprices=w.vprices;

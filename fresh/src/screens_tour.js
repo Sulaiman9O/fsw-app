@@ -1,5 +1,13 @@
+const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['job',{id:j.id}]:null;};
+const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'1.7.0',ic:'✨',t:'الخدمات الذكية',d:'تغيير الزيت يعرض الخيارات جنب بعض مع الفلتر المناسب والأجرة والكيلومتر الجاي. نفس الشي للبواجي والفحمات والبطارية وزيت القير والرديتر. البرنامج يتعلم كمية الزيت لكل محرك.',tour:[
+  {go:lastJob,sel:'#jadd',t:'✨ في الشغلة اضغط <b>Add service or part</b> واختر <b>Engine oil change</b>: تطلع لك الخيارات جنب بعض.',alt:'سوّ شغلة جديدة وأضف تغيير زيت عشان تشوف الخيارات.'},
+  {t:'كل خيار فيه: الزيت × اللترات، والفلتر اللي يناسب السيارة، والأجرة، والكيلومتر الجاي (عادي 5,000، نص صناعي 7,000، صناعي 10,000). الكرت الأخضر هو اختيار الزبون المرة الماضية.'},
+  {t:'📤 زر <b>Send options</b> يرسل الخيارات للزبون بالواتساب، ويرد برقم الخيار.'},
+  {go:'stock',open:()=>partSheet({cat:'Engine oil',unit:'L'},null,true),sel:'#pgr',t:'🛢 حدد نوع كل زيت هنا (أغلبها يتعرف بروحه من الاسم).'},
+  {go:'stocktools',sel:'[data-sx="smart"]',up:'.lrow',t:'لو ما عجبتك، طفّها من هنا وترجع الإضافة العادية.'}]},
  {v:'1.6.0',ic:'🚗',t:'قاعدة بيانات السيارات والمحركات',d:'68 ماركة وأكثر من 2000 موديل، ومحركات أشهر السيارات في الخليج. تكتب toy تطلع تويوتا، وسياراتك الأكثر استخداماً تطلع فوق.',tour:[
   {go:'newjob',sel:'#ncp',t:'🚗 اضغط هنا واكتب أول حروف الماركة (toy أو تويوتا). بعدها تختار الموديل، والسنة، والمحرك.'},
   {go:'newjob',sel:'#ncp',t:'⚙️ المحركات تتفلتر حسب السنة. لو المحرك مو موجود، اكتبه مرة وحدة ويتحفظ لنفس الموديل.'},
@@ -84,8 +92,6 @@ function drawTour(s,el){let o=$('#tour');if(!o){o=document.createElement('div');
   o.querySelector('#tsk').onclick=endTour;o.querySelector('#tnx').onclick=()=>{TOUR.i++;runStep();};const pv=o.querySelector('#tpv');if(pv)pv.onclick=()=>{TOUR.i--;runStep();};}
 window.addEventListener('resize',()=>{if(TOUR)runStep();});
 /* ---------- full app tour, by chapter ---------- */
-const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['job',{id:j.id}]:null;};
-const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 const FULL=[
  {ic:'🏠',t:'الرئيسية',steps:[
   {go:'home',sel:'[data-go="search"]',t:'🔎 ابحث عن أي سيارة أو عميل: برقم اللوحة أو الهاتف أو الاسم أو رقم الشغلة.'},
