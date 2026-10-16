@@ -554,3 +554,8 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 #tour .tn button.go{background:var(--red);color:#fff}
 .card.news.nw{border-color:var(--red)}.card.news .btn{margin-top:6px}
 .ar{font-family:system-ui,Tahoma,sans-serif}
+.pick2{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.pk{display:grid;gap:4px;justify-items:center;text-align:center;border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:16px 10px;color:inherit}
+.pk span{font-size:1.8rem}.pk b{font:600 1.05rem system-ui,Tahoma,sans-serif}.pk small{color:var(--muted);font-size:.74rem}
+.pk:active,.pk:hover{border-color:var(--red)}
+.card.news.full{border-color:rgba(37,99,201,.6);background:linear-gradient(160deg,rgba(37,99,201,.12),var(--panel))}

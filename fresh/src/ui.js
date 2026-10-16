@@ -76,7 +76,7 @@ function renderOnboard(){
       if(st.pin!==st.pin1){st.pin='';st.step=2;renderOnboard();$('#err').textContent='PINs did not match. Try again.';return;}
       DB.ws={name:st.name,phone:st.phone,addr:st.addr,logo:'',currency:'OMR',invStart:1001,nextInv:1001,nextJob:1,credDays:30,warranty:'',pay:['Cash','Card','Transfer','Credit'],vat:false,vatDecided:false,remMonths:6,remKm:7000,remMsg:'',svcReviewed:false,created:now()};
       DB.services=DEFAULT_SERVICES.map(([cat,name,a,b,tag])=>({id:uid('s'),cat,name,p:[a,b],tag:tag||''}));
-      const u={id:uid('u'),name:st.owner,role:'owner',pin:await hashPin(st.pin),color:COLORS[0]};DB.users=[u];save();S.user=u;render();toast('Welcome. Start with Setup · 100 steps.');return;}
+      const u={id:uid('u'),name:st.owner,role:'owner',pin:await hashPin(st.pin),color:COLORS[0]};DB.users=[u];save();S.user=u;DB.seenNews=window.WS_VN||'';save();render();setTimeout(()=>showNewsPrompt(true),400);return;}
     renderOnboard();
   });
 }

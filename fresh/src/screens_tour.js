@@ -1,5 +1,7 @@
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'1.4.1',ic:'📘',t:'شرح التطبيق كامل',d:'تختار: الجديد بس، أو شرح التطبيق كامل من البداية، أو جزء واحد منه.',tour:[
+  {go:'news',sel:'.card.news.full',t:'📘 هنا الشرح الكامل. تقدر تشغّله كله، أو تختار جزء واحد من الأزرار تحت.'}]},
  {v:'1.4.0',ic:'🎉',t:'شرح الجديد داخل البرنامج',d:'بعد كل تحديث يطلع لك وش الجديد، وزر «وريني» ياخذك لمكان كل ميزة ويشرحها خطوة خطوة.',tour:[
   {go:'more',sel:'[data-go="news"]',t:'🎉 من هنا تفتح <b>What\'s new</b> في أي وقت، وتعيد الشرح لأي نسخة.'},
   {t:'بعد كل تحديث، أول ما يدخل المالك يطلع له وش الجديد. اضغط <b>Next</b> و<b>Back</b> للتنقل، و<b>Skip</b> للخروج.'}]},
@@ -35,19 +37,30 @@ const vnum=s=>(s||'0').split('.').reduce((a,x)=>a*1000+(+x||0),0);
 function newsUnseen(){const seen=vnum(DB.seenNews||'0');return NEWS.filter(n=>vnum(n.v)>seen&&vnum(n.v)<=vnum(window.WS_VN||'9.9.9'));}
 SCREENS.news=m=>{const un=new Set(newsUnseen().map(n=>n.v));
   m.innerHTML=head('What\'s new')+`<p class="hint ar" dir="rtl">اضغط <b>وريني</b> والبرنامج ياخذك لكل شي جديد خطوة خطوة.</p>
+  <div class="card news full"><div class="h"><b>📘 <span dir="rtl">شرح التطبيق كامل</span></b><span>${FULL.reduce((a,c)=>a+c.steps.length,0)} steps</span></div><span class="sub ar" dir="rtl">من البداية: الرئيسية، السيارة الجديدة، الشغلة، الفاتورة، العملاء، المخزون، الفلوس، والإعدادات. أو اختر جزء بس.</span>
+   <button class="btn sm" id="tfull">▶ الشرح كامل · Full tour</button><div class="chips">${FULL.map((c,i)=>`<button data-ch="${i}">${c.ic} <span dir="rtl">${c.t}</span></button>`).join('')}</div></div>
+  ${sec('New in each version')}
   ${NEWS.map(n=>`<div class="card news${un.has(n.v)?' nw':''}"><div class="h"><b>${n.ic} <span dir="rtl">${n.t}</span></b><span>${n.v}${un.has(n.v)?' · <b style="color:var(--red2)">NEW</b>':''}</span></div><span class="sub ar" dir="rtl">${n.d}</span><button class="btn sm" data-tour="${n.v}">▶ وريني · Show me (${n.tour.length})</button></div>`).join('')}`;
-  $$('[data-tour]').forEach(b=>b.onclick=()=>startTour(NEWS.find(n=>n.v===b.dataset.tour)));};
+  $$('[data-tour]').forEach(b=>b.onclick=()=>startTour(NEWS.find(n=>n.v===b.dataset.tour)));
+  $('#tfull').onclick=()=>startFull();$$('[data-ch]').forEach(b=>b.onclick=()=>startFull([FULL[+b.dataset.ch]]));};
 function markNewsSeen(){DB.seenNews=window.WS_VN||NEWS[0].v;save();}
-function showNewsPrompt(){const un=newsUnseen();if(!un.length||!S.user||S.user.role!=='owner'&&!perm('settings'))return;
-  openSheet(`<h3>🎉 New in version ${esc(window.WS_VN||un[0].v)}</h3>${un.map(n=>`<div class="card"><b dir="rtl" class="ar">${n.ic} ${n.t}</b><span class="sub ar" dir="rtl">${n.d}</span></div>`).join('')}<button class="btn" id="nwgo">▶ وريني وين · Show me</button><button class="btn ghost" id="nwl">Later</button>`,el=>{
-    el.querySelector('#nwgo').onclick=()=>{markNewsSeen();closeSheet();startTour(un[un.length-1]&&un.length===1?un[0]:{tour:un.slice().reverse().flatMap(n=>n.tour)});};
+function showNewsPrompt(first){const un=newsUnseen();if(!S.user||!(S.user.role==='owner'||perm('settings')))return;if(!first&&!un.length)return;
+  openSheet(`<h3>${first?'👋 Welcome':'🎉 New in version '+esc(window.WS_VN||un[0].v)}</h3>
+   <p class="ar" dir="rtl" style="margin:0;line-height:1.6">${first?'تبي البرنامج يوريك وين كل شي وكيف تستخدمه؟':'وش تبي البرنامج يشرح لك؟'}</p>
+   <div class="pick2">${first?'':`<button class="pk" id="nwnew"><span>🎉</span><b dir="rtl">الجديد بس</b><small>New things only · ${un.reduce((a,n)=>a+n.tour.length,0)} steps</small></button>`}
+    <button class="pk" id="nwfull"><span>📘</span><b dir="rtl">شرح التطبيق كامل</b><small>Whole app · ${FULL.reduce((a,c)=>a+c.steps.length,0)} steps</small></button></div>
+   ${first?'':`<div class="field-l">What's new</div>`+un.map(n=>`<div class="card"><b dir="rtl" class="ar">${n.ic} ${n.t}</b><span class="sub ar" dir="rtl">${n.d}</span></div>`).join('')}
+   <button class="btn ghost" id="nwl">Later</button>`,el=>{
+    const n1=el.querySelector('#nwnew');if(n1)n1.onclick=()=>{closeSheet();startTour({tour:un.slice().reverse().flatMap(n=>n.tour)});};
+    el.querySelector('#nwfull').onclick=()=>{closeSheet();startFull();};
     el.querySelector('#nwl').onclick=()=>{markNewsSeen();closeSheet();toast('Find it any time: More → What\'s new');};});}
 /* tour runner */
 let TOUR=null;
-function startTour(n){if(!n)return;markNewsSeen();const steps=n.tour.filter(s=>!s.go||routeOk(s.go));TOUR={steps,i:0};runStep();}
+function startTour(n){if(!n)return;markNewsSeen();const steps=n.tour.filter(s=>{if(typeof s.go==='function'){const t=s.go();return t?routeOk(t[0]):!!s.alt;}return !s.go||routeOk(s.go);});TOUR={steps,i:0};runStep();}
 function endTour(){TOUR=null;const o=$('#tour');if(o)o.remove();closeSheet();}
 function runStep(){if(!TOUR)return;const s=TOUR.steps[TOUR.i];if(!s){endTour();go('news');toast('Done ✓');return;}
-  closeSheet();if(s.go&&S.r!==s.go)go(s.go);else if(s.go)render();
+  closeSheet();let tgt=typeof s.go==='function'?s.go():s.go?[s.go,{}]:null;if(typeof s.go==='function'&&!tgt){drawTour({t:s.alt||s.t},null);return;}
+  if(tgt&&(S.r!==tgt[0]||JSON.stringify(S.p)!==JSON.stringify(tgt[1])))go(tgt[0],tgt[1]);else if(tgt)render();
   if(s.open)try{s.open();}catch(e){}
   setTimeout(()=>{let el=null;if(s.sel)for(const q of s.sel.split(',')){const c=document.querySelector((s.open?'#sheet ':'')+q.trim())||document.querySelector(q.trim());if(c&&c.offsetParent!==null){el=c;break;}}
     if(el&&s.up&&el.closest(s.up))el=el.closest(s.up);
@@ -61,3 +74,51 @@ function drawTour(s,el){let o=$('#tour');if(!o){o=document.createElement('div');
     <div class="tn"><button id="tsk">Skip</button><span>${i+1} / ${n}</span>${i?'<button id="tpv">‹ Back</button>':''}<button id="tnx" class="go">${i===n-1?'Done ✓':'Next ›'}</button></div></div>`;
   o.querySelector('#tsk').onclick=endTour;o.querySelector('#tnx').onclick=()=>{TOUR.i++;runStep();};const pv=o.querySelector('#tpv');if(pv)pv.onclick=()=>{TOUR.i--;runStep();};}
 window.addEventListener('resize',()=>{if(TOUR)runStep();});
+/* ---------- full app tour, by chapter ---------- */
+const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['job',{id:j.id}]:null;};
+const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
+const FULL=[
+ {ic:'🏠',t:'الرئيسية',steps:[
+  {go:'home',sel:'[data-go="search"]',t:'🔎 ابحث عن أي سيارة أو عميل: برقم اللوحة أو الهاتف أو الاسم أو رقم الشغلة.'},
+  {go:'home',sel:'.bigbtn',t:'🚗 أهم زر: <b>New car in</b>. كل سيارة تدخل الورشة تبدأ من هنا.'},
+  {go:'home',sel:'.setupbar',t:'✅ خطوات تجهيز الورشة المئة. كمّلها بالتدريج، وبعضها ينصح بروحه.'},
+  {go:'home',sel:'.kpis3',t:'أرقام سريعة: كم فلوس لك عند الزبائن، وكم قطعة تحتاج تطلبها، وكم تذكير مستحق.'},
+  {go:'home',sel:'div.grp',t:'الأقسام الأربعة: الشغل، العملاء، المخزون، الفلوس. تحت كل قسم ملخص.'},
+  {go:'home',sel:'.bottom .navb[data-nav="more"],.rail .navb[data-nav="more"]',t:'☰ <b>More</b>: كل باقي البرنامج: الخدمات، الموردين، التقارير، الإعدادات، والشرح.'}]},
+ {ic:'🚗',t:'سيارة جديدة',steps:[
+  {go:'newjob',sel:'#nphone',t:'اكتب رقم الزبون. لو موجود قبل، البرنامج يعرفه ويطلع سياراته.'},
+  {go:'newjob',sel:'#nplate,#nmake',t:'اكتب اللوحة والماركة والموديل والكيلومتر.'},
+  {go:'newjob',sel:'#nest',up:'label',t:'لو الزبون يبي سعر بس قبل الشغل، اختر <b>Estimate only</b> (تقدير سعر).'},
+  {go:'newjob',sel:'#ngo',t:'اضغط وتنفتح الشغلة.'}]},
+ {ic:'🔧',t:'الشغلة (أمر العمل)',steps:[
+  {go:lastJob,sel:'.jb-steps',t:'مراحل الشغلة: جديدة ← قيد العمل ← جاهزة ← مسلّمة.',alt:'افتح أي شغلة تشوف هذا. سوّ سيارة جديدة أول.'},
+  {go:lastJob,sel:'#jnext',t:'الزر الأخضر ينقلك للمرحلة الجاية. أول مرة يسألك كم بتاخذ وقت.'},
+  {go:lastJob,sel:'#jadd',t:'＋ أضف خدمة أو قطعة. تختار حجم السيارة، والخدمات اللي تستخدمها كثير تطلع فوق.'},
+  {go:lastJob,sel:'#jdisc',t:'الخصم: بمبلغ أو نسبة (للمالك والمدير).'},
+  {go:lastJob,sel:'#jinsp',t:'📋 الفحص: أخضر وأصفر وأحمر لكل بند.'},
+  {go:lastJob,sel:'#jsendest,#jinv',t:'أرسل التقدير بالواتساب، أو سوّ الفاتورة. الفاتورة تنقص القطع من المخزون.'},
+  {go:lastJob,sel:'#jstk',t:'🏷 ستيكر الزيت: زيت المكينة أو زيت القير، مع الكيلومتر الجاي.'}]},
+ {ic:'🧾',t:'الفاتورة والدفع',steps:[
+  {go:lastInv,sel:'[data-pay]',t:'اختر طريقة الدفع واكتب المبلغ. تقدر تدفع على دفعات.',alt:'لما تسوي أول فاتورة تشوف هذا الجزء.'},
+  {go:lastInv,sel:'#iwa',t:'أرسل الفاتورة بالواتساب، أو اطبعها.'},
+  {go:lastInv,sel:'#iret',t:'إرجاع الفاتورة يرجّع القطع للمخزون (للمالك).'}]},
+ {ic:'👥',t:'العملاء والتذكيرات',steps:[
+  {go:'cust',sel:'.ops-sec',t:'🔔 فوق التذكيرات المستحقة: زيت المكينة وزيت القير. ترسلها بالواتساب بضغطة.'},
+  {go:'cust',sel:'#main .field',t:'ابحث عن أي عميل وافتح ملفه: سياراته وزياراته وكم عليه.'}]},
+ {ic:'🛢',t:'المخزون والموردين',steps:[
+  {go:'stock',sel:'#padd',t:'＋ أضف قطعة: الاسم والرقم والتصنيف والسعر والتكلفة والكمية.'},
+  {go:'stock',sel:'#plow',t:'القطع اللي وصلت لحد الطلب. من هنا تسوي طلب مورد بضغطة.'},
+  {go:'stock',sel:'[data-go="count"]',t:'📦 الجرد اليومي: البرنامج يختار 5 قطع كل يوم تعدّها.'},
+  {go:'vendors',sel:'#vadd',t:'🚚 أضف الموردين، وسوّ لهم طلبات وأرسلها بالواتساب.'}]},
+ {ic:'💰',t:'الفلوس',steps:[
+  {go:'money',sel:'.kpis2',t:'كم فلوس عند الزبائن، ومبيعات آخر 7 أيام.'},
+  {go:'money',sel:'[data-go="close"]',t:'🔒 إغلاق اليوم: تعدّ الكاش في الدرج والبرنامج يقارنه بالمتوقع.'},
+  {go:'money',sel:'[data-go="exp"]',t:'🧾 المصاريف: إيجار ورواتب وكهرباء وغيرها.'},
+  {go:'money',sel:'[data-go="reports"]',t:'📊 التقارير: المبيعات والربح وأكثر الخدمات والقطع.'}]},
+ {ic:'⚙️',t:'التخصيص والإعدادات',steps:[
+  {go:'more',sel:'[data-go="lists"]',t:'🗂 القوائم: الأقسام والتصنيفات والأحجام وطرق الدفع وقوائمك.'},
+  {go:'more',sel:'[data-go="msgs"]',t:'💬 نص رسائل الواتساب.'},
+  {go:'more',sel:'[data-go="users"]',t:'👥 الموظفين وصلاحية كل واحد.'},
+  {go:'settings',sel:'#sbk',t:'⬇️ مهم: النسخة الاحتياطية. البيانات في هذا الجهاز بس، فخذ نسخة كل أسبوع.'},
+  {go:'more',sel:'[data-go="news"]',t:'🎉 والشرح هذا كله تلقاه هنا في أي وقت.'}]}];
+function startFull(chs){startTour({tour:(chs||FULL).flatMap(c=>c.steps)});}
