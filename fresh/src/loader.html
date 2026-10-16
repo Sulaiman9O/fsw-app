@@ -1,0 +1,21 @@
+<!doctype html><html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000"><title>Workshop</title>
+<style>html,body{margin:0;min-height:100%;background:#000;color:#fff;font-family:system-ui,Roboto,sans-serif}#boot{position:fixed;inset:0;display:grid;place-items:center}#boot i{width:84px;height:84px;border-radius:24px;background:#ee3a39;display:grid;place-items:center;font:300 48px/1 system-ui;font-style:normal;box-shadow:0 10px 40px rgba(238,58,57,.4)}</style></head>
+<body><div id="boot"><i>+</i></div><div id="root"></div><div class="toast" id="toast" hidden></div>
+<script>
+/* Loader: runs the newest code it has (saved update or bundled copy), then checks GitHub for a newer one.
+   Only the app code updates. Workshop data stays on this device. */
+(function(){
+  var BASE='https://raw.githubusercontent.com/Sulaiman9O/fsw-app/main/docs/garage/';
+  function get(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+  function set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+  function txt(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();});}
+  function run(c){var b=document.getElementById('boot');if(b)b.remove();var st=document.createElement('style');st.textContent=c.css;document.head.appendChild(st);var sc=document.createElement('script');sc.textContent=c.js;document.body.appendChild(sc);}
+  function check(cur){txt(BASE+'version.json?t='+Date.now()).then(function(t){var rv=JSON.parse(t);if(!(rv.v>cur.v))return;
+    return Promise.all([txt(BASE+'app.css?v='+rv.v),txt(BASE+'app.js?v='+rv.v)]).then(function(p){if(set('ws_code',{v:rv.v,name:rv.name,css:p[0],js:p[1]}))window.dispatchEvent(new CustomEvent('ws-update',{detail:rv}));});}).catch(function(){});}
+  var saved=get('ws_code');
+  txt('app/version.json').then(function(t){return JSON.parse(t);}).catch(function(){return {v:0};}).then(function(bv){
+    if(saved&&saved.v>=bv.v){run(saved);check(saved);return;}
+    return Promise.all([txt('app/app.css'),txt('app/app.js')]).then(function(p){var c={v:bv.v,name:bv.name,css:p[0],js:p[1]};run(c);check(c);});
+  }).catch(function(){document.body.innerHTML='<p style="padding:30px;text-align:center">The app could not start. Close it and open it again.</p>';});
+})();
+</script></body></html>
