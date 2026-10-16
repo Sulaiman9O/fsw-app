@@ -490,6 +490,7 @@ const SECS={
  check:{t:'Check',i:'✅',c:'#1a3a26',g:'rgba(60,207,125,.22)'},
  stock:{t:'Stock',i:'🛢',c:'#3a2a10',g:'rgba(242,123,33,.25)'},
  remind:{t:'Reminders',i:'🔔',c:'#2a1a3a',g:'rgba(90,69,196,.28)'},
+ sticker:{t:'Stickers',i:'🏷️',c:'#1a2a2a',g:'rgba(60,207,207,.22)',sub:'print a reminder'},
  inv:{t:'Invoices',i:'🧾',c:'#3a3410',g:'rgba(201,138,0,.25)'}
 };
 function stockRows(){
@@ -518,6 +519,7 @@ function renderHome(){
     <div class="nh-list">${rows.map(r=>{const max=r.u==='L'?60:20;const p=Math.max(3,Math.min(100,Math.round(r.q/max*100)));const c=r.q<=0?'var(--bad)':r.low?'var(--warn)':'var(--ok)';return `<div class="nh-row"><b>${esc(r.n)}</b><span class="r">${r.q}<small>${r.u}</small></span><span class="m">${r.u==='L'?'by litre':'by piece'}${r.low?` · <span class="tag ${r.q<=0?'t-bad':'t-warn'}">${r.q<=0?'Out':'Low'}</span>`:''}</span><div class="nh-bar"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div>`;
     const i=$('#stq');i.oninput=()=>{S.stq=i.value;const pos=i.value.length;render();const j=$('#stq');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};
   } else if(window.FSW_SEC&&window.FSW_SEC[S.sec]){window.FSW_SEC[S.sec](m,hd);
+  } else if(S.sec==='sticker'){renderStickers(m,hd);
   } else if(S.sec==='jobs'){renderJobs(m,hd);
   } else if(S.sec==='remind'){renderRems(m,hd);
   } else {
@@ -694,11 +696,12 @@ const STK_PAPER={A:[62,990,'2.4" x 39"'],B:[62,990,'2.4" x 39"'],C:[62,990,'2.4"
 const ROLLS={r62:{n:'62 mm roll',t:['B','A','C']},r29:{n:'29 × 90 labels',t:['D']}};
 const roll=()=>ROLLS[store.get('roll2','r62')]?store.get('roll2','r62'):'r62';
 function stickerHtml(t,d,rb){
+  const G=d.kind==='gear';const TT=G?'GEARBOX OIL':'NEXT SERVICE',TA=G?'زيت الجير القادم':'الصيانة القادمة',TC=G?'موعد تغيير زيت الجير القادم':'موعد تغيير الزيت القادم',TCE=G?'NEXT GEARBOX OIL':'NEXT OIL CHANGE';
   const EMB=rb?EMB_RB:EMB_B,X=rb?' rb':'';const nk=kmf(d.nextKm),done=fmtD(Date.now()),next=fmtD(d.next),oil=esc(d.oil),km=kmf(d.km);
-  if(t==='A')return `<div class="stk sA${X}"><div class="lg"><img src="${EMB}" alt=""><div class="tl"><svg viewBox="0 0 24 24"><path fill="#000" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>${WS_TEL}</div></div><div><div class="t"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="k km">${d.nextKm?nk+'<small>km</small>':'—'}</div><div class="sep"><i></i><span>أو</span><i></i></div><div class="k d1">${next}</div><div class="o"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div></div>`;
-  if(t==='B')return `<div class="stk sB${X}"><img src="${LOGO_B}" alt=""><div class="bar"><span>NEXT SERVICE</span><span class="ar">الصيانة القادمة</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><span class="or"><b>أو</b><small>OR</small></span><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div><div class="tel"><svg viewBox="0 0 24 24"><path fill="#000" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>${WS_TEL}</div></div>`;
-  if(t==='C')return `<div class="stk sC${X}"><img src="${EMB}" alt=""><div class="h ar">موعد تغيير الزيت القادم<small>NEXT OIL CHANGE</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
-  return `<div class="stk sD${X}"><img src="${EMB}" alt=""><div class="bar">NEXT SERVICE</div><div class="ar" style="font-size:2.6mm">الصيانة القادمة</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
+  if(t==='A')return `<div class="stk sA${X}"><div class="lg"><img src="${EMB}" alt=""><div class="tl"><svg viewBox="0 0 24 24"><path fill="#000" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>${WS_TEL}</div></div><div><div class="t"><span>${TT}</span><span class="ar">${TA}</span></div><div class="k km">${d.nextKm?nk+'<small>km</small>':'—'}</div><div class="sep"><i></i><span>أو</span><i></i></div><div class="k d1">${next}</div><div class="o"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div></div></div>`;
+  if(t==='B')return `<div class="stk sB${X}"><img src="${LOGO_B}" alt=""><div class="bar"><span>${TT}</span><span class="ar">${TA}</span></div><div class="two"><div class="bx"><small><span>DATE</span><span class="ar">التاريخ</span></small><span class="k">${next}</span></div><span class="or"><b>أو</b><small>OR</small></span><div class="bx"><small><span>KM</span><span class="ar">الكيلومتر</span></small><span class="k${nk.length>6?' long':''}">${d.nextKm?nk:'—'}</span></div></div><div class="ft"><span>${oil}</span><span>${done}${d.km?' · '+km+' km':''}</span></div><div class="tel"><svg viewBox="0 0 24 24"><path fill="#000" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>${WS_TEL}</div></div>`;
+  if(t==='C')return `<div class="stk sC${X}"><img src="${EMB}" alt=""><div class="h ar">${TC}<small>${TCE}</small></div><div class="big"><div><span class="k">${next}</span><small>DATE · التاريخ</small></div><i></i><div><span class="k">${d.nextKm?nk:'—'}</span><small>KM · كم</small></div></div><div class="o">${oil} · Done ${done}${d.km?' at '+km+' km':''}</div><div class="nm ar">ورشة عالم الخدمات السريعة</div></div>`;
+  return `<div class="stk sD${X}"><img src="${EMB}" alt=""><div class="bar">${TT}</div><div class="ar" style="font-size:2.6mm">${TA}</div><div><div class="lb">DATE</div><div class="k">${next.replace(' 20',' ’')}</div></div><div><hr><div class="lb" style="margin-top:1.6mm">KM</div><div class="k">${d.nextKm?nk:'—'}</div></div><div class="o">${oil}<br>Done ${done}${d.km?'<br>'+km+' km':''}</div></div>`;
 }
 function stkCss(){if(!$('#stkcss')){const st=document.createElement('style');st.id='stkcss';st.textContent=__STKCSS__;document.head.appendChild(st);}}
 function renderStk(el,close){
@@ -722,16 +725,62 @@ function renderStk(el,close){
   const skm=$('#skm');if(skm)skm.onchange=()=>{j.km=parseInt(skm.value.replace(/\D/g,''))||0;renderSheet();};
   $('#stkgo').onclick=()=>{
     addRem(j,k.step,k.months);j.log.push([Date.now(),'Sticker '+k.tpl+' · next '+fmtD(d.next)]);
-    const [w,h]=STK_SIZES[k.tpl];const [pw,ph]=STK_PAPER[k.tpl];
-    const z=Math.min(1,(pw-3)/w,(ph-3)/h).toFixed(3);
-    const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;'+(ph>h+20?'height:'+h+'mm':'bottom:0')+';display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(k.tpl,d,ROLLS[roll()].rb)+'</div></div></body></html>';
-    const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
-    if(!P){toast('Reminder saved. Printing needs the new app version.');closeSheet();rerender();return;}
-    P.printHtml({html:doc,widthMm:pw,heightMm:ph,color:!!ROLLS[roll()].rb,name:'FSW sticker'}).then(()=>{closeSheet();rerender();}).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+    printSticker(k.tpl,d,()=>{closeSheet();rerender();});
   };
 }
 
 
+
+
+function printSticker(tpl,d,done){
+  const [w,h]=STK_SIZES[tpl];const [pw,ph]=STK_PAPER[tpl];
+  const z=Math.min(1,(pw-3)/w,(ph-3)/h).toFixed(3);
+  const doc='<!doctype html><html><head><meta charset="utf-8"><style>@page{margin:0}html,body{margin:0;padding:0;background:#fff;height:0;overflow:hidden}'+__STKCSS__+'.stk{box-shadow:none!important;border-radius:0!important;background:#fff!important}.pg{position:fixed;left:0;top:0;right:0;'+(ph>h+20?'height:'+h+'mm':'bottom:0')+';display:flex;align-items:center;justify-content:center}.pg>div{transform:scale('+z+');transform-origin:center}</style></head><body><div class="pg"><div>'+stickerHtml(tpl,d,ROLLS[roll()].rb)+'</div></div></body></html>';
+  const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
+  if(!P){toast('Printing needs the installed app.');done&&done();return;}
+  P.printHtml({html:doc,widthMm:pw,heightMm:ph,color:!!ROLLS[roll()].rb,name:'FSW sticker'}).then(()=>done&&done()).catch(e=>toast('Could not print: '+(e&&e.message||e)));
+}
+/* ---------- Stickers page (no job needed): engine oil or gearbox oil ---------- */
+const GEAR_STEPS=[40000,50000,60000,70000,80000];
+const SP=()=>{if(!S.sp)S.sp={kind:'oil',km:'',oilI:-1,step:0,months:6,tpl:ROLLS[roll()].t[0]};return S.sp;};
+function renderStickers(m,hd){
+  stkCss();const k=SP();if(!ROLLS[roll()].t.includes(k.tpl))k.tpl=ROLLS[roll()].t[0];
+  const oils=D.oils.map((o,i)=>({i,n:prettyOil(o[0])+(prettyOil(o[0]).includes(o[1])?'':' '+o[1]),raw:o[0],v:o[1]}));
+  const oil=oils[k.oilI]||null;const iv=oil?oilInterval(oil.raw,oil.v):null;
+  const km=parseInt(String(k.km).replace(/\D/g,''))||0;
+  const step=k.kind==='gear'?(k.step||70000):(k.step||(iv?iv.km:7000));
+  const months=k.kind==='gear'?(k.gm||36):k.months;
+  const n=new Date();n.setMonth(n.getMonth()+months);
+  const d={kind:k.kind,oil:k.kind==='gear'?'Gearbox oil':(oil?oil.n:'Engine oil'),km,nextKm:km?km+step:0,next:n.getTime()};
+  const sc={A:1,B:1,C:.9,D:.75}[k.tpl];
+  m.innerHTML=hd+`
+  <div class="jb-chips big"><button data-kind="oil" aria-pressed="${k.kind==='oil'}">🛢 Engine oil</button><button data-kind="gear" aria-pressed="${k.kind==='gear'}">⚙️ Gearbox oil</button></div>
+  <div class="stk-pv"><div style="transform:scale(${sc});transform-origin:center">${stickerHtml(k.tpl,d,ROLLS[roll()].rb)}</div></div>
+  <div class="jb-in" style="grid-template-columns:1fr"><input inputmode="numeric" placeholder="Km now" id="spkm" value="${esc(k.km)}" autocomplete="off"></div>
+  ${k.kind==='oil'?`<div class="lbl">Oil</div><select class="field" id="spoil"><option value="-1">Choose the oil…</option>${oils.map(o=>`<option value="${o.i}" ${k.oilI===o.i?'selected':''}>${esc(o.n)}</option>`).join('')}</select>
+    ${iv?`<p class="hint" style="margin:0">${esc(iv.t)} → ${kmf(iv.km)} km</p>`:''}
+    <div class="lbl">Next service after</div>
+    <div class="jb-chips">${[5000,7000,10000].map(v=>`<button data-step="${v}" aria-pressed="${step===v}">+${kmf(v)} km${iv&&iv.km===v?' ★':''}</button>`).join('')}${[3,6].map(v=>`<button data-mon="${v}" aria-pressed="${months===v}">${v} months</button>`).join('')}</div>`
+  :`<div class="lbl">Next gearbox oil after</div>
+    <div class="jb-chips">${GEAR_STEPS.map(v=>`<button data-step="${v}" aria-pressed="${step===v}">+${v/1000}k km${v===70000?' ★':''}</button>`).join('')}</div>
+    <div class="jb-chips">${[24,36,48].map(v=>`<button data-gm="${v}" aria-pressed="${months===v}">${v/12} years</button>`).join('')}</div>`}
+  <div class="lbl">Roll in the printer</div>
+  <div class="jb-chips">${Object.entries(ROLLS).map(([r,v])=>`<button data-roll="${r}" aria-pressed="${roll()===r}">${v.n}</button>`).join('')}</div>
+  ${ROLLS[roll()].t.length>1?`<div class="jb-chips">${ROLLS[roll()].t.map(t=>`<button data-tpl="${t}" aria-pressed="${k.tpl===t}">${t}<span>${STK_SIZES[t][0]}×${STK_SIZES[t][1]}</span></button>`).join('')}</div>`:''}
+  <div class="stk-paper">In the print screen, set <b>Paper size</b> to <span>${STK_PAPER[k.tpl][2]}</span><small>Only the first time. The tablet remembers it.</small></div>
+  <button class="btn" id="spgo" ${km?'':'disabled style="opacity:.5"'}>🖨 Print sticker</button>`;
+  const keep=()=>{S.keepScroll=true;render();};
+  m.querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{k.kind=b.dataset.kind;k.step=0;keep();});
+  m.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{k.step=+b.dataset.step;keep();});
+  m.querySelectorAll('[data-mon]').forEach(b=>b.onclick=()=>{k.months=+b.dataset.mon;keep();});
+  m.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{k.gm=+b.dataset.gm;keep();});
+  m.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{k.tpl=b.dataset.tpl;keep();});
+  m.querySelectorAll('[data-roll]').forEach(b=>b.onclick=()=>{store.set('roll2',b.dataset.roll);k.tpl=ROLLS[b.dataset.roll].t[0];keep();});
+  const i=$('#spkm');i.oninput=()=>{k.km=i.value;};i.onchange=()=>{keep();};
+  const so=$('#spoil');if(so)so.onchange=()=>{k.oilI=+so.value;k.step=0;keep();};
+  $('#spgo').onclick=()=>{if(!km){toast('Type the km first');return;}printSticker(k.tpl,d,()=>toast('Sent to the printer'));};
+  const h=m.querySelector('[data-home]');if(h)h.onclick=()=>{S.sec=null;render();scrollTo(0,0);};
+}
 
 /* ---------- Smart suggestions: what usually goes with a service, for this car ---------- */
 const partsByCat=c=>(CAT.parts||[]).filter(p=>p[5].toLowerCase().includes(c));
