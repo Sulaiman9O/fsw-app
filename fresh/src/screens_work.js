@@ -6,7 +6,7 @@ function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j),[sl,sc]=STAGE[j.s
 SCREENS.home=m=>{
   const open=openJobs(),[pd,pt]=stepsProgress(),due=dueInvoices().reduce((a,j)=>a+jobTotals(j).due,0),low=lowParts().length,rem=remindersDue().length;
   const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
-  m.innerHTML=`
+  m.innerHTML=demoBanner()+`
   <button class="srch" data-go="search"><svg><use href="#i-list"/></svg><b>Plate, phone or name…</b></button>
   <button class="bigbtn" data-go="newjob"><div><b>New car in</b><span>Customer → car → services → invoice</span></div><span class="plus">＋</span></button>
   ${pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
@@ -20,6 +20,7 @@ SCREENS.home=m=>{
    ${can.money()?`<button class="g" data-go="money" style="--tc:#1a3a26;--glow:rgba(60,207,125,.26)"><span class="ic">💰</span><b>Money</b><div class="sub"><span><i>${f3(due)}</i> due</span><span><i>${f3(todayInv.reduce((a,j)=>a+jobTotals(j).total,0))}</i> today</span><span><i>${DB.expenses.length}</i> expenses</span></div></button>`:`<button class="g" data-go="count" style="--tc:#1a3a26;--glow:rgba(60,207,125,.26)"><span class="ic">📦</span><b>Count</b><div class="sub"><span><i>${countToday().length}</i> to count today</span></div></button>`}
   </div>
   <button class="morerow" data-go="more"><span>⋯</span><b>More</b><span>Services · Suppliers · Inspections · Reports · Settings</span></button>`;
+  const dx=$('#demox');if(dx)dx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
 };
 /* ---------- SEARCH ---------- */
 SCREENS.search=m=>{

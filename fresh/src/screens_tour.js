@@ -1,5 +1,8 @@
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'1.5.0',ic:'🧪',t:'بيانات تجريبية',d:'5 زبائن وهميين مع سياراتهم، 3 موردين، 15 قطعة بأسعار وهمية، وشغلات وفواتير للتجربة. كلها عليها 🧪 وتنحذف بضغطة.',tour:[
+  {go:'settings',sel:'#sdemo,#sdemox',t:'🧪 من هنا تضيف البيانات التجريبية أو تحذفها. كل اسم عليه 🧪 يعني وهمي.'},
+  {go:'home',sel:'.demob',t:'طول ما البيانات التجريبية موجودة، يطلع هذا الشريط فوق عشان ما تنساها. زر <b>Remove</b> يحذفها كلها وبياناتك الحقيقية تبقى.'}]},
  {v:'1.4.1',ic:'📘',t:'شرح التطبيق كامل',d:'تختار: الجديد بس، أو شرح التطبيق كامل من البداية، أو جزء واحد منه.',tour:[
   {go:'news',sel:'.card.news.full',t:'📘 هنا الشرح الكامل. تقدر تشغّله كله، أو تختار جزء واحد من الأزرار تحت.'}]},
  {v:'1.4.0',ic:'🎉',t:'شرح الجديد داخل البرنامج',d:'بعد كل تحديث يطلع لك وش الجديد، وزر «وريني» ياخذك لمكان كل ميزة ويشرحها خطوة خطوة.',tour:[
@@ -50,7 +53,8 @@ function showNewsPrompt(first){const un=newsUnseen();if(!S.user||!(S.user.role==
    <div class="pick2">${first?'':`<button class="pk" id="nwnew"><span>🎉</span><b dir="rtl">الجديد بس</b><small>New things only · ${un.reduce((a,n)=>a+n.tour.length,0)} steps</small></button>`}
     <button class="pk" id="nwfull"><span>📘</span><b dir="rtl">شرح التطبيق كامل</b><small>Whole app · ${FULL.reduce((a,c)=>a+c.steps.length,0)} steps</small></button></div>
    ${first?'':`<div class="field-l">What's new</div>`+un.map(n=>`<div class="card"><b dir="rtl" class="ar">${n.ic} ${n.t}</b><span class="sub ar" dir="rtl">${n.d}</span></div>`).join('')}
-   <button class="btn ghost" id="nwl">Later</button>`,el=>{
+   ${!hasDemo()?`<button class="btn ghost" id="nwdemo">🧪 Add test data to try the app</button>`:''}
+   <button class="btn ghost" id="nwl">Later</button>`,el=>{const dm=el.querySelector('#nwdemo');if(dm)dm.onclick=()=>{loadDemo();dm.remove();};
     const n1=el.querySelector('#nwnew');if(n1)n1.onclick=()=>{closeSheet();startTour({tour:un.slice().reverse().flatMap(n=>n.tour)});};
     el.querySelector('#nwfull').onclick=()=>{closeSheet();startFull();};
     el.querySelector('#nwl').onclick=()=>{markNewsSeen();closeSheet();toast('Find it any time: More → What\'s new');};});}

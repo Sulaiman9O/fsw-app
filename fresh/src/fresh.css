@@ -159,3 +159,5 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .pk span{font-size:1.8rem}.pk b{font:600 1.05rem system-ui,Tahoma,sans-serif}.pk small{color:var(--muted);font-size:.74rem}
 .pk:active,.pk:hover{border-color:var(--red)}
 .card.news.full{border-color:rgba(37,99,201,.6);background:linear-gradient(160deg,rgba(37,99,201,.12),var(--panel))}
+.demob{display:flex;align-items:center;gap:10px;border:1px dashed rgba(240,162,94,.7);background:rgba(240,162,94,.1);border-radius:14px;padding:10px 12px;font-size:.84rem;color:#ffd7b0}
+.demob span{flex:1}.demob button{min-height:36px;padding:0 12px;border-radius:10px;background:rgba(240,162,94,.25);color:#fff;font-weight:600}
