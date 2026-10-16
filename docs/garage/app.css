@@ -542,3 +542,15 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .tok{background:rgba(60,207,125,.18);color:var(--ok)!important}
 .opt.alt{margin-left:18px;width:calc(100% - 18px);border-style:dashed;border-color:rgba(60,207,125,.45)}
 .list .row .lnk{flex:0 0 auto}
+/* guided tour */
+#tour{position:fixed;inset:0;z-index:60}
+#tour .th{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.72);outline:3px solid var(--red);transition:all .2s;pointer-events:none}
+#tour .th.none{left:50%;top:50%;width:0;height:0;outline:0}
+#tour .tb{position:fixed;left:12px;right:12px;max-width:520px;margin:0 auto;background:#fff;color:#111;border-radius:18px;padding:14px 14px 10px;box-shadow:0 16px 40px rgba(0,0,0,.6);display:grid;gap:10px}
+#tour .tb.mid{top:50%;transform:translateY(-50%)}
+#tour .tt{font-size:1rem;line-height:1.6;text-align:right;color:#111!important}#tour .tt b{color:#c2201f}
+#tour .tn{display:flex;align-items:center;gap:8px}#tour .tn span{flex:1;text-align:center;color:#888;font-size:.8rem}
+#tour .tn button{min-height:42px;padding:0 14px;border-radius:12px;background:#eee;color:#111;font-weight:600}
+#tour .tn button.go{background:var(--red);color:#fff}
+.card.news.nw{border-color:var(--red)}.card.news .btn{margin-top:6px}
+.ar{font-family:system-ui,Tahoma,sans-serif}
