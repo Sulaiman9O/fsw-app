@@ -57,15 +57,15 @@ function addItemSheet(j){
     el.querySelector('#alist').innerHTML=
      (cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(c=>`<button class="opt" data-cj="${c.id}"><div class="tx"><b>${esc(c.name)}</b><span>${c.items.length} items</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`).join(''):'')+
      (sv.length?`<div class="lbl">Services${!ql&&Object.keys(use).length?' · most used first':''}</div>`+sv.slice(0,ql?60:16).map(s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${scatIc(s.cat)} ${esc(s.name)}</b><span>${esc(s.cat)}${s.min?' · '+s.min+' min':''}${s.out&&s.out.who?' · at '+esc(s.out.who):''}${(s.parts||[]).length?' · + '+s.parts.length+' parts':''}</span></div><span class="v">${s.from?'<small>from</small>':''}${f3(svcPrice(s,v))}</span></button>`).join(''):'')+
-     (ps.length?`<div class="lbl">Parts</div>`+ps.slice(0,60).map(p=>`<button class="opt" data-pt="${p.id}"><div class="tx"><b>${esc(p.name)}</b><span>${esc(p.num||p.cat)} · ${+p.stock>0?(+p.stock)+(p.unit==='L'?' L':'')+' in stock':'out of stock'}</span></div><span class="v">${f3(p.price)}${p.unit==='L'?'<small>/L</small>':''}</span></button>`).join(''):DB.parts.length?'':`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`);
+     (ps.length?`<div class="lbl">Parts</div>`+partOpts(v,ps):DB.parts.length?'':`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`);
     el.querySelectorAll('[data-sz]').forEach(b=>b.onclick=()=>{v.size=+b.dataset.sz;save();draw(el);});
     el.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const s=byId('services',b.dataset.sv);j.items.push(svcItem(s,v));const at=j.items.length-1;
       (s.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});
       logJ(j,'Added '+s.name);save();if(s.from){editItemSheet(j,at);return;}closeSheet();render();});
     el.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.pt);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const c=DB.canned.find(x=>x.id===b.dataset.cj);c.items.forEach(i=>j.items.push(Object.assign({},i)));logJ(j,'Added '+c.name);save();closeSheet();render();});};
-  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3><div class="field-l">Car size</div><div class="chips" id="asz"></div><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off"><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="alist"></div>`,el=>{
-    el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};
+  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3><div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="alist"></div>`,el=>{
+    el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};const asc=el.querySelector('#ascan');if(asc)asc.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(!p){toast('No part with '+c);return;}j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
     draw(el);});
 }
@@ -101,7 +101,7 @@ function makeInvoice(j){
   const T=jobTotals(j);if(!(j.items||[]).length){toast('Add services or parts first');return;}
   if((j.items||[]).some(i=>i.pend)){toast('Some items have no price yet');return;}
   confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{
-    j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name};(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)p.stock=Math.round(((+p.stock||0)-(+it.q||0))*100)/100;}});
+    j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name};(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
     if(j.stage==='new'||j.stage==='work')j.stage='ready';logJ(j,'Invoice #'+j.inv.no);save();go('inv',{id:j.id});});
 }
 SCREENS.inv=m=>{
@@ -116,7 +116,7 @@ SCREENS.inv=m=>{
   $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
   $('#iwa').onclick=()=>shareText(c.phone,docText(j,'invoice'));
   $('#ipr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>',210,297,'Invoice '+j.inv.no);
-  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)p.stock=Math.round(((+p.stock||0)+(+it.q||0))*100)/100;}});j.returned=now();j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
+  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
 };
 function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=0;
   const tr=k=>(j.items||[]).filter(i=>(k==='part'?i.k==='part':i.k!=='part')&&!i.pend).map(i=>{n++;return `<tr><td class="n">${n}</td><td>${esc(i.d)}${i.num?`<small>${esc(i.num)}</small>`:''}${i.ar?`<div class="ar" style="font-size:2.7mm;color:#444">${esc(i.ar)}</div>`:''}${i.war?`<div style="font-size:2.4mm;color:#555">Warranty: ${esc(i.war)}</div>`:''}</td><td class="q">${+i.q}${i.u?' '+esc(i.u):''}</td><td class="u">${f3(i.p)}</td><td class="a">${f3(i.q*i.p)}</td></tr>`;}).join('');

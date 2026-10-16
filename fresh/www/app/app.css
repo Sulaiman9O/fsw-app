@@ -537,3 +537,8 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .qin{width:64px;height:38px;border-radius:10px;border:1px solid var(--line);background:#111113;color:#fff;text-align:center;font:400 1.05rem var(--f-brand)}
 .mprev{white-space:pre-wrap;background:#0b3d2a;border:1px solid #145c3f;border-radius:14px 14px 14px 4px;padding:12px 14px;font-size:.9rem;line-height:1.5;color:#e6fff2}
 .chips button small{font-size:.7rem}
+.srow{display:flex;gap:8px;align-items:stretch;min-width:0}.srow .field{flex:1;min-width:0}
+.scanb{width:52px;flex:0 0 auto;border-radius:12px;border:1px solid var(--line);background:var(--panel2);font-size:1.3rem}
+.tok{background:rgba(60,207,125,.18);color:var(--ok)!important}
+.opt.alt{margin-left:18px;width:calc(100% - 18px);border-style:dashed;border-color:rgba(60,207,125,.45)}
+.list .row .lnk{flex:0 0 auto}
