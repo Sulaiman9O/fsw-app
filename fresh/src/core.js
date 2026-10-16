@@ -23,14 +23,28 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const ROLE={owner:'Owner',manager:'Manager',worker:'Worker'};
-const can={
-  cost:()=>S.user&&S.user.role==='owner',
-  discount:()=>S.user&&S.user.role!=='worker',
-  money:()=>S.user&&S.user.role!=='worker',
-  del:()=>S.user&&S.user.role==='owner',
-  settings:()=>S.user&&S.user.role==='owner',
-  invoice:()=>S.user&&S.user.role!=='worker'
-};
+const PERMS=[
+ ['jobs','Work','Open jobs and estimates, add services and parts',1,1],
+ ['cust','Customers','Customers, cars and reminders',1,1],
+ ['invoice','Invoices','Make invoices, take payments, return invoices',0,1],
+ ['discount','Discounts','Give discounts and lower prices',0,1],
+ ['money','Money','Money page: amounts due and today',0,1],
+ ['exp','Expenses','See and add expenses',0,1],
+ ['close','Daily close','Count the cash drawer',0,1],
+ ['reports','Reports','Sales and top items',0,1],
+ ['cost','Costs & profit','See cost prices and profit',0,0],
+ ['stock','Stock','Parts and stock',1,1],
+ ['vendors','Suppliers','Suppliers and supplier orders',1,1],
+ ['count','Daily count','Count 5 parts a day',1,1],
+ ['svcEdit','Services','Change services, groups and prices',0,0],
+ ['del','Delete','Delete jobs, parts, orders',0,0],
+ ['settings','Settings','Settings, lists, messages and users',0,0]];
+const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0]===k);return !!(p&&p[role==='manager'?4:3]);};
+function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
+const perm=k=>permOf(S.user,k);
+const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
+const ROUTE_P={work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings'};
+const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);
 const custOf=j=>byId('customers',j.cust)||{};

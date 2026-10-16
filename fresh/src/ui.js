@@ -3,7 +3,7 @@ const S={user:null,r:'home',p:{},sheet:null,q:''};
 const AUTO={
  profile:()=>DB.ws&&DB.ws.name&&DB.ws.phone,logo:()=>DB.ws&&DB.ws.logo,cur:()=>!!DB.ws,vat:()=>DB.ws&&DB.ws.vatDecided,invno:()=>DB.ws&&DB.ws.invStart,warranty:()=>DB.ws&&DB.ws.warranty,
  pay:()=>DB.ws&&DB.ws.pay&&DB.ws.pay.length,cred:()=>DB.ws&&DB.ws.credDays,owner:()=>DB.users.some(u=>u.role==='owner'),manager:()=>DB.users.some(u=>u.role==='manager'),worker:()=>DB.users.some(u=>u.role==='worker'),
- remind:()=>DB.ws&&DB.ws.remMonths,remmsg:()=>DB.ws&&DB.ws.remMsg,backup:()=>DB.backups>=1,backup2:()=>DB.backups>=2,
+ remind:()=>DB.ws&&DB.ws.remMonths,remmsg:()=>DB.ws&&(DB.ws.remMsg||(DB.ws.msgs&&DB.ws.msgs.remind)),backup:()=>DB.backups>=1,backup2:()=>DB.backups>=2,
  svc:()=>DB.ws&&DB.ws.svcReviewed,svcadd:()=>DB.services.some(s=>s.custom),pcat:()=>DB.pcats.length>0,oils:()=>DB.parts.some(p=>p.cat==='Engine oil'),filters:()=>DB.parts.some(p=>p.cat==='Oil filters'),
  pprice:()=>DB.parts.length&&DB.parts.every(p=>+p.price>0),pcost:()=>DB.parts.length&&DB.parts.every(p=>+p.cost>0),reorder:()=>DB.parts.some(p=>+p.reorder>0),vendors:()=>DB.vendors.length,po:()=>DB.pos.length,porec:()=>DB.pos.some(p=>p.status==='received'),
  canned:()=>DB.canned.length,insp:()=>DB.insp.length,expcat:()=>DB.ecats.length,exp:()=>DB.expenses.length,
@@ -18,7 +18,7 @@ function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
 const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
 function go(r,p){S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money'}[S.r];if(S.sheet){closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more'}[S.r];if(S.sheet){closeSheet();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
   if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
 window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');}catch(e){}});
@@ -28,8 +28,8 @@ function render(){
   if(!DB.ws){renderOnboard();return;}
   if(!S.user){renderLogin();return;}
   ensureLists();
-  const T={home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops'};
-  const nb=NAV.map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
+  const T={home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages'};
+  const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
    <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${S.user.color}">${initials(S.user.name)}</span></div></header>
    <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${S.user.color}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
@@ -38,7 +38,9 @@ function render(){
   $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
   $$('[data-logout]').forEach(b=>b.onclick=()=>{S.user=null;render();});
   const m=$('#main');
+  if(!routeOk(S.r)){toast('Not allowed for '+S.user.name);S.r='home';}
   (SCREENS[S.r]||SCREENS.home)(m);
+  m.querySelectorAll('[data-go]').forEach(b=>{if(!routeOk(b.dataset.go.split(':')[0]))b.remove();});
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
 }

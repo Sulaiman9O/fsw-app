@@ -37,12 +37,15 @@ SCREENS.job=m=>{
   const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);
   $('#jstk').onclick=()=>stickerSheet(j);
-  const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,'السلام عليكم،\nسيارتكم '+carName(v)+' جاهزة للاستلام.\nالمبلغ: '+f3(T.total)+' '+(DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency)+'\n'+DB.ws.name);
+  const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
   const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };
 function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{location.href=u;}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
-function docText(j,kind){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
-  return DB.ws.name+'\n'+(kind==='estimate'?'تقدير سعر':'فاتورة')+' #'+(kind==='estimate'?j.no:j.inv.no)+' · '+fmtD(kind==='estimate'?j.t:j.inv.t)+'\n'+(c.name?'العميل: '+c.name+'\n':'')+'السيارة: '+carName(v)+(v.plate?' · '+v.plate:'')+'\n\n'+(j.items||[]).filter(i=>!i.pend).map(i=>'• '+i.d+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):'')+'\n\nالمجموع: '+f3(T.total)+' '+cur+(kind==='invoice'&&T.paid?'\nالمدفوع: '+f3(T.paid)+'\nالمتبقي: '+f3(T.due):'')+(DB.ws.warranty?'\n\n'+DB.ws.warranty:'')+'\n'+(DB.ws.phone||'');}
+function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
+  return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
+    items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
+    total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km):'',warranty:DB.ws.warranty||''};}
+function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;return msg(kind,x);}
 /* add / edit items */
 function svcUse(){const u={};DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.ref)u[i.ref]=(u[i.ref]||0)+1;}));return u;}
 function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',p:svcPrice(s,v),tag:s.tag,war:s.war||'',min:+s.min||0,comm:+s.comm||0,by:S.user.name,lockP:!!s.lockP,from:!!s.from,out:s.out&&s.out.who?Object.assign({},s.out):null};}

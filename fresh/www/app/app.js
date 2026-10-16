@@ -1,4 +1,4 @@
-window.WS_V=202610161652;window.WS_VN="1.1.0";document.body.insertAdjacentHTML("afterbegin","<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\">\n  <defs>\n    <linearGradient id=\"paint\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#d9d9de\"/><stop offset=\".55\" stop-color=\"#8d8d95\"/><stop offset=\"1\" stop-color=\"#3b3b41\"/></linearGradient>\n    <linearGradient id=\"paintR\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ff6b5f\"/><stop offset=\".55\" stop-color=\"#c2201f\"/><stop offset=\"1\" stop-color=\"#5a0d0d\"/></linearGradient>\n    <linearGradient id=\"glass\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b3340\"/><stop offset=\"1\" stop-color=\"#0c0f14\"/></linearGradient>\n  </defs>\n  <symbol id=\"suvR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"86\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"30\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/><rect x=\"146\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M50 16 H150 L164 50 H36 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M56 21 H144 L155 48 H45 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M24 50 H176 Q184 52 184 62 V92 Q184 98 176 98 H24 Q16 98 16 92 V62 Q16 52 24 50 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"10\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"174\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <rect x=\"70\" y=\"60\" width=\"60\" height=\"22\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M74 66 H126 M74 71 H126 M74 76 H126\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\"/><path d=\"M176 60 H138 L140 70 H174 Z\" fill=\"#fff\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\" opacity=\".5\" style=\"filter:blur(3px)\"/>\n    <rect x=\"80\" y=\"86\" width=\"40\" height=\"7\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n    <rect x=\"22\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/><rect x=\"162\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/>\n  </symbol>\n  <symbol id=\"sedanR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"90\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"28\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/><rect x=\"150\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M58 30 Q100 22 142 30 L162 60 H38 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M63 34 Q100 27 137 34 L152 58 H48 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M22 60 Q100 52 178 60 Q188 63 188 74 V92 Q188 99 180 99 H20 Q12 99 12 92 V74 Q12 63 22 60 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"14\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"170\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <path d=\"M74 70 H126 L122 86 H78 Z\" fill=\"#111\"/>\n    <path d=\"M80 75 H120 M80 80 H120\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M20 68 Q40 66 64 70 L60 77 H24 Z\" fill=\"#fff\"/><path d=\"M180 68 Q160 66 136 70 L140 77 H176 Z\" fill=\"#fff\"/>\n    <rect x=\"84\" y=\"89\" width=\"32\" height=\"6\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n  </symbol>\n  <symbol id=\"i-cam\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 8h3l2-3h6l2 3h3v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-calc\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0\"/></symbol>\n  <symbol id=\"i-bell\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 16V11a6 6 0 0 1 12 0v5l2 2H4z\"/><path d=\"M10 21h4\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1\"/><circle cx=\"4.5\" cy=\"12\" r=\"1\"/><circle cx=\"4.5\" cy=\"18\" r=\"1\"/></symbol>\n  <symbol id=\"i-gear\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1\"/></symbol>\n  <symbol id=\"i-filter\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"6\" y=\"4\" width=\"12\" height=\"16\" rx=\"3\"/><path d=\"M6 8h12M9 4v16M12 4v16M15 4v16\"/></symbol>\n  <symbol id=\"i-wrench\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 4h6v3H9z\"/><rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><path d=\"M9 13l2 2 4-4\"/></symbol>\n  <symbol id=\"i-air\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7\"/></symbol>\n  <symbol id=\"i-gearbox\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 4v16M12 4v16M18 4v8H6\"/></symbol>\n  <symbol id=\"i-brake\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12a8 8 0 0 1 4-7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 2v4M9 6h6v5H9zM10 11v6l2 3 2-3v-6\"/></symbol>\n  <symbol id=\"i-belt\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"7\" cy=\"12\" r=\"4\"/><circle cx=\"18\" cy=\"8\" r=\"3\"/><path d=\"M7 8l11-3M7 16l11-5\"/></symbol>\n  <symbol id=\"i-send\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M21 3L3 10.5l7 2.5 2.5 7z\"/><path d=\"M10 13l11-10\"/></symbol>\n  <symbol id=\"i-can\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M7 5h7l3 3v12H7z\"/><path d=\"M14 5V3h-4v2M10 12h4\"/></symbol>\n  <symbol id=\"i-car\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M3 15l2-6h14l2 6v4H3z\"/><circle cx=\"7.5\" cy=\"16.5\" r=\"1\"/><circle cx=\"16.5\" cy=\"16.5\" r=\"1\"/></symbol>\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 11l8-7 8 7v9H4z\"/><path d=\"M10 20v-6h4v6\"/></symbol>\n</svg>");
+window.WS_V=202610161731;window.WS_VN="1.2.0";document.body.insertAdjacentHTML("afterbegin","<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\">\n  <defs>\n    <linearGradient id=\"paint\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#d9d9de\"/><stop offset=\".55\" stop-color=\"#8d8d95\"/><stop offset=\"1\" stop-color=\"#3b3b41\"/></linearGradient>\n    <linearGradient id=\"paintR\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ff6b5f\"/><stop offset=\".55\" stop-color=\"#c2201f\"/><stop offset=\"1\" stop-color=\"#5a0d0d\"/></linearGradient>\n    <linearGradient id=\"glass\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b3340\"/><stop offset=\"1\" stop-color=\"#0c0f14\"/></linearGradient>\n  </defs>\n  <symbol id=\"suvR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"86\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"30\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/><rect x=\"146\" y=\"92\" width=\"24\" height=\"18\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M50 16 H150 L164 50 H36 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M56 21 H144 L155 48 H45 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M24 50 H176 Q184 52 184 62 V92 Q184 98 176 98 H24 Q16 98 16 92 V62 Q16 52 24 50 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"10\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"174\" y=\"44\" width=\"16\" height=\"9\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <rect x=\"70\" y=\"60\" width=\"60\" height=\"22\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M74 66 H126 M74 71 H126 M74 76 H126\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\"/><path d=\"M176 60 H138 L140 70 H174 Z\" fill=\"#fff\"/>\n    <path d=\"M24 60 H62 L60 70 H26 Z\" fill=\"#fff\" opacity=\".5\" style=\"filter:blur(3px)\"/>\n    <rect x=\"80\" y=\"86\" width=\"40\" height=\"7\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n    <rect x=\"22\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/><rect x=\"162\" y=\"84\" width=\"16\" height=\"5\" rx=\"2.5\" fill=\"#2a2a2e\"/>\n  </symbol>\n  <symbol id=\"sedanR\" viewBox=\"0 0 200 120\">\n    <ellipse cx=\"100\" cy=\"110\" rx=\"90\" ry=\"6\" fill=\"rgba(0,0,0,.7)\"/>\n    <rect x=\"28\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/><rect x=\"150\" y=\"94\" width=\"22\" height=\"15\" rx=\"4\" fill=\"#111\"/>\n    <path d=\"M58 30 Q100 22 142 30 L162 60 H38 Z\" fill=\"url(#paintR)\"/>\n    <path d=\"M63 34 Q100 27 137 34 L152 58 H48 Z\" fill=\"url(#glass)\"/>\n    <path d=\"M22 60 Q100 52 178 60 Q188 63 188 74 V92 Q188 99 180 99 H20 Q12 99 12 92 V74 Q12 63 22 60 Z\" fill=\"url(#paintR)\"/>\n    <rect x=\"14\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/><rect x=\"170\" y=\"54\" width=\"16\" height=\"8\" rx=\"3\" fill=\"url(#paintR)\"/>\n    <path d=\"M74 70 H126 L122 86 H78 Z\" fill=\"#111\"/>\n    <path d=\"M80 75 H120 M80 80 H120\" stroke=\"#3a3a40\" stroke-width=\"1.6\"/>\n    <path d=\"M20 68 Q40 66 64 70 L60 77 H24 Z\" fill=\"#fff\"/><path d=\"M180 68 Q160 66 136 70 L140 77 H176 Z\" fill=\"#fff\"/>\n    <rect x=\"84\" y=\"89\" width=\"32\" height=\"6\" rx=\"1.5\" fill=\"#e9e9ec\"/>\n  </symbol>\n  <symbol id=\"i-cam\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 8h3l2-3h6l2 3h3v11H4z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/></symbol>\n  <symbol id=\"i-calc\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0\"/></symbol>\n  <symbol id=\"i-bell\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 16V11a6 6 0 0 1 12 0v5l2 2H4z\"/><path d=\"M10 21h4\"/></symbol>\n  <symbol id=\"i-list\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 6h11M9 12h11M9 18h11\"/><circle cx=\"4.5\" cy=\"6\" r=\"1\"/><circle cx=\"4.5\" cy=\"12\" r=\"1\"/><circle cx=\"4.5\" cy=\"18\" r=\"1\"/></symbol>\n  <symbol id=\"i-gear\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1\"/></symbol>\n  <symbol id=\"i-filter\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"6\" y=\"4\" width=\"12\" height=\"16\" rx=\"3\"/><path d=\"M6 8h12M9 4v16M12 4v16M15 4v16\"/></symbol>\n  <symbol id=\"i-wrench\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z\"/></symbol>\n  <symbol id=\"i-drop\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z\"/></symbol>\n  <symbol id=\"i-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 4h6v3H9z\"/><rect x=\"5\" y=\"5\" width=\"14\" height=\"16\" rx=\"2\"/><path d=\"M9 13l2 2 4-4\"/></symbol>\n  <symbol id=\"i-air\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7\"/></symbol>\n  <symbol id=\"i-gearbox\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M6 4v16M12 4v16M18 4v8H6\"/></symbol>\n  <symbol id=\"i-brake\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12a8 8 0 0 1 4-7\"/></symbol>\n  <symbol id=\"i-plug\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 2v4M9 6h6v5H9zM10 11v6l2 3 2-3v-6\"/></symbol>\n  <symbol id=\"i-belt\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"7\" cy=\"12\" r=\"4\"/><circle cx=\"18\" cy=\"8\" r=\"3\"/><path d=\"M7 8l11-3M7 16l11-5\"/></symbol>\n  <symbol id=\"i-send\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M21 3L3 10.5l7 2.5 2.5 7z\"/><path d=\"M10 13l11-10\"/></symbol>\n  <symbol id=\"i-can\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M7 5h7l3 3v12H7z\"/><path d=\"M14 5V3h-4v2M10 12h4\"/></symbol>\n  <symbol id=\"i-car\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M3 15l2-6h14l2 6v4H3z\"/><circle cx=\"7.5\" cy=\"16.5\" r=\"1\"/><circle cx=\"16.5\" cy=\"16.5\" r=\"1\"/></symbol>\n  <symbol id=\"i-home\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"><path d=\"M4 11l8-7 8 7v9H4z\"/><path d=\"M10 20v-6h4v6\"/></symbol>\n</svg>");
 /* ---------- defaults for a brand-new workshop ---------- */
 const DEFAULT_SERVICES=[
  ['Engine','Engine oil change',2.5,3.5,'oil'],['Engine','Air filter replace',1,1.5],['Engine','Spark plugs (4 cyl)',6,6],['Engine','Spark plugs (6/8 cyl)',10,10],['Engine','Throttle body cleaning',2,2],['Engine','Engine bay cleaning',1,1.5],
@@ -71,14 +71,28 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const ROLE={owner:'Owner',manager:'Manager',worker:'Worker'};
-const can={
-  cost:()=>S.user&&S.user.role==='owner',
-  discount:()=>S.user&&S.user.role!=='worker',
-  money:()=>S.user&&S.user.role!=='worker',
-  del:()=>S.user&&S.user.role==='owner',
-  settings:()=>S.user&&S.user.role==='owner',
-  invoice:()=>S.user&&S.user.role!=='worker'
-};
+const PERMS=[
+ ['jobs','Work','Open jobs and estimates, add services and parts',1,1],
+ ['cust','Customers','Customers, cars and reminders',1,1],
+ ['invoice','Invoices','Make invoices, take payments, return invoices',0,1],
+ ['discount','Discounts','Give discounts and lower prices',0,1],
+ ['money','Money','Money page: amounts due and today',0,1],
+ ['exp','Expenses','See and add expenses',0,1],
+ ['close','Daily close','Count the cash drawer',0,1],
+ ['reports','Reports','Sales and top items',0,1],
+ ['cost','Costs & profit','See cost prices and profit',0,0],
+ ['stock','Stock','Parts and stock',1,1],
+ ['vendors','Suppliers','Suppliers and supplier orders',1,1],
+ ['count','Daily count','Count 5 parts a day',1,1],
+ ['svcEdit','Services','Change services, groups and prices',0,0],
+ ['del','Delete','Delete jobs, parts, orders',0,0],
+ ['settings','Settings','Settings, lists, messages and users',0,0]];
+const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0]===k);return !!(p&&p[role==='manager'?4:3]);};
+function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
+const perm=k=>permOf(S.user,k);
+const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
+const ROUTE_P={work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings'};
+const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);
 const custOf=j=>byId('customers',j.cust)||{};
@@ -100,7 +114,7 @@ const S={user:null,r:'home',p:{},sheet:null,q:''};
 const AUTO={
  profile:()=>DB.ws&&DB.ws.name&&DB.ws.phone,logo:()=>DB.ws&&DB.ws.logo,cur:()=>!!DB.ws,vat:()=>DB.ws&&DB.ws.vatDecided,invno:()=>DB.ws&&DB.ws.invStart,warranty:()=>DB.ws&&DB.ws.warranty,
  pay:()=>DB.ws&&DB.ws.pay&&DB.ws.pay.length,cred:()=>DB.ws&&DB.ws.credDays,owner:()=>DB.users.some(u=>u.role==='owner'),manager:()=>DB.users.some(u=>u.role==='manager'),worker:()=>DB.users.some(u=>u.role==='worker'),
- remind:()=>DB.ws&&DB.ws.remMonths,remmsg:()=>DB.ws&&DB.ws.remMsg,backup:()=>DB.backups>=1,backup2:()=>DB.backups>=2,
+ remind:()=>DB.ws&&DB.ws.remMonths,remmsg:()=>DB.ws&&(DB.ws.remMsg||(DB.ws.msgs&&DB.ws.msgs.remind)),backup:()=>DB.backups>=1,backup2:()=>DB.backups>=2,
  svc:()=>DB.ws&&DB.ws.svcReviewed,svcadd:()=>DB.services.some(s=>s.custom),pcat:()=>DB.pcats.length>0,oils:()=>DB.parts.some(p=>p.cat==='Engine oil'),filters:()=>DB.parts.some(p=>p.cat==='Oil filters'),
  pprice:()=>DB.parts.length&&DB.parts.every(p=>+p.price>0),pcost:()=>DB.parts.length&&DB.parts.every(p=>+p.cost>0),reorder:()=>DB.parts.some(p=>+p.reorder>0),vendors:()=>DB.vendors.length,po:()=>DB.pos.length,porec:()=>DB.pos.some(p=>p.status==='received'),
  canned:()=>DB.canned.length,insp:()=>DB.insp.length,expcat:()=>DB.ecats.length,exp:()=>DB.expenses.length,
@@ -115,7 +129,7 @@ function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
 const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
 function go(r,p){S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money'}[S.r];if(S.sheet){closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more'}[S.r];if(S.sheet){closeSheet();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
   if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
 window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');}catch(e){}});
@@ -125,8 +139,8 @@ function render(){
   if(!DB.ws){renderOnboard();return;}
   if(!S.user){renderLogin();return;}
   ensureLists();
-  const T={home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops'};
-  const nb=NAV.map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
+  const T={home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages'};
+  const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
    <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${S.user.color}">${initials(S.user.name)}</span></div></header>
    <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${S.user.color}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
@@ -135,7 +149,9 @@ function render(){
   $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
   $$('[data-logout]').forEach(b=>b.onclick=()=>{S.user=null;render();});
   const m=$('#main');
+  if(!routeOk(S.r)){toast('Not allowed for '+S.user.name);S.r='home';}
   (SCREENS[S.r]||SCREENS.home)(m);
+  m.querySelectorAll('[data-go]').forEach(b=>{if(!routeOk(b.dataset.go.split(':')[0]))b.remove();});
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
 }
@@ -317,12 +333,15 @@ SCREENS.job=m=>{
   const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);
   $('#jstk').onclick=()=>stickerSheet(j);
-  const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,'السلام عليكم،\nسيارتكم '+carName(v)+' جاهزة للاستلام.\nالمبلغ: '+f3(T.total)+' '+(DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency)+'\n'+DB.ws.name);
+  const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
   const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };
 function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{location.href=u;}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
-function docText(j,kind){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
-  return DB.ws.name+'\n'+(kind==='estimate'?'تقدير سعر':'فاتورة')+' #'+(kind==='estimate'?j.no:j.inv.no)+' · '+fmtD(kind==='estimate'?j.t:j.inv.t)+'\n'+(c.name?'العميل: '+c.name+'\n':'')+'السيارة: '+carName(v)+(v.plate?' · '+v.plate:'')+'\n\n'+(j.items||[]).filter(i=>!i.pend).map(i=>'• '+i.d+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):'')+'\n\nالمجموع: '+f3(T.total)+' '+cur+(kind==='invoice'&&T.paid?'\nالمدفوع: '+f3(T.paid)+'\nالمتبقي: '+f3(T.due):'')+(DB.ws.warranty?'\n\n'+DB.ws.warranty:'')+'\n'+(DB.ws.phone||'');}
+function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
+  return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
+    items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
+    total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km):'',warranty:DB.ws.warranty||''};}
+function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;return msg(kind,x);}
 /* add / edit items */
 function svcUse(){const u={};DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.ref)u[i.ref]=(u[i.ref]||0)+1;}));return u;}
 function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',p:svcPrice(s,v),tag:s.tag,war:s.war||'',min:+s.min||0,comm:+s.comm||0,by:S.user.name,lockP:!!s.lockP,from:!!s.from,out:s.out&&s.out.who?Object.assign({},s.out):null};}
@@ -439,7 +458,7 @@ SCREENS.cust=m=>{
   const cq=$('#cq');cq.oninput=()=>{S.p.q=cq.value;const pos=cq.value.length;render();const e=$('#cq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
   $$('[data-rs]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rs);r.sent=now();save();render();});
   $$('[data-rwa]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rwa);const v=byId('vehicles',r.veh)||{},c=byId('customers',r.cust)||{};
-    const t=(DB.ws.remMsg||'السلام عليكم،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}').replace('{service}',r.kind==='gear'?'تغيير زيت الجير':'تغيير زيت المحرك').replace('{car}',carName(v)).replace('{workshop}',DB.ws.name).replace('{name}',c.name||'');shareText(c.phone,t);r.sent=now();save();});
+    const t=msg('remind',{name:c.name||'',car:carName(v),plate:v.plate||'',service:r.kind==='gear'?'تغيير زيت الجير':'تغيير زيت المحرك'});shareText(c.phone,t);r.sent=now();save();});
   $('#cadd').onclick=()=>custSheet();
 };
 function custSheet(c){const isNew=!c;c=c||{};openSheet(`<h3>${isNew?'New customer':'Edit customer'}</h3><input class="field" id="cn" placeholder="Name" value="${esc(c.name||'')}"><input class="field" id="cp" inputmode="tel" placeholder="Phone" value="${esc(c.phone||'')}"><textarea class="field" id="cnt" rows="2" placeholder="Notes">${esc(c.notes||'')}</textarea><button class="btn" id="cok">Save</button>`,el=>el.querySelector('#cok').onclick=()=>{const n=$('#cn').value.trim();if(!n){toast('Type a name');return;}
@@ -458,7 +477,7 @@ SCREENS.custd=m=>{
   ${can.del()&&!js.length?`<button class="btn ghost jb-del" id="cdel">Delete customer</button>`:''}`;
   $('#cedit').onclick=()=>custSheet(c);$('#vadd').onclick=()=>vehSheet(c);
   $$('[data-ve]').forEach(b=>b.onclick=()=>vehSheet(c,byId('vehicles',b.dataset.ve)));
-  const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,'السلام عليكم '+(c.name||'')+'،\n');
+  const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,msg('hello',{name:c.name||''}));
   const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});
 };
 /* ---------- STOCK ---------- */
@@ -480,7 +499,7 @@ SCREENS.stock=m=>{
   const mk=$('#mkpo');if(mk)mk.onclick=()=>newPoFromLow();
 };
 function partRow(p){const lo=(+p.reorder||0)>0&&(+p.stock||0)<=(+p.reorder||0);return `<button class="row" data-pe="${p.id}"><div><b>${esc(p.name)}</b><span>${esc(p.num||'')}${p.num?' · ':''}${esc(p.cat)} · ${f3(p.price)}${p.unit==='L'?'/L':''}${lo?' · <span class="tag t-bad">Order</span>':''}</span></div><span class="v ${(+p.stock||0)<=0?'bad':''}">${+p.stock||0}<small>${p.unit==='L'?'L':p.unit||'pc'}</small></span></button>`;}
-function partSheet(p){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
+function partSheet(p,onSaved){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(p.name||'')}"><div class="in2"><input class="field" id="pnum" placeholder="Part number / barcode" value="${esc(p.num||'')}"><select class="field" id="pcat">${DB.pcats.map(c=>`<option ${p.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
    <div class="chips">${DB.units.map(k=>[k,unitName(k)]).map(([k,l])=>`<button data-u="${k}" aria-pressed="${p.unit===k}">${l}</button>`).join('')}</div>
    <div class="in2"><label class="field-l">Selling price<input class="field" id="ppr" inputmode="decimal" value="${p.price?f3(p.price):''}"></label>${can.cost()?`<label class="field-l">Cost (owner only)<input class="field" id="pco" inputmode="decimal" value="${p.cost?f3(p.cost):''}"></label>`:'<span></span>'}</div>
@@ -490,7 +509,7 @@ function partSheet(p){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
    let unit=p.unit;el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{unit=b.dataset.u;el.querySelectorAll('[data-u]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
    el.querySelector('#pok').onclick=()=>{const n=$('#pn').value.trim();if(!n){toast('Type a name');return;}
      const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||($('#pnum').value.trim()&&x.num===$('#pnum').value.trim())));if(dup){toast('This part already exists: '+dup.name);return;}
-     if(isNew){p={id:uid('p'),t:now()};DB.parts.push(p);}p.name=n;p.num=$('#pnum').value.trim();p.cat=$('#pcat').value;p.unit=unit;p.price=num($('#ppr').value);const co=$('#pco');if(co)p.cost=num(co.value);p.stock=num($('#pst').value);p.reorder=num($('#pro').value);save();closeSheet();render();};
+     if(isNew){p={id:uid('p'),t:now()};DB.parts.push(p);}p.name=n;p.num=$('#pnum').value.trim();p.cat=$('#pcat').value;p.unit=unit;p.price=num($('#ppr').value);const co=$('#pco');if(co)p.cost=num(co.value);p.stock=num($('#pst').value);p.reorder=num($('#pro').value);save();closeSheet();if(onSaved)onSaved(p);else render();};
    const d=el.querySelector('#pdel');if(d)d.onclick=()=>{DB.parts=DB.parts.filter(x=>x!==p);save();closeSheet();render();};});}
 /* daily count */
 function countToday(){const done=new Set(DB.counts.filter(c=>c.date===today()).map(c=>c.part));const last={};DB.counts.forEach(c=>last[c.part]=Math.max(last[c.part]||0,c.t));
@@ -514,20 +533,21 @@ function newPoFromLow(){if(!DB.vendors.length){toast('Add a supplier first');go(
 SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=byId('vendors',p.vendor)||{};const tot=p.items.reduce((a,i)=>a+i.q*(i.cost||0),0);const rec=p.status==='received';
   m.innerHTML=head('Order #'+p.no,rec?'<span class="tag t-ok">Received</span>':'<span class="tag t-warn">Open</span>')+`
   <label class="field-l">Supplier<select class="field" id="pov" ${rec?'disabled':''}>${DB.vendors.map(x=>`<option value="${x.id}" ${x.id===p.vendor?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
-  <div class="list">${p.items.map((i,k)=>{const pt=byId('parts',i.part)||{name:'(deleted part)'};return `<div class="oi"><div><b>${esc(pt.name)}</b><span>stock ${+pt.stock||0}${can.cost()?' · cost '+f3(i.cost||0):''}</span></div>${rec?`<em>${i.q}</em>`:`<div class="st"><button data-q="${k}|-1">−</button><em>${i.q}</em><button data-q="${k}|1">+</button></div>`}</div>`;}).join('')||empty('📄','No items. Add parts below.')}</div>
-  ${rec?'':`<select class="field" id="poadd"><option value="">＋ Add a part…</option>${DB.parts.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>`}
+  <div class="list">${p.items.map((i,k)=>{const pt=byId('parts',i.part)||{name:'(deleted part)'};return `<div class="oi"><div><b>${esc(pt.name)}</b><span>stock ${+pt.stock||0}${can.cost()?' · cost '+f3(i.cost||0):''}</span></div>${rec?`<em>${i.q}</em>`:`<div class="st"><button data-q="${k}|-1">−</button><input class="qin" data-qi="${k}" inputmode="decimal" value="${i.q}"><button data-q="${k}|1">+</button></div>`}</div>`;}).join('')||empty('📄','No items. Add parts below.')}</div>
+  ${rec?'':`<select class="field" id="poadd"><option value="">＋ Add a part…</option><option value="__new">✏️ New part (not in the list yet)…</option>${DB.parts.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>`}
   ${can.cost()?`<div class="card"><div class="h"><b>Total (cost)</b><b>${f3(tot)} ${DB.ws.currency}</b></div></div>`:''}
   <div class="two"><button class="btn ghost" id="pomsg">📤 Send to supplier</button>${rec?'<span></span>':`<button class="btn okb" id="porec">✓ Received</button>`}</div>
   ${!rec?`<p class="hint">“Received” adds the quantities to stock${can.cost()?' and updates the cost':''}.</p>`:''}
   ${!rec&&can.del()?'<button class="btn ghost jb-del" id="podel">Delete order</button>':''}`;
+  $$('[data-qi]').forEach(b=>{b.onfocus=()=>b.select();b.onchange=()=>{const i=p.items[+b.dataset.qi];const q=num(b.value);if(q<=0){p.items.splice(+b.dataset.qi,1);}else i.q=q;save();render();};b.onkeydown=e=>{if(e.key==='Enter')b.blur();};});
   const sv=$('#pov');if(sv)sv.onchange=()=>{p.vendor=sv.value;save();render();};
   $$('[data-q]').forEach(b=>b.onclick=()=>{const [k,d]=b.dataset.q.split('|');const i=p.items[+k];i.q=Math.max(0,i.q+(+d));if(!i.q)p.items.splice(+k,1);save();render();});
-  const pa=$('#poadd');if(pa)pa.onchange=()=>{if(!pa.value)return;const pt=byId('parts',pa.value);p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();};
-  $('#pomsg').onclick=()=>shareText(v.phone,'السلام عليكم، نرجو توفير:\n'+p.items.map(i=>'• '+((byId('parts',i.part)||{}).name||'')+((byId('parts',i.part)||{}).num?' ('+byId('parts',i.part).num+')':'')+' × '+i.q).join('\n')+'\n\n'+DB.ws.name+(DB.ws.phone?' · '+DB.ws.phone:''));
+  const pa=$('#poadd');if(pa)pa.onchange=()=>{if(!pa.value)return;if(pa.value==='__new'){pa.value='';partSheet(null,pt=>{p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();toast('Part added to stock and to this order');});return;}const pt=byId('parts',pa.value);p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();};
+  $('#pomsg').onclick=()=>shareText(v.phone,msg('po',{supplier:v.name||'',no:p.no,items:p.items.map(i=>{const pt=byId('parts',i.part)||{};return '• '+(pt.name||'')+(pt.num?' ('+pt.num+')':'')+' × '+i.q+(pt.unit&&pt.unit!=='pc'?' '+pt.unit:'');}).join('\n')}));
   const rc=$('#porec');if(rc)rc.onclick=()=>confirmSheet('Mark order #'+p.no+' as received? Stock goes up.','Received',()=>{p.items.forEach(i=>{const pt=byId('parts',i.part);if(pt){pt.stock=Math.round(((+pt.stock||0)+i.q)*100)/100;if(i.cost)pt.cost=i.cost;}});p.status='received';p.rt=now();save();render();toast('Stock updated');});
   const dl=$('#podel');if(dl)dl.onclick=()=>{DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
 /* ---------- SERVICES ---------- */
-SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=can.settings();
+SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=perm('svcEdit');
   const vis=g=>DB.services.filter(s=>s.cat===g.name&&!s.hidden&&(!q||(s.name+' '+(s.ar||'')).toLowerCase().includes(q)));const hid=DB.services.filter(s=>s.hidden);
   const tags=s=>[s.from?'<span class="tg tgr">FROM</span>':'',s.out&&s.out.who?'<span class="tg tb">OUTSIDE</span>':'',s.lockP?'<span class="tg tgr">🔒</span>':''].join('');
   const sub=s=>[s.ar?'<bdi>'+esc(s.ar)+'</bdi>':'',s.min?'⏱ '+s.min+' min':'',s.out&&s.out.who?'at '+esc(s.out.who)+' · '+({pass:'not in our sales',share:'we keep '+f3(s.out.amt),pay:'we pay '+f3(s.out.amt)})[s.out.mode]:'',(s.parts||[]).length?'+ '+s.parts.length+' parts':'',s.tag?(s.tag==='oil'?'oil reminder':'gearbox reminder'):'',s.war?'warranty '+esc(s.war):''].filter(Boolean).join(' · ');
@@ -543,7 +563,7 @@ SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=can.set
   const rv=$('#srev');if(rv)rv.onclick=()=>{DB.ws.svcReviewed=true;save();render();};
   const sa=$('#sadd');if(sa)sa.onclick=()=>svcSheet(null,(DB.scats.find(g=>g.id===fc)||DB.scats[0]||{}).name);
   $$('[data-sa]').forEach(b=>b.onclick=()=>svcSheet(null,DB.scats.find(g=>g.id===b.dataset.sa).name));
-  $$('[data-se]').forEach(b=>b.onclick=()=>{if(!own){toast('Only the owner changes services');return;}svcSheet(byId('services',b.dataset.se));});};
+  $$('[data-se]').forEach(b=>b.onclick=()=>{if(!own){toast('Not allowed for '+S.user.name);return;}svcSheet(byId('services',b.dataset.se));});};
 function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||{cat:cat||(DB.scats[0]||{}).name||'Other',p:[0],tag:''}));
   s.out=s.out||{who:'',mode:'pass',amt:0};s.parts=s.parts||[];let outOn=!!s.out.who;
   const partners=(DB.mlists.find(L=>/partner|workshop/i.test(L.name))||{items:[]}).items.map(i=>i.name);
@@ -680,7 +700,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <button class="mitem" data-go="list:pay"><span class="ic">💳</span><div><b>Payment methods</b><span>${esc(w.pay.join(', '))}</span></div><span class="v">›</span></button>
   ${sec('Reminders')}
   <div class="in2"><label class="field-l">Engine oil · months<input class="field" id="srm" inputmode="numeric" value="${w.remMonths}"></label><label class="field-l">Engine oil · km<input class="field" id="srk" inputmode="numeric" value="${w.remKm}"></label></div>
-  <label class="field-l">Reminder message ({name} {car} {service} {workshop})<textarea class="field" id="srmsg" rows="4" placeholder="Leave empty for the default Arabic message">${esc(w.remMsg||'')}</textarea></label>
+  <button class="mitem" data-go="msgs"><span class="ic">💬</span><div><b>WhatsApp messages</b><span>Customers, reminders, estimates, invoices, suppliers</span></div><span class="v">›</span></button>
   ${sec('Lists')}
   <button class="mitem" data-go="lists"><span class="ic">🗂</span><div><b>All lists</b><span>Service groups, part categories, units, car makes, expense types, your own lists</span></div><span class="v">›</span></button>
   <label class="field-l">Opening cash in the drawer<input class="field" id="soc" inputmode="decimal" value="${DB.openingCash?f3(DB.openingCash):''}"></label>
@@ -692,7 +712,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#slogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);w.logo=c.toDataURL('image/png');save();render();};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#slogox');if(lx)lx.onclick=()=>{w.logo='';save();render();};
   $('#ssave').onclick=()=>{w.name=$('#sname').value.trim()||w.name;w.phone=$('#sphone').value.trim();w.addr=$('#saddr').value.trim();w.cr=$('#scr').value.trim();w.nextInv=Math.max(1,parseInt($('#sinv').value)||w.nextInv);w.invStart=w.invStart||w.nextInv;w.credDays=parseInt($('#scred').value)||30;w.vat=$('#svat').checked;w.vatDecided=true;w.warranty=$('#swar').value.trim();
-    w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;w.remMsg=$('#srmsg').value.trim();
+    w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;
     DB.openingCash=num($('#soc').value);save();toast('Saved');render();};
   $('#sbk').onclick=async()=>{const txt=JSON.stringify(DB);DB.backups=(DB.backups||0)+1;save();const name='workshop-backup-'+today()+'.json';
     try{if(navigator.canShare&&navigator.canShare({files:[new File([txt],name)]})){await navigator.share({files:[new File([txt],name,{type:'application/json'})],title:name});return;}}catch(e){}
@@ -702,19 +722,30 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();S.user=null;OB.step=0;render();});};
 /* ---------- USERS ---------- */
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
+  const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
   m.innerHTML=head('Users',`<button class="lnk" id="uadd">＋ Add</button>`)+`
-  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything, costs, deletes, settings.<br><b>Manager</b>: invoices, payments, discounts. No costs, no deletes.<br><b>Worker</b>: opens jobs, adds items, inspections, counts. No money, no discounts.</span></div>
-  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
-  const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role,pin='';
-    openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}"><div class="chips">${['owner','manager','worker'].map(r=>`<button data-r="${r}" aria-pressed="${role===r}">${ROLE[r]}</button>`).join('')}</div><input class="field" id="up" inputmode="numeric" maxlength="4" placeholder="${isNew?'4-number PIN':'New PIN (leave empty to keep)'}"><button class="btn" id="uok">Save</button>${!isNew&&u.id!==S.user.id?'<button class="btn ghost jb-del" id="udel">Remove user</button>':''}`,el=>{
-     el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;el.querySelectorAll('[data-r]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
-     el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
+  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything.<br><b>Manager</b> and <b>Worker</b> start with a set of permissions. Tap a person to turn each one on or off.</span></div>
+  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}${nCust(u)?' · custom permissions':''}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
+  const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role;let pm=Object.assign({},u.perm||{});
+    openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}">
+     <div class="chips" id="uro"></div>
+     <input class="field" id="up" inputmode="numeric" maxlength="4" placeholder="${isNew?'4-number PIN':'New PIN (leave empty to keep)'}">
+     <div class="field-l" style="display:flex;justify-content:space-between;align-items:center">What ${isNew?'they':esc(u.name)} can see and do <button class="lnk" id="urst" style="min-height:0;padding:0">Reset to ${'role'}</button></div>
+     <div class="list" id="upm"></div>
+     <button class="btn" id="uok">Save</button>${!isNew&&u.id!==S.user.id?'<button class="btn ghost jb-del" id="udel">Remove user</button>':''}`,el=>{
+     const draw=()=>{el.querySelector('#uro').innerHTML=['owner','manager','worker'].map(r=>`<button data-r="${r}" aria-pressed="${role===r}">${ROLE[r]}</button>`).join('');
+       el.querySelector('#urst').hidden=role==='owner'||!Object.keys(pm).length;
+       el.querySelector('#upm').innerHTML=role==='owner'?'<p class="hint">The owner can see and do everything.</p>':PERMS.map(([k,t,d])=>{const on=k in pm?!!pm[k]:roleDef(role,k);return `<label class="lrow tgl2"><span class="lname"><div><b>${t}${k in pm?' <span class="tg tgr">changed</span>':''}</b><span>${d}</span></div></span><input type="checkbox" data-pk="${k}" ${on?'checked':''}></label>`;}).join('');
+       el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;pm={};draw();});
+       el.querySelectorAll('[data-pk]').forEach(b=>b.onchange=()=>{const k=b.dataset.pk;if(b.checked===roleDef(role,k))delete pm[k];else pm[k]=b.checked;draw();});};
+     draw();el.querySelector('#urst').onclick=()=>{pm={};draw();};
+     el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();const pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
        if(!isNew&&u.role==='owner'&&role!=='owner'&&DB.users.filter(x=>x.role==='owner').length===1){toast('Keep at least one owner');return;}
-       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}u.name=n;u.role=role;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
-     const d=el.querySelector('#udel');if(d)d.onclick=()=>{DB.users=DB.users.filter(x=>x!==u);save();closeSheet();render();};});};
+       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}u.name=n;u.role=role;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
+     const d=el.querySelector('#udel');if(d)d.onclick=()=>confirmSheet('Remove '+esc(u.name)+'?','Remove',()=>{DB.users=DB.users.filter(x=>x!==u);save();render();});});};
   $('#uadd').onclick=()=>edit();$$('[data-ue]').forEach(b=>b.onclick=()=>edit(DB.users.find(x=>x.id===b.dataset.ue)));};
 /* ---------- MORE ---------- */
-SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
+SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&routeOk(r)&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
   const ml=DB.mlists.filter(L=>L.inMenu!==false);
   m.innerHTML=head('More')+`<div class="list">
   ${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
@@ -730,7 +761,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('reports','📊','Reports','Sales, profit, top items',can.money())}
   </div>
   ${ml.length?sec('Your lists')+`<div class="list">${ml.map(L=>it('list:'+L.id,L.ic||'📝',esc(L.name),L.items.length+' items')).join('')}</div>`:''}
-  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('users','👥','Users','Owner, manager, workers')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
+  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('msgs','💬','WhatsApp messages','Customers, reminders, suppliers')}${it('users','👥','Users','Who sees what')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
   <button class="btn ghost" id="lo">Log out (${esc(S.user.name)})</button><p class="hint" style="text-align:center">Test version ${esc(window.WS_VN||"")} · data stays on this device · updates by itself</p>`;
   $('#lo').onclick=()=>{S.user=null;render();};};
 /* ---------- print CSS ---------- */
@@ -799,7 +830,7 @@ function mlistSheet(L){const isNew=!L;let ic=L?L.ic:'📝';
     el.querySelectorAll('[data-ic]').forEach(b=>b.onclick=()=>{ic=b.dataset.ic;el.querySelectorAll('[data-ic]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
     el.querySelector('#mlok').onclick=()=>{const n=$('#mln').value.trim();if(!n){toast('Type a name');return;}if(isNew){L={id:uid('ml'),items:[]};DB.mlists.push(L);}L.name=n;L.note=$('#mlh').value.trim();L.ic=ic;L.inMenu=$('#mlm').checked;save();closeSheet();isNew?go('list',{id:L.id}):render();};
     const d=el.querySelector('#mldel');if(d)d.onclick=()=>confirmSheet(`Delete the list “${esc(L.name)}” and its ${L.items.length} items?`,'Delete list',()=>{DB.mlists=DB.mlists.filter(x=>x!==L);save();go('lists');});});}
-SCREENS.list=m=>{ensureLists();const L=listOf(S.p.id);if(!L){go('lists');return;}if(!L.custom&&!can.settings()){go('more');return;}const its=L.items();
+SCREENS.list=m=>{ensureLists();const L=listOf(S.p.id);if(!L){go('lists');return;}if(!L.custom&&!(can.settings()||((S.p.id==='scat'||S.p.id==='size')&&perm('svcEdit')))){go('more');return;}const its=L.items();
   m.innerHTML=head(esc(L.t),`${L.custom&&can.settings()?'<button class="lnk" id="ledl">Edit list</button>':''}<button class="lnk" id="ladd">＋ Add</button>`)+`<p class="hint">${esc(L.hint)}</p>
   <div class="list">${its.map((x,i)=>`<div class="lrow"><button class="lname" data-le="${i}">${x.ic?`<span class="ic">${x.ic}</span>`:''}<div><b>${esc(x.n)}${x.lock?' 🔒':''}</b>${x.sub?`<span>${esc(x.sub)}</span>`:x.c!=null?`<span>${L.cw?x.c+' '+L.cw:x.c?'used '+x.c+(x.c===1?' time':' times'):'not used yet'}</span>`:''}</div></button><button class="mv" data-mv="${i}|-1" ${i?'':'disabled'}>↑</button><button class="mv" data-mv="${i}|1" ${i<its.length-1?'':'disabled'}>↓</button></div>`).join('')||empty('📝','Empty. Tap ＋ Add.')}</div>`;
   const edit=x=>{const isNew=!x;let ic=x?x.ic:'🔧';
@@ -829,6 +860,32 @@ SCREENS.outw=m=>{if(!can.money()){go('home');return;}const o=outwData();const ks
   ${ks.map(w=>{const x=o[w],bal=x.owed-x.paid;return `<div class="card"><div class="h"><b>🏪 ${esc(w)}</b><b style="${bal>0.0005?'color:var(--orange)':''}">${f3(bal)}</b></div><span class="sub">Owed ${f3(x.owed)} · paid ${f3(x.paid)} · ${x.jobs.length} jobs</span>${bal>0.0005?`<button class="btn ghost sm" data-ow="${esc(w)}">Pay ${esc(w)}</button>`:''}</div>`;}).join('')||empty('🏪','Nothing yet. Mark a service as “Done at another workshop” in Services.')}
   ${DB.outPaid.length?sec('Payments')+`<div class="list">${DB.outPaid.slice().sort((a,b)=>b.t-a.t).map(p=>`<div class="row"><div><b>${esc(p.who)}</b><span>${fmtD(p.t)} · ${esc(p.by)}</span></div><span class="v">${f3(p.amt)}</span></div>`).join('')}</div>`:''}`;
   $$('[data-ow]').forEach(b=>b.onclick=()=>{const w=b.dataset.ow,bal=o[w].owed-o[w].paid;openSheet(`<h3>Pay ${esc(w)}</h3><input class="field" id="owa" inputmode="decimal" value="${f3(bal)}"><button class="btn" id="owok">Save payment</button>`,el=>el.querySelector('#owok').onclick=()=>{const a=num($('#owa').value);if(!a)return;DB.outPaid.push({who:w,amt:a,t:now(),by:S.user.name});save();closeSheet();render();});});};
+/* ---------- WhatsApp message templates ---------- */
+const MSGS=[
+ ['ready','🚗','Car is ready','Customer',['name','car','plate','total','due','workshop','phone'],'السلام عليكم {name}،\nسيارتكم {car} جاهزة للاستلام.\nالمبلغ: {total}\n\n{workshop}'],
+ ['estimate','🧾','Estimate','Customer',['name','car','plate','no','date','items','total','warranty','workshop','phone'],'السلام عليكم {name}،\nتقدير سعر رقم {no} لسيارتكم {car} {plate}:\n\n{items}\n\nالمجموع: {total}\n\n{workshop} · {phone}'],
+ ['invoice','🧾','Invoice','Customer',['name','car','plate','no','date','items','total','paid','due','warranty','workshop','phone'],'{workshop}\nفاتورة رقم {no} · {date}\nالعميل: {name}\nالسيارة: {car} {plate}\n\n{items}\n\nالمجموع: {total}\nالمدفوع: {paid}\nالمتبقي: {due}\n\n{warranty}\n{phone}'],
+ ['remind','🔔','Service reminder','Customer',['name','car','plate','service','workshop','phone'],'السلام عليكم {name}،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}'],
+ ['hello','👋','WhatsApp a customer','Customer',['name','workshop','phone'],'السلام عليكم {name}،\n'],
+ ['po','🚚','Order to a supplier','Supplier',['supplier','no','items','workshop','phone'],'السلام عليكم {supplier}،\nنرجو توفير الطلب رقم {no}:\n{items}\n\n{workshop} · {phone}']];
+const VAR_L={name:'customer name',car:'car',plate:'plate',total:'total',paid:'paid',due:'left to pay',workshop:'workshop name',phone:'workshop phone',no:'number',date:'date',items:'list of items',warranty:'warranty text',service:'service',supplier:'supplier name',km:'km'};
+function msgTpl(k){const m=DB.ws.msgs||{};if(m[k]!=null&&m[k]!=='')return m[k];if(k==='remind'&&DB.ws.remMsg)return DB.ws.remMsg;return (MSGS.find(x=>x[0]===k)||[])[5]||'';}
+function msg(k,vars){const v=Object.assign({workshop:DB.ws.name,phone:DB.ws.phone||''},vars||{});
+  return msgTpl(k).replace(/\{(\w+)\}/g,(a,n)=>v[n]!=null?v[n]:a).replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();}
+const SAMPLE={name:'Salim',car:'Toyota Camry',plate:'12345 A',total:'12.500 ر.ع',paid:'10.000 ر.ع',due:'2.500 ر.ع',no:'1001',date:fmtD(Date.now()),items:'• تغيير زيت المحرك: 2.500\n• فلتر زيت: 3.000',warranty:'',service:'تغيير زيت المحرك',supplier:'Al Noor Parts',km:'85,000'};
+SCREENS.msgs=m=>{if(!can.settings()){go('more');return;}
+  m.innerHTML=head('WhatsApp messages')+`<p class="hint">Change the words the app writes when it opens WhatsApp. Words in {curly brackets} are filled in by the app.</p>
+  <div class="list">${MSGS.map(([k,ic,t,who])=>{const cu=DB.ws.msgs&&DB.ws.msgs[k];return `<button class="mitem" data-mk="${k}"><span class="ic">${ic}</span><div><b>${t}</b><span>${who}${cu?' · changed':''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`;
+  $$('[data-mk]').forEach(b=>b.onclick=()=>{const [k,ic,t,who,vars,def]=MSGS.find(x=>x[0]===b.dataset.mk);
+    openSheet(`<h3>${ic} ${t}</h3><textarea class="field" id="mt" dir="auto" rows="9">${esc(msgTpl(k))}</textarea>
+     <div class="field-l">Tap to add</div><div class="chips">${vars.map(x=>`<button data-v="${x}">{${x}}<small style="opacity:.6;margin-left:4px">${VAR_L[x]}</small></button>`).join('')}</div>
+     <div class="field-l">Preview</div><div class="mprev" id="mp" dir="auto"></div>
+     <button class="btn" id="mok">Save</button><button class="btn ghost" id="mdef">Back to the default message</button>`,el=>{
+      const ta=el.querySelector('#mt'),pv=()=>{const o=(DB.ws.msgs=DB.ws.msgs||{})[k];DB.ws.msgs[k]=ta.value;el.querySelector('#mp').textContent=msg(k,SAMPLE);if(o==null)delete DB.ws.msgs[k];else DB.ws.msgs[k]=o;};
+      ta.oninput=pv;pv();
+      el.querySelectorAll('[data-v]').forEach(x=>x.onclick=()=>{const s=ta.selectionStart??ta.value.length,e=ta.selectionEnd??s;ta.value=ta.value.slice(0,s)+'{'+x.dataset.v+'}'+ta.value.slice(e);ta.focus();const c=s+x.dataset.v.length+2;ta.setSelectionRange(c,c);pv();});
+      el.querySelector('#mok').onclick=()=>{DB.ws.msgs=DB.ws.msgs||{};DB.ws.msgs[k]=ta.value.trim();if(k==='remind')DB.ws.remMsg='';save();closeSheet();render();toast('Saved');};
+      el.querySelector('#mdef').onclick=()=>{ta.value=def;pv();};});});};
 
 /* ---------- start ---------- */
 (function(){

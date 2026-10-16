@@ -13,7 +13,7 @@ SCREENS.cust=m=>{
   const cq=$('#cq');cq.oninput=()=>{S.p.q=cq.value;const pos=cq.value.length;render();const e=$('#cq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
   $$('[data-rs]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rs);r.sent=now();save();render();});
   $$('[data-rwa]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rwa);const v=byId('vehicles',r.veh)||{},c=byId('customers',r.cust)||{};
-    const t=(DB.ws.remMsg||'السلام عليكم،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}').replace('{service}',r.kind==='gear'?'تغيير زيت الجير':'تغيير زيت المحرك').replace('{car}',carName(v)).replace('{workshop}',DB.ws.name).replace('{name}',c.name||'');shareText(c.phone,t);r.sent=now();save();});
+    const t=msg('remind',{name:c.name||'',car:carName(v),plate:v.plate||'',service:r.kind==='gear'?'تغيير زيت الجير':'تغيير زيت المحرك'});shareText(c.phone,t);r.sent=now();save();});
   $('#cadd').onclick=()=>custSheet();
 };
 function custSheet(c){const isNew=!c;c=c||{};openSheet(`<h3>${isNew?'New customer':'Edit customer'}</h3><input class="field" id="cn" placeholder="Name" value="${esc(c.name||'')}"><input class="field" id="cp" inputmode="tel" placeholder="Phone" value="${esc(c.phone||'')}"><textarea class="field" id="cnt" rows="2" placeholder="Notes">${esc(c.notes||'')}</textarea><button class="btn" id="cok">Save</button>`,el=>el.querySelector('#cok').onclick=()=>{const n=$('#cn').value.trim();if(!n){toast('Type a name');return;}
@@ -32,7 +32,7 @@ SCREENS.custd=m=>{
   ${can.del()&&!js.length?`<button class="btn ghost jb-del" id="cdel">Delete customer</button>`:''}`;
   $('#cedit').onclick=()=>custSheet(c);$('#vadd').onclick=()=>vehSheet(c);
   $$('[data-ve]').forEach(b=>b.onclick=()=>vehSheet(c,byId('vehicles',b.dataset.ve)));
-  const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,'السلام عليكم '+(c.name||'')+'،\n');
+  const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,msg('hello',{name:c.name||''}));
   const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});
 };
 /* ---------- STOCK ---------- */
@@ -54,7 +54,7 @@ SCREENS.stock=m=>{
   const mk=$('#mkpo');if(mk)mk.onclick=()=>newPoFromLow();
 };
 function partRow(p){const lo=(+p.reorder||0)>0&&(+p.stock||0)<=(+p.reorder||0);return `<button class="row" data-pe="${p.id}"><div><b>${esc(p.name)}</b><span>${esc(p.num||'')}${p.num?' · ':''}${esc(p.cat)} · ${f3(p.price)}${p.unit==='L'?'/L':''}${lo?' · <span class="tag t-bad">Order</span>':''}</span></div><span class="v ${(+p.stock||0)<=0?'bad':''}">${+p.stock||0}<small>${p.unit==='L'?'L':p.unit||'pc'}</small></span></button>`;}
-function partSheet(p){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
+function partSheet(p,onSaved){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(p.name||'')}"><div class="in2"><input class="field" id="pnum" placeholder="Part number / barcode" value="${esc(p.num||'')}"><select class="field" id="pcat">${DB.pcats.map(c=>`<option ${p.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
    <div class="chips">${DB.units.map(k=>[k,unitName(k)]).map(([k,l])=>`<button data-u="${k}" aria-pressed="${p.unit===k}">${l}</button>`).join('')}</div>
    <div class="in2"><label class="field-l">Selling price<input class="field" id="ppr" inputmode="decimal" value="${p.price?f3(p.price):''}"></label>${can.cost()?`<label class="field-l">Cost (owner only)<input class="field" id="pco" inputmode="decimal" value="${p.cost?f3(p.cost):''}"></label>`:'<span></span>'}</div>
@@ -64,7 +64,7 @@ function partSheet(p){const isNew=!p;p=p||{cat:DB.pcats[0],unit:'pc'};
    let unit=p.unit;el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{unit=b.dataset.u;el.querySelectorAll('[data-u]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
    el.querySelector('#pok').onclick=()=>{const n=$('#pn').value.trim();if(!n){toast('Type a name');return;}
      const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||($('#pnum').value.trim()&&x.num===$('#pnum').value.trim())));if(dup){toast('This part already exists: '+dup.name);return;}
-     if(isNew){p={id:uid('p'),t:now()};DB.parts.push(p);}p.name=n;p.num=$('#pnum').value.trim();p.cat=$('#pcat').value;p.unit=unit;p.price=num($('#ppr').value);const co=$('#pco');if(co)p.cost=num(co.value);p.stock=num($('#pst').value);p.reorder=num($('#pro').value);save();closeSheet();render();};
+     if(isNew){p={id:uid('p'),t:now()};DB.parts.push(p);}p.name=n;p.num=$('#pnum').value.trim();p.cat=$('#pcat').value;p.unit=unit;p.price=num($('#ppr').value);const co=$('#pco');if(co)p.cost=num(co.value);p.stock=num($('#pst').value);p.reorder=num($('#pro').value);save();closeSheet();if(onSaved)onSaved(p);else render();};
    const d=el.querySelector('#pdel');if(d)d.onclick=()=>{DB.parts=DB.parts.filter(x=>x!==p);save();closeSheet();render();};});}
 /* daily count */
 function countToday(){const done=new Set(DB.counts.filter(c=>c.date===today()).map(c=>c.part));const last={};DB.counts.forEach(c=>last[c.part]=Math.max(last[c.part]||0,c.t));
@@ -88,20 +88,21 @@ function newPoFromLow(){if(!DB.vendors.length){toast('Add a supplier first');go(
 SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=byId('vendors',p.vendor)||{};const tot=p.items.reduce((a,i)=>a+i.q*(i.cost||0),0);const rec=p.status==='received';
   m.innerHTML=head('Order #'+p.no,rec?'<span class="tag t-ok">Received</span>':'<span class="tag t-warn">Open</span>')+`
   <label class="field-l">Supplier<select class="field" id="pov" ${rec?'disabled':''}>${DB.vendors.map(x=>`<option value="${x.id}" ${x.id===p.vendor?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
-  <div class="list">${p.items.map((i,k)=>{const pt=byId('parts',i.part)||{name:'(deleted part)'};return `<div class="oi"><div><b>${esc(pt.name)}</b><span>stock ${+pt.stock||0}${can.cost()?' · cost '+f3(i.cost||0):''}</span></div>${rec?`<em>${i.q}</em>`:`<div class="st"><button data-q="${k}|-1">−</button><em>${i.q}</em><button data-q="${k}|1">+</button></div>`}</div>`;}).join('')||empty('📄','No items. Add parts below.')}</div>
-  ${rec?'':`<select class="field" id="poadd"><option value="">＋ Add a part…</option>${DB.parts.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>`}
+  <div class="list">${p.items.map((i,k)=>{const pt=byId('parts',i.part)||{name:'(deleted part)'};return `<div class="oi"><div><b>${esc(pt.name)}</b><span>stock ${+pt.stock||0}${can.cost()?' · cost '+f3(i.cost||0):''}</span></div>${rec?`<em>${i.q}</em>`:`<div class="st"><button data-q="${k}|-1">−</button><input class="qin" data-qi="${k}" inputmode="decimal" value="${i.q}"><button data-q="${k}|1">+</button></div>`}</div>`;}).join('')||empty('📄','No items. Add parts below.')}</div>
+  ${rec?'':`<select class="field" id="poadd"><option value="">＋ Add a part…</option><option value="__new">✏️ New part (not in the list yet)…</option>${DB.parts.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select>`}
   ${can.cost()?`<div class="card"><div class="h"><b>Total (cost)</b><b>${f3(tot)} ${DB.ws.currency}</b></div></div>`:''}
   <div class="two"><button class="btn ghost" id="pomsg">📤 Send to supplier</button>${rec?'<span></span>':`<button class="btn okb" id="porec">✓ Received</button>`}</div>
   ${!rec?`<p class="hint">“Received” adds the quantities to stock${can.cost()?' and updates the cost':''}.</p>`:''}
   ${!rec&&can.del()?'<button class="btn ghost jb-del" id="podel">Delete order</button>':''}`;
+  $$('[data-qi]').forEach(b=>{b.onfocus=()=>b.select();b.onchange=()=>{const i=p.items[+b.dataset.qi];const q=num(b.value);if(q<=0){p.items.splice(+b.dataset.qi,1);}else i.q=q;save();render();};b.onkeydown=e=>{if(e.key==='Enter')b.blur();};});
   const sv=$('#pov');if(sv)sv.onchange=()=>{p.vendor=sv.value;save();render();};
   $$('[data-q]').forEach(b=>b.onclick=()=>{const [k,d]=b.dataset.q.split('|');const i=p.items[+k];i.q=Math.max(0,i.q+(+d));if(!i.q)p.items.splice(+k,1);save();render();});
-  const pa=$('#poadd');if(pa)pa.onchange=()=>{if(!pa.value)return;const pt=byId('parts',pa.value);p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();};
-  $('#pomsg').onclick=()=>shareText(v.phone,'السلام عليكم، نرجو توفير:\n'+p.items.map(i=>'• '+((byId('parts',i.part)||{}).name||'')+((byId('parts',i.part)||{}).num?' ('+byId('parts',i.part).num+')':'')+' × '+i.q).join('\n')+'\n\n'+DB.ws.name+(DB.ws.phone?' · '+DB.ws.phone:''));
+  const pa=$('#poadd');if(pa)pa.onchange=()=>{if(!pa.value)return;if(pa.value==='__new'){pa.value='';partSheet(null,pt=>{p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();toast('Part added to stock and to this order');});return;}const pt=byId('parts',pa.value);p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();};
+  $('#pomsg').onclick=()=>shareText(v.phone,msg('po',{supplier:v.name||'',no:p.no,items:p.items.map(i=>{const pt=byId('parts',i.part)||{};return '• '+(pt.name||'')+(pt.num?' ('+pt.num+')':'')+' × '+i.q+(pt.unit&&pt.unit!=='pc'?' '+pt.unit:'');}).join('\n')}));
   const rc=$('#porec');if(rc)rc.onclick=()=>confirmSheet('Mark order #'+p.no+' as received? Stock goes up.','Received',()=>{p.items.forEach(i=>{const pt=byId('parts',i.part);if(pt){pt.stock=Math.round(((+pt.stock||0)+i.q)*100)/100;if(i.cost)pt.cost=i.cost;}});p.status='received';p.rt=now();save();render();toast('Stock updated');});
   const dl=$('#podel');if(dl)dl.onclick=()=>{DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
 /* ---------- SERVICES ---------- */
-SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=can.settings();
+SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=perm('svcEdit');
   const vis=g=>DB.services.filter(s=>s.cat===g.name&&!s.hidden&&(!q||(s.name+' '+(s.ar||'')).toLowerCase().includes(q)));const hid=DB.services.filter(s=>s.hidden);
   const tags=s=>[s.from?'<span class="tg tgr">FROM</span>':'',s.out&&s.out.who?'<span class="tg tb">OUTSIDE</span>':'',s.lockP?'<span class="tg tgr">🔒</span>':''].join('');
   const sub=s=>[s.ar?'<bdi>'+esc(s.ar)+'</bdi>':'',s.min?'⏱ '+s.min+' min':'',s.out&&s.out.who?'at '+esc(s.out.who)+' · '+({pass:'not in our sales',share:'we keep '+f3(s.out.amt),pay:'we pay '+f3(s.out.amt)})[s.out.mode]:'',(s.parts||[]).length?'+ '+s.parts.length+' parts':'',s.tag?(s.tag==='oil'?'oil reminder':'gearbox reminder'):'',s.war?'warranty '+esc(s.war):''].filter(Boolean).join(' · ');
@@ -117,7 +118,7 @@ SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=can.set
   const rv=$('#srev');if(rv)rv.onclick=()=>{DB.ws.svcReviewed=true;save();render();};
   const sa=$('#sadd');if(sa)sa.onclick=()=>svcSheet(null,(DB.scats.find(g=>g.id===fc)||DB.scats[0]||{}).name);
   $$('[data-sa]').forEach(b=>b.onclick=()=>svcSheet(null,DB.scats.find(g=>g.id===b.dataset.sa).name));
-  $$('[data-se]').forEach(b=>b.onclick=()=>{if(!own){toast('Only the owner changes services');return;}svcSheet(byId('services',b.dataset.se));});};
+  $$('[data-se]').forEach(b=>b.onclick=()=>{if(!own){toast('Not allowed for '+S.user.name);return;}svcSheet(byId('services',b.dataset.se));});};
 function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||{cat:cat||(DB.scats[0]||{}).name||'Other',p:[0],tag:''}));
   s.out=s.out||{who:'',mode:'pass',amt:0};s.parts=s.parts||[];let outOn=!!s.out.who;
   const partners=(DB.mlists.find(L=>/partner|workshop/i.test(L.name))||{items:[]}).items.map(i=>i.name);

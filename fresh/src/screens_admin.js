@@ -69,7 +69,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <button class="mitem" data-go="list:pay"><span class="ic">💳</span><div><b>Payment methods</b><span>${esc(w.pay.join(', '))}</span></div><span class="v">›</span></button>
   ${sec('Reminders')}
   <div class="in2"><label class="field-l">Engine oil · months<input class="field" id="srm" inputmode="numeric" value="${w.remMonths}"></label><label class="field-l">Engine oil · km<input class="field" id="srk" inputmode="numeric" value="${w.remKm}"></label></div>
-  <label class="field-l">Reminder message ({name} {car} {service} {workshop})<textarea class="field" id="srmsg" rows="4" placeholder="Leave empty for the default Arabic message">${esc(w.remMsg||'')}</textarea></label>
+  <button class="mitem" data-go="msgs"><span class="ic">💬</span><div><b>WhatsApp messages</b><span>Customers, reminders, estimates, invoices, suppliers</span></div><span class="v">›</span></button>
   ${sec('Lists')}
   <button class="mitem" data-go="lists"><span class="ic">🗂</span><div><b>All lists</b><span>Service groups, part categories, units, car makes, expense types, your own lists</span></div><span class="v">›</span></button>
   <label class="field-l">Opening cash in the drawer<input class="field" id="soc" inputmode="decimal" value="${DB.openingCash?f3(DB.openingCash):''}"></label>
@@ -81,7 +81,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#slogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);w.logo=c.toDataURL('image/png');save();render();};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#slogox');if(lx)lx.onclick=()=>{w.logo='';save();render();};
   $('#ssave').onclick=()=>{w.name=$('#sname').value.trim()||w.name;w.phone=$('#sphone').value.trim();w.addr=$('#saddr').value.trim();w.cr=$('#scr').value.trim();w.nextInv=Math.max(1,parseInt($('#sinv').value)||w.nextInv);w.invStart=w.invStart||w.nextInv;w.credDays=parseInt($('#scred').value)||30;w.vat=$('#svat').checked;w.vatDecided=true;w.warranty=$('#swar').value.trim();
-    w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;w.remMsg=$('#srmsg').value.trim();
+    w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;
     DB.openingCash=num($('#soc').value);save();toast('Saved');render();};
   $('#sbk').onclick=async()=>{const txt=JSON.stringify(DB);DB.backups=(DB.backups||0)+1;save();const name='workshop-backup-'+today()+'.json';
     try{if(navigator.canShare&&navigator.canShare({files:[new File([txt],name)]})){await navigator.share({files:[new File([txt],name,{type:'application/json'})],title:name});return;}}catch(e){}
@@ -91,19 +91,30 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();S.user=null;OB.step=0;render();});};
 /* ---------- USERS ---------- */
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
+  const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
   m.innerHTML=head('Users',`<button class="lnk" id="uadd">＋ Add</button>`)+`
-  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything, costs, deletes, settings.<br><b>Manager</b>: invoices, payments, discounts. No costs, no deletes.<br><b>Worker</b>: opens jobs, adds items, inspections, counts. No money, no discounts.</span></div>
-  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
-  const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role,pin='';
-    openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}"><div class="chips">${['owner','manager','worker'].map(r=>`<button data-r="${r}" aria-pressed="${role===r}">${ROLE[r]}</button>`).join('')}</div><input class="field" id="up" inputmode="numeric" maxlength="4" placeholder="${isNew?'4-number PIN':'New PIN (leave empty to keep)'}"><button class="btn" id="uok">Save</button>${!isNew&&u.id!==S.user.id?'<button class="btn ghost jb-del" id="udel">Remove user</button>':''}`,el=>{
-     el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;el.querySelectorAll('[data-r]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
-     el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
+  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything.<br><b>Manager</b> and <b>Worker</b> start with a set of permissions. Tap a person to turn each one on or off.</span></div>
+  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}${nCust(u)?' · custom permissions':''}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
+  const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role;let pm=Object.assign({},u.perm||{});
+    openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}">
+     <div class="chips" id="uro"></div>
+     <input class="field" id="up" inputmode="numeric" maxlength="4" placeholder="${isNew?'4-number PIN':'New PIN (leave empty to keep)'}">
+     <div class="field-l" style="display:flex;justify-content:space-between;align-items:center">What ${isNew?'they':esc(u.name)} can see and do <button class="lnk" id="urst" style="min-height:0;padding:0">Reset to ${'role'}</button></div>
+     <div class="list" id="upm"></div>
+     <button class="btn" id="uok">Save</button>${!isNew&&u.id!==S.user.id?'<button class="btn ghost jb-del" id="udel">Remove user</button>':''}`,el=>{
+     const draw=()=>{el.querySelector('#uro').innerHTML=['owner','manager','worker'].map(r=>`<button data-r="${r}" aria-pressed="${role===r}">${ROLE[r]}</button>`).join('');
+       el.querySelector('#urst').hidden=role==='owner'||!Object.keys(pm).length;
+       el.querySelector('#upm').innerHTML=role==='owner'?'<p class="hint">The owner can see and do everything.</p>':PERMS.map(([k,t,d])=>{const on=k in pm?!!pm[k]:roleDef(role,k);return `<label class="lrow tgl2"><span class="lname"><div><b>${t}${k in pm?' <span class="tg tgr">changed</span>':''}</b><span>${d}</span></div></span><input type="checkbox" data-pk="${k}" ${on?'checked':''}></label>`;}).join('');
+       el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{role=b.dataset.r;pm={};draw();});
+       el.querySelectorAll('[data-pk]').forEach(b=>b.onchange=()=>{const k=b.dataset.pk;if(b.checked===roleDef(role,k))delete pm[k];else pm[k]=b.checked;draw();});};
+     draw();el.querySelector('#urst').onclick=()=>{pm={};draw();};
+     el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();const pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
        if(!isNew&&u.role==='owner'&&role!=='owner'&&DB.users.filter(x=>x.role==='owner').length===1){toast('Keep at least one owner');return;}
-       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}u.name=n;u.role=role;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
-     const d=el.querySelector('#udel');if(d)d.onclick=()=>{DB.users=DB.users.filter(x=>x!==u);save();closeSheet();render();};});};
+       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}u.name=n;u.role=role;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
+     const d=el.querySelector('#udel');if(d)d.onclick=()=>confirmSheet('Remove '+esc(u.name)+'?','Remove',()=>{DB.users=DB.users.filter(x=>x!==u);save();render();});});};
   $('#uadd').onclick=()=>edit();$$('[data-ue]').forEach(b=>b.onclick=()=>edit(DB.users.find(x=>x.id===b.dataset.ue)));};
 /* ---------- MORE ---------- */
-SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
+SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&routeOk(r)&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
   const ml=DB.mlists.filter(L=>L.inMenu!==false);
   m.innerHTML=head('More')+`<div class="list">
   ${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
@@ -119,7 +130,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('reports','📊','Reports','Sales, profit, top items',can.money())}
   </div>
   ${ml.length?sec('Your lists')+`<div class="list">${ml.map(L=>it('list:'+L.id,L.ic||'📝',esc(L.name),L.items.length+' items')).join('')}</div>`:''}
-  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('users','👥','Users','Owner, manager, workers')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
+  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('msgs','💬','WhatsApp messages','Customers, reminders, suppliers')}${it('users','👥','Users','Who sees what')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
   <button class="btn ghost" id="lo">Log out (${esc(S.user.name)})</button><p class="hint" style="text-align:center">Test version ${esc(window.WS_VN||"")} · data stays on this device · updates by itself</p>`;
   $('#lo').onclick=()=>{S.user=null;render();};};
 /* ---------- print CSS ---------- */
