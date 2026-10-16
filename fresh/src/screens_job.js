@@ -26,7 +26,7 @@ SCREENS.job=m=>{
   ${can.del()&&!isInvoiced(j)?`<button class="btn ghost jb-del" id="jdel">Delete ${j.stage==='estimate'?'estimate':'job'}</button>`:''}`;
   const nb=$('#jnext');if(nb)nb.onclick=()=>{
     if(j.stage==='estimate'){j.stage='new';j.fromEst=true;logJ(j,'Customer agreed');save();render();return;}
-    if(j.stage==='new'){openSheet(`<h3>How long will it take?</h3><div class="chips big">${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']].map(([x,l])=>`<button data-eta="${x}">${l}</button>`).join('')}</div>`,el=>el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const x=+b.dataset.eta;j.eta=x>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():now()+x*60e3;j.stage='work';logJ(j,'Working · ETA '+b.textContent);save();closeSheet();render();}));return;}
+    if(j.stage==='new'){const mins=(j.items||[]).reduce((a,i)=>a+(+i.min||0)*(i.k==='part'?0:Math.max(1,Math.round(+i.q||1))),0);openSheet(`<h3>How long will it take?</h3>${mins?`<p class="hint">The services on this job take about <b>${mins>=60?Math.floor(mins/60)+' h '+(mins%60?mins%60+' min':''):mins+' min'}</b>.</p>`:''}<div class="chips big">${mins?`<button data-eta="${mins}">≈ ${mins>=60?(Math.round(mins/6)/10)+' h':mins+' min'} (services)</button>`:''}${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']].map(([x,l])=>`<button data-eta="${x}">${l}</button>`).join('')}</div>`,el=>el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const x=+b.dataset.eta;j.eta=x>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():now()+x*60e3;j.stage='work';logJ(j,'Working · ETA '+b.textContent);save();closeSheet();render();}));return;}
     if(j.stage==='ready'&&!isInvoiced(j)&&can.invoice()){toast('Make the invoice first');return;}
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);
@@ -44,29 +44,39 @@ function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?t
 function docText(j,kind){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return DB.ws.name+'\n'+(kind==='estimate'?'تقدير سعر':'فاتورة')+' #'+(kind==='estimate'?j.no:j.inv.no)+' · '+fmtD(kind==='estimate'?j.t:j.inv.t)+'\n'+(c.name?'العميل: '+c.name+'\n':'')+'السيارة: '+carName(v)+(v.plate?' · '+v.plate:'')+'\n\n'+(j.items||[]).filter(i=>!i.pend).map(i=>'• '+i.d+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):'')+'\n\nالمجموع: '+f3(T.total)+' '+cur+(kind==='invoice'&&T.paid?'\nالمدفوع: '+f3(T.paid)+'\nالمتبقي: '+f3(T.due):'')+(DB.ws.warranty?'\n\n'+DB.ws.warranty:'')+'\n'+(DB.ws.phone||'');}
 /* add / edit items */
+function svcUse(){const u={};DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.ref)u[i.ref]=(u[i.ref]||0)+1;}));return u;}
+function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',p:svcPrice(s,v),tag:s.tag,war:s.war||'',min:+s.min||0,comm:+s.comm||0,by:S.user.name,lockP:!!s.lockP,from:!!s.from,out:s.out&&s.out.who?Object.assign({},s.out):null};}
 function addItemSheet(j){
-  let q='';const v=vehOf(j);
-  const draw=el=>{const ql=q.toLowerCase();const f=x=>!ql||x.toLowerCase().includes(ql);
-    const sv=DB.services.filter(s=>f(s.name+' '+s.cat));const ps=DB.parts.filter(p=>f(p.name+' '+(p.num||'')+' '+p.cat));const cj=DB.canned.filter(c=>f(c.name));
+  let q='';const v=vehOf(j);const use=svcUse();
+  const draw=el=>{const ql=q.toLowerCase();const f=x=>!ql||x.toLowerCase().includes(ql);const sz=sizeOf(v);
+    el.querySelector('#asz').innerHTML=DB.sizes.map((n,k)=>`<button data-sz="${k}" aria-pressed="${k===sz}">${esc(n)}</button>`).join('');
+    const sv=DB.services.filter(s=>!s.hidden&&f(s.name+' '+(s.ar||'')+' '+s.cat)).sort((a,b)=>(use[b.id]||0)-(use[a.id]||0));const ps=DB.parts.filter(p=>f(p.name+' '+(p.num||'')+' '+p.cat));const cj=DB.canned.filter(c=>f(c.name));
     el.querySelector('#alist').innerHTML=
      (cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(c=>`<button class="opt" data-cj="${c.id}"><div class="tx"><b>${esc(c.name)}</b><span>${c.items.length} items</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`).join(''):'')+
-     (sv.length?`<div class="lbl">Services</div>`+sv.slice(0,ql?60:14).map(s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${esc(s.name)}</b><span>${esc(s.cat)}</span></div><span class="v">${f3(s.p[isSuv(v)?1:0])}</span></button>`).join(''):'')+
+     (sv.length?`<div class="lbl">Services${!ql&&Object.keys(use).length?' · most used first':''}</div>`+sv.slice(0,ql?60:16).map(s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${scatIc(s.cat)} ${esc(s.name)}</b><span>${esc(s.cat)}${s.min?' · '+s.min+' min':''}${s.out&&s.out.who?' · at '+esc(s.out.who):''}${(s.parts||[]).length?' · + '+s.parts.length+' parts':''}</span></div><span class="v">${s.from?'<small>from</small>':''}${f3(svcPrice(s,v))}</span></button>`).join(''):'')+
      (ps.length?`<div class="lbl">Parts</div>`+ps.slice(0,60).map(p=>`<button class="opt" data-pt="${p.id}"><div class="tx"><b>${esc(p.name)}</b><span>${esc(p.num||p.cat)} · ${+p.stock>0?(+p.stock)+(p.unit==='L'?' L':'')+' in stock':'out of stock'}</span></div><span class="v">${f3(p.price)}${p.unit==='L'?'<small>/L</small>':''}</span></button>`).join(''):DB.parts.length?'':`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`);
-    el.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const s=byId('services',b.dataset.sv);j.items.push({k:'labour',ref:s.id,d:s.name,q:1,u:'',p:s.p[isSuv(v)?1:0],tag:s.tag});logJ(j,'Added '+s.name);save();closeSheet();render();});
+    el.querySelectorAll('[data-sz]').forEach(b=>b.onclick=()=>{v.size=+b.dataset.sz;save();draw(el);});
+    el.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const s=byId('services',b.dataset.sv);j.items.push(svcItem(s,v));const at=j.items.length-1;
+      (s.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});
+      logJ(j,'Added '+s.name);save();if(s.from){editItemSheet(j,at);return;}closeSheet();render();});
     el.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.pt);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const c=DB.canned.find(x=>x.id===b.dataset.cj);c.items.forEach(i=>j.items.push(Object.assign({},i)));logJ(j,'Added '+c.name);save();closeSheet();render();});};
-  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off"><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="alist"></div>`,el=>{
+  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3><div class="field-l">Car size</div><div class="chips" id="asz"></div><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off"><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="alist"></div>`,el=>{
     el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};
-    el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1});editItemSheet(j,j.items.length-1,true);};
+    el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
     draw(el);});
 }
-const isSuv=v=>/land cruiser|patrol|prado|fortuner|pajero|tahoe|yukon|suburban|lx|gx|range|x5|x7|gle|q7|explorer|expedition|sequoia|armada|4runner|fj|hilux|tundra|sierra|silverado|ram|f-150/i.test((v&&v.model)||'');
+const isSuv=v=>/land cruiser|patrol|prado|fortuner|pajero|tahoe|yukon|suburban|lx|gx|range|x5|x7|gle|q7|explorer|expedition|sequoia|armada|4runner|fj|tundra|sierra|silverado|ram|f-150/i.test((v&&v.model)||'');
+const isPickup=v=>/hilux|pickup|pick-up|navara|d-max|dmax|l200|triton|ranger|tacoma/i.test((v&&v.model)||'');
+function sizeOf(v){const n=DB.sizes.length;if(v&&v.size!=null&&v.size<n)return v.size;const g=x=>{const i=DB.sizes.findIndex(s=>s.toLowerCase()===x);return i<0?null:i;};
+  if(isPickup(v)&&g('pickup')!=null)return g('pickup');if(isSuv(v)&&g('suv')!=null)return g('suv');return g('sedan')!=null?g('sedan'):0;}
+function svcPrice(s,v){const k=sizeOf(v);const p=s.p||[0];return +(p[k]!=null&&p[k]!==''?p[k]:p[p.length-1])||0;}
 function editItemSheet(j,i,isNew){
   const it=j.items[i];if(!it)return;
   openSheet(`<h3>${isNew&&!it.ref?'New item':'Item'}</h3>
    <input class="field" id="ed" placeholder="Name" value="${esc(it.d)}">
    <div class="chips"><button data-k="part" aria-pressed="${it.k==='part'}">Part</button><button data-k="labour" aria-pressed="${it.k!=='part'}">Labour / service</button></div>
-   <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each<input class="field" id="ep" inputmode="decimal" value="${it.pend?'':f3(it.p)}"></label></div>
+   <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each${it.from?' (starts from '+f3(it.p)+')':''}<input class="field" id="ep" inputmode="decimal" value="${it.pend?'':f3(it.p)}" ${it.lockP&&!can.discount()?'disabled':''}></label></div>
    ${can.cost()&&it.k==='part'?`<label class="field-l">Cost each (owner only)<input class="field" id="ec" inputmode="decimal" value="${it.cost?f3(it.cost):''}"></label>`:''}
    ${!it.ref?`<label class="chk"><input type="checkbox" id="eo" ${it.outside?'checked':''}> Bought outside (not from our stock)</label>`:''}
    <label class="chk"><input type="checkbox" id="epd" ${it.pend?'checked':''}> Ask the owner for the price</label>
@@ -106,7 +116,7 @@ SCREENS.inv=m=>{
   const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)p.stock=Math.round(((+p.stock||0)+(+it.q||0))*100)/100;}});j.returned=now();j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
 };
 function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=0;
-  const tr=k=>(j.items||[]).filter(i=>(k==='part'?i.k==='part':i.k!=='part')&&!i.pend).map(i=>{n++;return `<tr><td class="n">${n}</td><td>${esc(i.d)}${i.num?`<small>${esc(i.num)}</small>`:''}</td><td class="q">${+i.q}${i.u?' '+esc(i.u):''}</td><td class="u">${f3(i.p)}</td><td class="a">${f3(i.q*i.p)}</td></tr>`;}).join('');
+  const tr=k=>(j.items||[]).filter(i=>(k==='part'?i.k==='part':i.k!=='part')&&!i.pend).map(i=>{n++;return `<tr><td class="n">${n}</td><td>${esc(i.d)}${i.num?`<small>${esc(i.num)}</small>`:''}${i.ar?`<div class="ar" style="font-size:2.7mm;color:#444">${esc(i.ar)}</div>`:''}${i.war?`<div style="font-size:2.4mm;color:#555">Warranty: ${esc(i.war)}</div>`:''}</td><td class="q">${+i.q}${i.u?' '+esc(i.u):''}</td><td class="u">${f3(i.p)}</td><td class="a">${f3(i.q*i.p)}</td></tr>`;}).join('');
   const pa=tr('part'),la=tr('labour');
   return `<div class="inv"><div class="inv-hd">${DB.ws.logo?`<img src="${DB.ws.logo}" alt="">`:`<b style="font-size:6mm">${esc(DB.ws.name)}</b>`}<div class="inv-ws"><b>${esc(DB.ws.name)}</b><span>${[DB.ws.addr,DB.ws.phone,DB.ws.cr?'CR '+DB.ws.cr:''].filter(Boolean).map(esc).join(' · ')}</span></div></div>
   <div class="inv-ttl"><b>INVOICE <span class="ar">فاتورة</span></b><span>#${j.inv.no} · ${fmtD(j.inv.t)}</span></div>

@@ -60,7 +60,7 @@ SCREENS.newjob=m=>{
   :`<div class="in2"><input class="field" id="nplate" placeholder="Plate (12345 A)" value="${esc(N.plate)}" style="text-transform:uppercase"><input class="field" id="nkm" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}"></div>
    ${vfound.length&&!cust?`<div class="list">${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:''}
    <div class="in3"><input class="field" id="nmake" placeholder="Make" value="${esc(N.make)}" list="mklist"><input class="field" id="nmodel" placeholder="Model" value="${esc(N.model)}"><input class="field" id="nyear" inputmode="numeric" placeholder="Year" value="${esc(N.year)}"></div>
-   <datalist id="mklist">${['Toyota','Nissan','Lexus','Hyundai','Kia','Honda','Mitsubishi','Mazda','Chevrolet','GMC','Ford','Mercedes-Benz','BMW','Land Rover','MG','Changan','Geely','Suzuki','Jeep','Volkswagen'].map(x=>`<option>${x}</option>`).join('')}</datalist>
+   <datalist id="mklist">${DB.makes.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
    <input class="field" id="nvin" placeholder="VIN (optional)" maxlength="17" value="${esc(N.vin)}" style="text-transform:uppercase">`}
   ${N.vehId?`<input class="field" id="nkm2" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}">`:''}
   <label class="chk"><input type="checkbox" id="nest" ${N.est?'checked':''}> Estimate only (customer has not agreed yet)</label>

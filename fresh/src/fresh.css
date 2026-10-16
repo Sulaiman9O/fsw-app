@@ -112,3 +112,23 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
   .list.two-col{grid-template-columns:1fr 1fr}
 }
 .top .me .av{display:grid;place-items:center;text-align:center;font:700 .85rem var(--f-body);color:#fff;line-height:1;padding:0}
+/* lists editor */
+.lrow{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:4px 6px 4px 4px;min-height:56px}
+.lrow .lname{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;background:none;color:inherit;padding:8px 10px;min-height:48px}
+.lrow .lname div{display:grid;gap:2px;min-width:0}.lrow .lname b{font-weight:600;font-size:.95rem}.lrow .lname span{font-size:.76rem;color:var(--muted)}
+.lrow .ic{font-size:1.2rem;width:36px;height:36px;border-radius:10px;background:var(--panel2);display:grid;place-items:center;flex:0 0 auto}
+.lrow .mv{width:40px;height:40px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:1rem;color:var(--text);flex:0 0 auto}
+.lrow .mv:disabled{opacity:.25}
+.lrow.tgl2{cursor:pointer;padding-right:14px}.lrow.tgl2 input{width:24px;height:24px;accent-color:var(--ok)}
+.row.addr{border-style:dashed;background:transparent;min-height:46px}.row.addr b{color:var(--ok)!important;font-weight:600}
+.chips button[data-ic]{font-size:1.15rem;min-width:46px;padding:0 10px}
+#main .mitem+.mitem{margin-top:0}
+.tg{font-size:.62rem;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:1px;font-family:var(--f-body)}
+.tb{background:rgba(37,99,201,.22);color:#8db8ff!important}.tgr{background:rgba(255,255,255,.08);color:var(--muted)!important}
+.list .row b .tg{font-size:.62rem}
+.szg{display:grid;gap:6px}.szg .field{padding:10px 8px}
+.obox{border:1px solid rgba(37,99,201,.5);background:linear-gradient(160deg,rgba(37,99,201,.1),var(--panel));border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{min-height:44px;background:var(--panel);color:var(--text);font-size:.8rem;border-right:1px solid var(--line);padding:0 4px}
+.seg button:last-child{border-right:0}.seg button.on{background:var(--red);color:#fff;font-weight:600}
+.field.ar{text-align:right}

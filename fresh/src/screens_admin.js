@@ -3,7 +3,7 @@ function rangeOf(k){const d=new Date();const s=new Date(d.toLocaleString('en-US'
   if(k==='week')s.setDate(s.getDate()-6);if(k==='month')s.setDate(1);if(k==='year')s.setMonth(0,1);return s.getTime()-(new Date().getTimezoneOffset()+240)*60e3*0;}
 function sumRange(from){const inv=DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=from);const T=inv.map(jobTotals);
   const pays=DB.jobs.flatMap(j=>(j.pays||[]).filter(p=>p.t>=from));const exp=DB.expenses.filter(e=>e.t>=from).reduce((a,e)=>a+e.amt,0);
-  return {n:inv.length,sales:T.reduce((a,t)=>a+t.total,0),profit:T.reduce((a,t)=>a+t.profit,0),cost:T.reduce((a,t)=>a+t.cost,0),labour:T.reduce((a,t)=>a+t.labour,0),parts:T.reduce((a,t)=>a+t.parts,0),paid:pays.reduce((a,p)=>a+p.amt,0),byM:pays.reduce((o,p)=>(o[p.m]=(o[p.m]||0)+p.amt,o),{}),exp,inv};}
+  return {n:inv.length,sales:T.reduce((a,t)=>a+t.sales,0),passOut:T.reduce((a,t)=>a+t.passOut,0),profit:T.reduce((a,t)=>a+t.profit,0),cost:T.reduce((a,t)=>a+t.cost,0),labour:T.reduce((a,t)=>a+t.labour,0),parts:T.reduce((a,t)=>a+t.parts,0),paid:pays.reduce((a,p)=>a+p.amt,0),byM:pays.reduce((o,p)=>(o[p.m]=(o[p.m]||0)+p.amt,o),{}),exp,inv};}
 SCREENS.money=m=>{if(!can.money()){go('home');return;}
   const due=dueInvoices().sort((a,b)=>a.inv.t-b.inv.t),dt=due.reduce((a,j)=>a+jobTotals(j).due,0),cd=(+DB.ws.credDays||30)*864e5;
   const td=sumRange(rangeOf('today')),wk=sumRange(rangeOf('week'));
@@ -11,7 +11,7 @@ SCREENS.money=m=>{if(!can.money()){go('home');return;}
   <div class="kpis2"><div class="kpi org"><b>${f3(dt)}</b><span>Due from customers</span></div><div class="kpi ok"><b>${f3(wk.sales)}</b><span>Sales · last 7 days</span></div></div>
   ${sec('Today')}<div class="kpis3"><div class="kpi"><b>${f3(td.sales)}</b><span>Invoiced · ${td.n}</span></div><div class="kpi"><b>${f3(td.paid)}</b><span>Collected</span></div><div class="kpi"><b>${f3(td.exp)}</b><span>Expenses</span></div></div>
   <div class="two"><button class="btn ghost sm" data-go="close">🔒 Daily close</button><button class="btn ghost sm" data-go="exp">🧾 Expenses</button></div>
-  <button class="btn ghost sm" data-go="reports">📊 Reports</button>
+  <div class="two"><button class="btn ghost sm" data-go="reports">📊 Reports</button><button class="btn ghost sm" data-go="outw">🏪 Other workshops</button></div>
   ${sec('Collect first · '+due.length,`older than ${DB.ws.credDays||30} days in red`)}
   <div class="jb-list">${due.map(j=>{const c=custOf(j),v=vehOf(j),T=jobTotals(j),old=now()-j.inv.t>cd;return `<button class="jb-r it" data-go="inv:${j.id}"><div>${esc(c.name||'')}<small>#${j.inv.no} · ${esc(carName(v))} · ${ago(j.inv.t)}</small></div><b style="${old?'color:var(--bad)':''}">${f3(T.due)}</b></button>`;}).join('')||'<div class="jb-r"><div>Nothing due 👌</div></div>'}</div>`;};
 SCREENS.exp=m=>{const f=rangeOf('month');const list=DB.expenses.slice().sort((a,b)=>b.t-a.t);const mon=DB.expenses.filter(e=>e.t>=f);
@@ -41,12 +41,14 @@ SCREENS.reports=m=>{if(!can.money()){go('home');return;}const k=S.p.k||'month';c
   m.innerHTML=head('Reports')+`<div class="chips">${[['today','Today'],['week','7 days'],['month','This month'],['year','This year']].map(([x,l])=>`<button data-k="${x}" aria-pressed="${k===x}">${l}</button>`).join('')}</div>
   <div class="kpis3"><div class="kpi ok"><b>${f3(R.sales)}</b><span>Sales · ${R.n} invoices</span></div><div class="kpi"><b>${f3(R.paid)}</b><span>Collected</span></div><div class="kpi red"><b>${f3(R.exp)}</b><span>Expenses</span></div></div>
   ${can.cost()?`<div class="kpis3"><div class="kpi"><b>${f3(R.labour)}</b><span>Labour</span></div><div class="kpi"><b>${f3(R.parts-R.cost)}</b><span>Profit on parts</span></div><div class="kpi ${R.profit-R.exp>=0?'ok':'red'}"><b>${f3(R.profit-R.exp)}</b><span>Net after expenses</span></div></div>`:''}
+  ${R.passOut>0.0005?`<p class="hint">${f3(R.passOut)} of work done at other workshops is not counted in sales.</p>`:''}
+  ${(()=>{const cm={};R.inv.forEach(j=>(j.items||[]).forEach(i=>{if(+i.comm&&i.by){cm[i.by]=(cm[i.by]||0)+(+i.comm)*(+i.q||1);}}));const e=Object.entries(cm);return can.cost()&&e.length?sec('Commission')+`<div class="list">${e.sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<div class="row"><div><b>${esc(n)}</b></div><span class="v">${f3(v)}</span></div>`).join('')}</div>`:'';})()}
   ${sec('Top services')}<div class="list">${top(svc).map(([n,o])=>`<div class="row"><div><b>${esc(n)}</b><span>${o.n} times</span></div><span class="v">${f3(o.a)}</span></div>`).join('')||empty('📊','No invoices in this period.')}</div>
   ${sec('Top parts')}<div class="list">${top(prt).map(([n,o])=>`<div class="row"><div><b>${esc(n)}</b><span>${+o.n.toFixed(2)} sold</span></div><span class="v">${f3(o.a)}</span></div>`).join('')||''}</div>
   ${Object.keys(days).length?sec('Invoices by day of week')+`<div class="list">${['Sat','Sun','Mon','Tue','Wed','Thu','Fri'].filter(d=>days[d]).map(d=>`<div class="nh-row"><b>${d}</b><span class="r">${days[d]}</span><span class="m"></span><div class="nh-bar"><i style="width:${Math.round(days[d]/Math.max(...Object.values(days))*100)}%;background:var(--red)"></i></div></div>`).join('')}</div>`:''}`;
   $$('[data-k]').forEach(b=>b.onclick=()=>{S.p.k=b.dataset.k;render();});};
 /* ---------- SETUP · 100 steps ---------- */
-const STEP_LINK={profile:'settings',logo:'settings',vat:'settings',invno:'settings',warranty:'settings',pay:'settings',cred:'settings',remind:'settings',remmsg:'settings',backup:'settings',backup2:'settings',manager:'users',worker:'users',owner:'users',svc:'svc',svcadd:'svc',pcat:'settings',oils:'stock',filters:'stock',pprice:'stock',pcost:'stock',reorder:'stock',vendors:'vendors',po:'vendors',porec:'vendors',canned:'canned',insp:'insp',expcat:'settings',exp:'exp',cust5:'cust',job1:'newjob',est2job:'work',inv1:'work',pay3:'money',ret:'work',outside:'work',rem1:'cust',close1:'close',count1:'count'};
+const STEP_LINK={profile:'settings',logo:'settings',vat:'settings',invno:'settings',warranty:'settings',pay:'list:pay',cred:'settings',remind:'settings',remmsg:'settings',backup:'settings',backup2:'settings',manager:'users',worker:'users',owner:'users',svc:'svc',svcadd:'svc',pcat:'list:pcat',oils:'stock',filters:'stock',pprice:'stock',pcost:'stock',reorder:'stock',vendors:'vendors',po:'vendors',porec:'vendors',canned:'canned',insp:'insp',expcat:'list:pcat',exp:'exp',cust5:'cust',job1:'newjob',est2job:'work',inv1:'work',pay3:'money',ret:'work',outside:'work',rem1:'cust',close1:'close',count1:'count'};
 SCREENS.setup=m=>{const [d,t]=stepsProgress();const open=S.p.w||STEPS.find(([w,,l])=>l.some(([,a],i)=>!stepDone(w,i,a)))?.[0]||'w1';
   m.innerHTML=head('Setup · 100 steps',`${d}/${t}`)+`<div class="prog"><i style="width:${d/t*100}%"></i></div>
   <p class="hint">Ticks with ✨ tick themselves when the app sees it done. Tap a step with › to go there.</p>
@@ -64,13 +66,12 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <div class="in2"><label class="field-l">Next invoice number<input class="field" id="sinv" inputmode="numeric" value="${w.nextInv}"></label><label class="field-l">Credit days<input class="field" id="scred" inputmode="numeric" value="${w.credDays}"></label></div>
   <label class="chk"><input type="checkbox" id="svat" ${w.vat?'checked':''}> VAT registered (if not, leave off)</label>
   <label class="field-l">Warranty / footer text<textarea class="field" id="swar" rows="2" placeholder="e.g. 3 months warranty on labour. Parts as per maker.">${esc(w.warranty||'')}</textarea></label>
-  <label class="field-l">Payment methods (comma separated)<input class="field" id="spay" value="${esc(w.pay.join(', '))}"></label>
+  <button class="mitem" data-go="list:pay"><span class="ic">💳</span><div><b>Payment methods</b><span>${esc(w.pay.join(', '))}</span></div><span class="v">›</span></button>
   ${sec('Reminders')}
   <div class="in2"><label class="field-l">Engine oil · months<input class="field" id="srm" inputmode="numeric" value="${w.remMonths}"></label><label class="field-l">Engine oil · km<input class="field" id="srk" inputmode="numeric" value="${w.remKm}"></label></div>
   <label class="field-l">Reminder message ({name} {car} {service} {workshop})<textarea class="field" id="srmsg" rows="4" placeholder="Leave empty for the default Arabic message">${esc(w.remMsg||'')}</textarea></label>
   ${sec('Lists')}
-  <label class="field-l">Part categories (one per line)<textarea class="field" id="spc" rows="5">${esc(DB.pcats.join('\n'))}</textarea></label>
-  <label class="field-l">Expense types (one per line)<textarea class="field" id="sec" rows="5">${esc(DB.ecats.join('\n'))}</textarea></label>
+  <button class="mitem" data-go="lists"><span class="ic">🗂</span><div><b>All lists</b><span>Service groups, part categories, units, car makes, expense types, your own lists</span></div><span class="v">›</span></button>
   <label class="field-l">Opening cash in the drawer<input class="field" id="soc" inputmode="decimal" value="${DB.openingCash?f3(DB.openingCash):''}"></label>
   <button class="btn" id="ssave">Save settings</button>
   ${sec('Backup')}
@@ -80,8 +81,8 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#slogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);w.logo=c.toDataURL('image/png');save();render();};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#slogox');if(lx)lx.onclick=()=>{w.logo='';save();render();};
   $('#ssave').onclick=()=>{w.name=$('#sname').value.trim()||w.name;w.phone=$('#sphone').value.trim();w.addr=$('#saddr').value.trim();w.cr=$('#scr').value.trim();w.nextInv=Math.max(1,parseInt($('#sinv').value)||w.nextInv);w.invStart=w.invStart||w.nextInv;w.credDays=parseInt($('#scred').value)||30;w.vat=$('#svat').checked;w.vatDecided=true;w.warranty=$('#swar').value.trim();
-    w.pay=$('#spay').value.split(',').map(x=>x.trim()).filter(Boolean);if(!w.pay.length)w.pay=['Cash'];w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;w.remMsg=$('#srmsg').value.trim();
-    DB.pcats=$('#spc').value.split('\n').map(x=>x.trim()).filter(Boolean);DB.ecats=$('#sec').value.split('\n').map(x=>x.trim()).filter(Boolean);DB.openingCash=num($('#soc').value);save();toast('Saved');render();};
+    w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;w.remMsg=$('#srmsg').value.trim();
+    DB.openingCash=num($('#soc').value);save();toast('Saved');render();};
   $('#sbk').onclick=async()=>{const txt=JSON.stringify(DB);DB.backups=(DB.backups||0)+1;save();const name='workshop-backup-'+today()+'.json';
     try{if(navigator.canShare&&navigator.canShare({files:[new File([txt],name)]})){await navigator.share({files:[new File([txt],name,{type:'application/json'})],title:name});return;}}catch(e){}
     try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=name;a.click();}catch(e){}
@@ -102,10 +103,11 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
      const d=el.querySelector('#udel');if(d)d.onclick=()=>{DB.users=DB.users.filter(x=>x!==u);save();closeSheet();render();};});};
   $('#uadd').onclick=()=>edit();$$('[data-ue]').forEach(b=>b.onclick=()=>edit(DB.users.find(x=>x.id===b.dataset.ue)));};
 /* ---------- MORE ---------- */
-SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
+SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
+  const ml=DB.mlists.filter(L=>L.inMenu!==false);
   m.innerHTML=head('More')+`<div class="list">
   ${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
-  ${it('svc','🛠','Services',DB.services.length+' services')}
+  ${it('svc','🛠','Services',DB.services.length+' services · '+DB.scats.length+' groups')}
   ${it('stock','🛢','Stock',DB.parts.length+' parts')}
   ${it('vendors','🚚','Suppliers & orders',DB.vendors.length+' suppliers')}
   ${it('canned','📦','Canned jobs',DB.canned.length+' sets')}
@@ -115,9 +117,10 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('exp','🧾','Expenses','Rent, salaries, supplies',can.money())}
   ${it('close','🔒','Daily close','Match the cash drawer',can.money())}
   ${it('reports','📊','Reports','Sales, profit, top items',can.money())}
-  ${it('users','👥','Users','Owner, manager, workers',can.settings())}
-  ${it('settings','⚙️','Settings','Workshop, invoices, backup',can.settings())}
-  </div><button class="btn ghost" id="lo">Log out (${esc(S.user.name)})</button><p class="hint" style="text-align:center">Test version · data stays on this device</p>`;
+  </div>
+  ${ml.length?sec('Your lists')+`<div class="list">${ml.map(L=>it('list:'+L.id,L.ic||'📝',esc(L.name),L.items.length+' items')).join('')}</div>`:''}
+  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('users','👥','Users','Owner, manager, workers')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
+  <button class="btn ghost" id="lo">Log out (${esc(S.user.name)})</button><p class="hint" style="text-align:center">Test version · data stays on this device</p>`;
   $('#lo').onclick=()=>{S.user=null;render();};};
 /* ---------- print CSS ---------- */
 const INV_CSS='.inv-t .ar0{letter-spacing:0;text-transform:none}.inv{background:#fff;color:#000;font-size:3.3mm;line-height:1.3;padding:0}.inv .ar{direction:rtl}.inv-hd{display:flex;align-items:center;gap:4mm;border-bottom:.5mm solid #000;padding-bottom:3mm}.inv-hd img{max-width:40mm;max-height:18mm}.inv-ws{display:grid;gap:.4mm;margin-left:auto;text-align:right}.inv-ws b{font-size:4mm}.inv-ws span{font-size:2.8mm}.inv-ttl{display:flex;justify-content:space-between;align-items:baseline;margin:3mm 0 2.5mm}.inv-ttl b{font-size:5mm;letter-spacing:.1em}.inv-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5mm 4mm;border:.3mm solid #000;border-radius:1.5mm;padding:2mm 3mm;margin-bottom:3mm}.inv-meta small{display:block;font-size:2.3mm;color:#555;text-transform:uppercase;letter-spacing:.08em}.inv .mono{font-family:monospace}.inv-t{width:100%;border-collapse:collapse}.inv-t th{font-size:2.5mm;letter-spacing:.1em;border-bottom:.4mm solid #000;padding:1.2mm 1mm;text-align:left}.inv-t td{padding:1.4mm 1mm;border-bottom:.2mm solid #ccc;vertical-align:top}.inv-t td small{color:#555;font-size:2.5mm;margin-left:1.5mm}.inv-t .n{width:6mm;color:#888}.inv-t .q,.inv-t .u,.inv-t .a{text-align:right;white-space:nowrap}.inv-t .q{width:12mm}.inv-t .u{width:18mm;color:#555}.inv-t .a{width:20mm;font-weight:700}.inv-t .grp td{white-space:nowrap;border-bottom:.3mm solid #000;padding-top:3mm;font-size:2.6mm;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.inv-sum{margin-left:auto;width:70mm;margin-top:3mm;border-top:.3mm solid #000}.inv-sum div{display:flex;justify-content:space-between;padding:1.2mm 1mm}.inv-sum .tot{border-top:.5mm solid #000;font-weight:800;font-size:4.4mm;padding-top:2mm;margin-top:1mm}.inv-paid{display:inline-block;border:.6mm solid #000;border-radius:1.5mm;padding:1mm 3mm;font-weight:800;letter-spacing:.1em;margin-top:3mm;transform:rotate(-3deg)}.inv-ft{margin-top:5mm;text-align:center;font-size:2.9mm;color:#333}';
