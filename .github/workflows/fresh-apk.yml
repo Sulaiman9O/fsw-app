@@ -1,0 +1,55 @@
+name: Build Workshop APK (new-workshop test app)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'fresh/**'
+      - '.github/workflows/fresh-apk.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fresh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Android project
+        run: npx cap add android && sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
+      - name: Print plugin
+        run: |
+          D=android/app/src/main/java/om/fsw/garage
+          sed 's/^package om.fsw.workshop;/package om.fsw.garage;/' ../native/FswPrintPlugin.java > $D/FswPrintPlugin.java
+          printf 'package om.fsw.garage;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(FswPrintPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n' > $D/MainActivity.java
+          cat $D/MainActivity.java
+      - name: Icons
+        continue-on-error: true
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'
+      - name: Version
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"0.1.${{ github.run_number }}\"/" android/app/build.gradle
+      - name: Build
+        run: npx cap sync android && cd android && ./gradlew assembleRelease --no-daemon
+      - name: Sign
+        run: |
+          BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $BT/zipalign -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          $BT/apksigner sign --ks ../keystore/fsw.keystore --ks-key-alias fsw --ks-pass pass:fswapp2026 --key-pass pass:fswapp2026 --out workshop-test.apk aligned.apk
+          $BT/apksigner verify workshop-test.apk
+      - name: Release (does not touch the main app's latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: garage
+          name: Workshop (new-workshop test app)
+          make_latest: false
+          prerelease: true
+          files: fresh/workshop-test.apk

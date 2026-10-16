@@ -1,0 +1,6 @@
+{
+  "appId": "om.fsw.garage",
+  "appName": "Workshop (test)",
+  "webDir": "www",
+  "android": { "backgroundColor": "#000000" }
+}
