@@ -161,3 +161,13 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .card.news.full{border-color:rgba(37,99,201,.6);background:linear-gradient(160deg,rgba(37,99,201,.12),var(--panel))}
 .demob{display:flex;align-items:center;gap:10px;border:1px dashed rgba(240,162,94,.7);background:rgba(240,162,94,.1);border-radius:14px;padding:10px 12px;font-size:.84rem;color:#ffd7b0}
 .demob span{flex:1}.demob button{min-height:36px;padding:0 12px;border-radius:10px;background:rgba(240,162,94,.25);color:#fff;font-weight:600}
+/* car picker */
+.carpick{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:#111113;border-radius:12px;padding:10px 14px;min-height:56px;color:inherit}
+.carpick b{display:block;font-weight:600}.carpick span{display:block;font-size:.78rem;color:var(--muted)}.carpick>b,.carpick>span{flex:1}.carpick em{font-style:normal;color:var(--dim);font-size:1.3rem;margin-left:auto}
+.carpick{flex-wrap:wrap}.carpick b,.carpick span{flex-basis:calc(100% - 30px)}
+.cpath{display:flex;align-items:center;gap:4px;flex-wrap:wrap}.cpath span{color:var(--dim)}
+.cpath button{border:1px solid var(--line);background:var(--panel);border-radius:999px;min-height:34px;padding:0 12px;font-size:.82rem;color:var(--text);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpath button.on{background:var(--red);border-color:var(--red);color:#fff}.cpath button:disabled{opacity:.4}
+.cpl .row{min-height:50px}
+.ygrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.ygrid button{min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:600}.ygrid button.on{background:var(--red);border-color:var(--red)}
+.cpo summary{color:var(--muted);font-size:.85rem;padding:8px 0;cursor:pointer}

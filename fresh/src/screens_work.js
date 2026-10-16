@@ -45,7 +45,7 @@ SCREENS.work=m=>{
 };
 /* ---------- NEW JOB (customer → car → job) ---------- */
 SCREENS.newjob=m=>{
-  const N=S.p.n||(S.p.n={phone:'',name:'',plate:'',make:'',model:'',year:'',km:'',vin:'',est:false,custId:null,vehId:null});
+  const N=S.p.n||(S.p.n={phone:'',name:'',plate:'',make:'',model:'',year:'',km:'',vin:'',engine:'',est:false,custId:null,vehId:null});
   const found=N.phone.length>=4?DB.customers.filter(c=>(c.phone||'').includes(N.phone)).slice(0,4):[];
   const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];
   const cust=N.custId&&byId('customers',N.custId);const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
@@ -60,8 +60,8 @@ SCREENS.newjob=m=>{
   ${cars.length&&!N.vehNew?`<div class="list">${cars.map(v=>`<button class="row${N.vehId===v.id?' selr':''}" data-pv="${v.id}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${v.km?'last '+kmf(v.km)+' km':''}</span></div><span class="v">${N.vehId===v.id?'✓':'›'}</span></button>`).join('')}<button class="row" id="nvnew"><div><b>＋ Another car</b></div></button></div>`
   :`<div class="in2"><input class="field" id="nplate" placeholder="Plate (12345 A)" value="${esc(N.plate)}" style="text-transform:uppercase"><input class="field" id="nkm" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}"></div>
    ${vfound.length&&!cust?`<div class="list">${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:''}
-   <div class="in3"><input class="field" id="nmake" placeholder="Make" value="${esc(N.make)}" list="mklist"><input class="field" id="nmodel" placeholder="Model" value="${esc(N.model)}"><input class="field" id="nyear" inputmode="numeric" placeholder="Year" value="${esc(N.year)}"></div>
-   <datalist id="mklist">${DB.makes.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
+   <button class="carpick" id="ncp">${N.make?`<b>${esc([N.make,N.model,N.year].filter(Boolean).join(' '))}</b><span>${N.engine?esc(N.engine):'Tap to choose the engine'}</span>`:'<b>🚗 Choose make, model, year, engine</b><span>Type “toy” for Toyota…</span>'}<em>›</em></button>
+   <input type="hidden" id="nmake" value="${esc(N.make)}"><input type="hidden" id="nmodel" value="${esc(N.model)}"><input type="hidden" id="nyear" value="${esc(N.year)}">
    <input class="field" id="nvin" placeholder="VIN (optional)" maxlength="17" value="${esc(N.vin)}" style="text-transform:uppercase">`}
   ${N.vehId?`<input class="field" id="nkm2" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}">`:''}
   <label class="chk"><input type="checkbox" id="nest" ${N.est?'checked':''}> Estimate only (customer has not agreed yet)</label>
@@ -71,6 +71,7 @@ SCREENS.newjob=m=>{
   $$('[data-pc]').forEach(b=>b.onclick=()=>{keep();N.custId=b.dataset.pc;const vs=DB.vehicles.filter(v=>v.cust===N.custId);N.vehId=vs.length===1?vs[0].id:null;render();});
   $$('[data-pv]').forEach(b=>b.onclick=()=>{keep();N.vehId=b.dataset.pv;render();});
   $$('[data-pvf]').forEach(b=>b.onclick=()=>{keep();const v=byId('vehicles',b.dataset.pvf);N.custId=v.cust;N.vehId=v.id;render();});
+  const ncp=$('#ncp');if(ncp)ncp.onclick=()=>{keep();carPicker(N,r=>{Object.assign(N,r);render();});};
   const nv=$('#nvnew');if(nv)nv.onclick=()=>{keep();N.vehNew=true;N.vehId=null;render();};
   const ch=$('#nchg');if(ch)ch.onclick=()=>{N.custId=null;N.vehId=null;N.vehNew=false;render();};
   const wk=$('#nwalk');if(wk)wk.onclick=()=>{keep();N.name='Walk-in';render();};
@@ -78,7 +79,7 @@ SCREENS.newjob=m=>{
   $('#ngo').onclick=()=>{keep();
     let c=cust;if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     let v=N.vehId&&byId('vehicles',N.vehId);
-    if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),km:num(N.km),t:now()};DB.vehicles.push(v);}
+    if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
     const j={id:uid('j'),no:DB.ws.nextJob++,cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
     DB.jobs.push(j);save();toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};

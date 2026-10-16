@@ -14,7 +14,7 @@ const r2=x=>Math.round(x*100)/100;
 function mv(p,q,why,ref){if(!p||!q)return;p.stock=r2((+p.stock||0)+q);(DB.moves=DB.moves||[]).push({t:now(),part:p.id,q:r2(q),why,ref:ref||'',by:S.user?S.user.name:'',bal:p.stock});}
 const unitS=p=>p.unit==='L'?'L':p.unit&&p.unit!=='pc'?p.unit:'';
 function lastSold(){const o={};DB.jobs.filter(isInvoiced).forEach(j=>(j.items||[]).forEach(i=>{if(i.k==='part'&&i.ref)o[i.ref]=Math.max(o[i.ref]||0,j.inv.t);}));return o;}
-function fitsCar(p,v){if(!p.fits||!v)return false;const car=((v.make||'')+' '+(v.model||'')+' '+(v.year||'')).toLowerCase();
+function fitsCar(p,v){if(!p.fits||!v)return false;const car=((v.make||'')+' '+(v.model||'')+' '+(v.year||'')+' '+(v.engine||'')).toLowerCase();
   return p.fits.split(/[,،\n]/).map(x=>x.trim().toLowerCase()).filter(Boolean).some(f=>{const w=f.split(/\s+/);const yr=w.find(x=>/^\d{4}(-\d{4})?$/.test(x));const words=w.filter(x=>x!==yr);
     if(!words.every(x=>car.includes(x)))return false;if(!yr||!v.year)return true;const [a,b]=yr.split('-').map(Number);const y=+v.year;return y>=a&&y<=(b||a);});}
 const markOf=cat=>+((DB.markup||{})[cat])||0;

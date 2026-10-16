@@ -7,7 +7,7 @@ SCREENS.job=m=>{
   const stages=['new','work','ready','done'];const si=stages.indexOf(j.stage);
   m.innerHTML=head((j.stage==='estimate'?'Estimate':'Job')+' #'+j.no,`<span class="tag" style="background:${sc};color:#000">${sl}</span>`)+`
   <div class="card"><div class="h"><b>${esc(carName(v)||'Car')} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><button class="lnk" data-go="custd:${c.id}">${esc(c.name||'')} ›</button></div>
-   <span class="sub">${c.phone?esc(c.phone)+' · ':''}${j.km?kmf(j.km)+' km · ':''}opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
+   <span class="sub">${v.engine?'⚙️ '+esc(v.engine)+'<br>':''}${c.phone?esc(c.phone)+' · ':''}${j.km?kmf(j.km)+' km · ':''}opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
   ${j.stage!=='estimate'?`<div class="jb-steps">${stages.map((s,i)=>`<div class="${i<=si?'on':''}" style="--sc:${STAGE[s][1]}"><i></i><span>${STAGE[s][0]}</span></div>`).join('')}</div>`:''}
   ${nx?`<button class="btn okb" id="jnext">${nx[1]}</button>`:''}
   ${sec('Services & parts',`${(j.items||[]).length} items`)}
