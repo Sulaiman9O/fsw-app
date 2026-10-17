@@ -60,7 +60,7 @@ function repeatVisit(j,from){const v=vehOf(j);let n=0;(from.items||[]).forEach(i
     const c=Object.assign({},i);delete c.pend;c.by=S.user.name;j.items.push(c);n++;});
   logJ(j,'Repeated visit #'+from.no);return n;}
 function addItemSheet(j,opt){opt=opt||{};
-  let q=opt.q||'',tab=opt.tab||'';const v=vehOf(j);const use=svcUse();const lv=lastVisit(j);
+  let q=opt.q||'',tab=opt.tab||'';const v=vehOf(j);const use=svcUse();const lv=lastVisit(j);let msel=null;/* long press = pick several, then add them together */
   const svRow=s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${scatIc(s.cat)} ${esc(s.name)}</b><span>${esc(s.cat)}${s.min?' · '+s.min+' min':''}${s.out&&s.out.who?' · at '+esc(s.out.who):''}${(s.parts||[]).length?' · + '+s.parts.length+' parts':''}</span></div><span class="v">${s.from?'<small>from</small>':''}${f3(svcPrice(s,v))}</span></button>`;
   const cjRow=c=>`<button class="opt" data-cj="${c.id}"><div class="tx"><b>${esc(c.name)}</b><span>${c.items.length} items</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`;
   const byUse=(a,b)=>(use[b.id]||0)-(use[a.id]||0);
@@ -92,8 +92,25 @@ function addItemSheet(j,opt){opt=opt||{};
       (s.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});
       logJ(j,'Added '+s.name);save();if(s.from){editItemSheet(j,at);return;}closeSheet();render();});
     el.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.pt);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
-    el.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const c=DB.canned.find(x=>x.id===b.dataset.cj);c.items.forEach(i=>j.items.push(Object.assign({},i)));logJ(j,'Added '+c.name);save();closeSheet();render();});};
-  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="atabs"></div><div id="alist"></div>`,el=>{
+    el.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const c=DB.canned.find(x=>x.id===b.dataset.cj);c.items.forEach(i=>j.items.push(Object.assign({},i)));logJ(j,'Added '+c.name);save();closeSheet();render();});
+    const key=b=>b.dataset.sv?'s:'+b.dataset.sv:b.dataset.pt?'p:'+b.dataset.pt:'c:'+b.dataset.cj;
+    const rows=[...el.querySelectorAll('#alist [data-sv],#alist [data-pt],#alist [data-cj]')];
+    rows.forEach(b=>longPress(b,()=>{if(msel)return;msel=new Set([key(b)]);draw(el);}));
+    let mb=el.querySelector('#amsel');
+    if(!msel){if(mb)mb.remove();return;}
+    rows.forEach(b=>{b.classList.add('selm');b.classList.toggle('on',msel.has(key(b)));if(!b.querySelector('.ck'))b.insertAdjacentHTML('afterbegin','<i class="ck">✓</i>');
+      b.onclick=()=>{const k=key(b);if(msel.has(k))msel.delete(k);else msel.add(k);b.classList.toggle('on');mbar();};});
+    if(!mb){mb=document.createElement('div');mb.id='amsel';mb.className='amsel';el.querySelector('.pnl').appendChild(mb);}
+    const priceOf=k=>{const [t,id]=[k[0],k.slice(2)];if(t==='s'){const sv=byId('services',id);return sv?svcPrice(sv,v)+(sv.parts||[]).reduce((a,x)=>{const pt=byId('parts',x.ref);return a+(pt?(+x.q||1)*(+pt.price||0):0);},0):0;}if(t==='p'){const p=byId('parts',id);return p?+p.price||0:0;}const c=DB.canned.find(x=>x.id===id);return c?c.items.reduce((a,i)=>a+i.q*i.p,0):0;};
+    const mbar=()=>{const n=msel.size,tot=[...msel].reduce((a,k)=>a+priceOf(k),0);mb.innerHTML=`<button class="btn" id="amok" ${n?'':'disabled'}>＋ Add ${n} item${n===1?'':'s'} · ${f3(tot)}</button><button class="btn ghost sm" id="amx">✕ Cancel selecting</button>`;
+      mb.querySelector('#amx').onclick=()=>{msel=null;draw(el);};
+      mb.querySelector('#amok').onclick=()=>{let smart=null,n2=0;[...msel].forEach(k=>{const t=k[0],id=k.slice(2);
+          if(t==='s'){const sv=byId('services',id);if(!sv)return;if(!opt.manual&&smartOk(sv)&&!smart){smart=sv;return;}j.items.push(svcItem(sv,v));(sv.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});n2++;}
+          else if(t==='p'){const p=byId('parts',id);if(!p)return;j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});n2++;}
+          else{const c=DB.canned.find(x=>x.id===id);if(c){c.items.forEach(i=>j.items.push(Object.assign({},i)));n2++;}}});
+        logJ(j,'Added '+n2+' items');save();closeSheet();render();if(smart){smartSheet(j,smart);toast('Added '+n2+'. Now choose the oil for '+smart.name);}else toast('Added '+n2+' items');};};
+    mbar();};
+  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="atabs"></div><p class="hint ahint">👆 Hold an item to pick several and add them together.</p><div id="alist"></div>`,el=>{
     el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};const asc=el.querySelector('#ascan');if(asc)asc.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(!p){toast('No part with '+c);return;}j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
     draw(el);});

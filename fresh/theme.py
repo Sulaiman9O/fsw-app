@@ -77,6 +77,8 @@ def light(c, role):
     if neutral:
         if a < 0.999 and l < 0.01:
             return rgb(h, 0, 0, a * 0.75 if a >= 0.4 else a * 0.6)   # black overlays and the screen behind popups
+        if role == 'bg' and l > 0.85 and a > 0.9:
+            return c                                    # white boxes (messages, tour, logo badge) stay white with their dark text
         if role == 'fg' and l < 0.15 and a > 0.9:
             return c                                    # dark text was already on a light/coloured spot
         if role == 'fg':
