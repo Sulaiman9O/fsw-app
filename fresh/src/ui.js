@@ -17,7 +17,7 @@ function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
 const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
-function go(r,p){S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
+function go(r,p){S.selJ=null;S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
 function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){closeSheet();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
   if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
@@ -44,6 +44,7 @@ function render(){
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
   try{motionAfterRender(m);}catch(e){}
+  try{attachPress(m);}catch(e){}
 }
 const head=(t,right='')=>`<div class="nh-head"><button class="nh-bk" data-back aria-label="Back">‹</button><b>${t}</b>${right?`<span class="hr">${right}</span>`:''}</div>`;
 const sec=(t,r='')=>`<div class="ops-sec"><b>${t}</b><span>${r}</span></div>`;

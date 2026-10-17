@@ -599,3 +599,18 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .sghost{position:fixed;inset:0;z-index:29;display:flex;align-items:flex-end;justify-content:center}
 .sghost .pnl{background:#121214;border:1px solid var(--line);width:100%;max-width:640px;border-radius:22px 22px 0 0;max-height:84vh;overflow:hidden;padding:16px;display:grid;gap:10px}
 .mbar{border:1px dashed rgba(240,162,94,.7);background:rgba(240,162,94,.1);border-radius:12px;padding:8px 12px;font-size:.84rem;color:#ffd7b0}
+/* long press + selection */
+.lp-hold{transform:scale(.97);transition:transform .45s ease!important;filter:brightness(1.15)}
+.ash-h{display:grid;gap:2px}.ash-h span{color:var(--muted);font-size:.84rem}.ash-h b{color:var(--text)}
+.ash{display:grid;gap:6px}
+.ash-b{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:11px 12px;color:inherit;min-height:54px}
+.ash-b .ic{font-size:1.25rem;width:34px;height:34px;border-radius:10px;background:var(--panel2);display:grid;place-items:center;flex:0 0 auto}
+.ash-b div{display:grid;gap:1px}.ash-b b{font-weight:600}.ash-b small{color:var(--muted);font-size:.76rem}
+.ash-b.dg b{color:var(--bad)}
+.selbar{position:sticky;top:calc(var(--top,56px) + 4px);z-index:5;display:flex;gap:6px;align-items:center;flex-wrap:wrap;border:1px solid var(--red);background:#1a0f10;border-radius:14px;padding:8px 10px}
+.selbar b{flex:1;font-weight:700}.selbar button{min-height:38px;padding:0 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:.82rem;font-weight:600}.selbar .dg{color:var(--bad)}
+.jb-r.selm{gap:10px}.jb-r.selm .ck{width:24px;height:24px;border-radius:7px;border:2px solid #555;display:grid;place-items:center;font-style:normal;font-weight:800;flex:0 0 auto}
+.jb-r.selm.on{background:rgba(238,58,57,.1)}.jb-r.selm.on .ck{background:var(--red);border-color:var(--red);color:#fff}
+.jb-r.selm>div{flex:1}
+.undob{position:fixed;left:12px;right:12px;bottom:calc(var(--navh) + 12px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;align-items:center;gap:12px;background:#222;border:1px solid #444;color:#fff;border-radius:14px;padding:8px 8px 8px 14px;max-width:560px;margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.undob span{flex:1;font-size:.9rem}.undob button{min-height:40px;padding:0 16px;border-radius:10px;background:var(--red);color:#fff;font-weight:700}
