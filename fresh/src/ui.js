@@ -53,8 +53,8 @@ const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span
 /* ---------- sheets ---------- */
 function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
   el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)closeSheet();};
-  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
-function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;}
+  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
+function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;document.documentElement.classList.remove('sheet-open');}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 
 /* ---------- onboarding (first run) ---------- */
