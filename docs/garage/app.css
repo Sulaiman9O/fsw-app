@@ -598,3 +598,4 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 @keyframes drift{0%{transform:translate(0,0)}100%{transform:translate(-6%,4%)}}
 .sghost{position:fixed;inset:0;z-index:29;display:flex;align-items:flex-end;justify-content:center}
 .sghost .pnl{background:#121214;border:1px solid var(--line);width:100%;max-width:640px;border-radius:22px 22px 0 0;max-height:84vh;overflow:hidden;padding:16px;display:grid;gap:10px}
+.mbar{border:1px dashed rgba(240,162,94,.7);background:rgba(240,162,94,.1);border-radius:12px;padding:8px 12px;font-size:.84rem;color:#ffd7b0}

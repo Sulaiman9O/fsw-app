@@ -2,6 +2,10 @@ const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['jo
 const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'1.8.1',ic:'✋',t:'تجنّب المقارنة الذكية',d:'3 طرق: زر «Choose manually» أو «Cancel» داخل شاشة المقارنة، إطفاؤها لخدمة وحدة من تعديل الخدمة، أو إطفاؤها كلها من الإعدادات.',tour:[
+  {go:'settings',sel:'#ssmart',up:'label',t:'1️⃣ من هنا تطفي المقارنة الذكية بالكامل. بعدها تغيير الزيت ينضاف عادي.'},
+  {go:'svc',open:()=>svcSheet(DB.services.find(x=>rxGuess(x)==='oil')||DB.services[0]),sel:'#srx',t:'2️⃣ أو تطفيها لخدمة وحدة بس من هنا.'},
+  {t:'3️⃣ ولو طلعت لك شاشة المقارنة في الشغلة: <b>✋ Choose manually</b> يضيف الأجرة ويفتح لك الزيوت تختار بيدك، و<b>✕ Cancel</b> يرجعك للقائمة بدون ما يضيف شي.'}]},
  {v:'1.8.0',ic:'✨',t:'حركة ناعمة (GSAP)',d:'الشاشات تدخل بنعومة، الأرقام تعدّ، النوافذ تنزلق من تحت، زر «New car in» يلمع، والأزرار تتجاوب مع الضغط. تقدر تطفيها من الإعدادات.',tour:[
   {go:'home',sel:'.kpis3',t:'✨ الأرقام تعدّ لين توصل، والشاشة تدخل بالتدريج.'},
   {go:'settings',sel:'#smo',up:'label',t:'لو ما عجبتك أو التابلت ثقل، طفّها من هنا.'}]},

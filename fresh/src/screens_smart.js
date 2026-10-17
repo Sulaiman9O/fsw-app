@@ -57,7 +57,9 @@ function smartSheet(j,s){let O=smartOptions(j,s),sel=O.opts.findIndex(o=>o.last)
       j.items.push({k:'part',ref:o.p.id,d:o.p.name,num:o.p.num,q:o.q,u:o.p.unit==='L'?'L':'',p:+o.p.price,cost:+o.p.cost||0,rxk:O.k});
       if(O.fl)j.items.push({k:'part',ref:O.fl.p.id,d:O.fl.p.name,num:O.fl.p.num,q:1,u:'',p:+O.fl.p.price,cost:+O.fl.p.cost||0,rxk:O.k});
       if(O.R.liq)learn(O.k,v,o.q);logJ(j,'Added '+s.name+' · '+o.p.name+(O.fl?' + '+O.fl.p.name:''));save();closeSheet();render();toast('Added: service, '+(O.fl?'oil and filter':'parts'));};};
-  openSheet(`<h3>${O.R.ic} ${esc(s.name)} · choose</h3><div id="smb"></div>`,()=>{});draw();}
+  openSheet(`<h3>${O.R.ic} ${esc(s.name)} · choose</h3><div class="two"><button class="btn ghost sm" id="smman">✋ Choose manually</button><button class="btn ghost sm" id="smx">✕ Cancel</button></div><div id="smb"></div>`,el=>{
+    el.querySelector('#smx').onclick=()=>{closeSheet();addItemSheet(j);};
+    el.querySelector('#smman').onclick=()=>{j.items.push(svcItem(s,vehOf(j)));logJ(j,'Added '+s.name+' (manual)');save();closeSheet();render();addItemSheet(j,{manual:true,q:RX[rxOf(s)].cat[0]});toast(s.name+' added. Now pick the parts.');};});draw();}
 function smartOptionsQ(j,s,q){const O=smartOptions(j,s);if(q&&(O.R.liq||O.R.cyl)){if(Math.abs(q-O.qty)>1e-9)O.qSrc='';O.qty=q;O.opts.forEach(o=>{o.q=q;o.partT=r3(q*(+o.p.price||0));o.total=r3(o.partT+o.fT+O.lab);o.profit=r3(o.total-(q*(+o.p.cost||0)+(O.fl?(+O.fl.p.cost||0):0)));o.out=(+o.p.stock||0)<q-0.0001;});
     const perKm=O.opts.filter(o=>o.next).map(o=>o.total/o.next);const best=perKm.length?Math.min(...perKm):0;O.opts.forEach(o=>o.bestKm=o.next&&Math.abs(o.total/o.next-best)<1e-9&&perKm.length>1);}
   return O;}

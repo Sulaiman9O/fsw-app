@@ -104,6 +104,7 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
   <div class="szg" style="grid-template-columns:repeat(${Math.min(DB.sizes.length,4)},minmax(0,1fr))">${DB.sizes.map((z,k)=>`<label class="field-l">${esc(z)}<input class="field" data-sp="${k}" inputmode="decimal" value="${f3(pr(k))}"></label>`).join('')}</div>
   <label class="chk"><input type="checkbox" id="sfr" ${s.from?'checked':''}> Price “starts from” (set the real price on the job)</label>
   <div class="in2"><label class="field-l">Time it takes (min)<input class="field" id="smin" inputmode="numeric" value="${s.min||''}" placeholder="e.g. 30"></label><label class="field-l">Warranty<input class="field" id="swar" value="${esc(s.war||'')}" placeholder="e.g. 3 months"></label></div>
+  ${sx('smart')?`<label class="field-l">✨ Smart compare when adding to a job<select class="field" id="srx"><option value="auto" ${s.rx===undefined?'selected':''}>Auto${rxGuess(s)?' ('+RX[rxGuess(s)].t+')':' (none)'}</option><option value="" ${s.rx===''?'selected':''}>Off for this service</option>${Object.entries(RX).map(([k,r])=>`<option value="${k}" ${s.rx===k?'selected':''}>${r.ic} ${r.t}</option>`).join('')}</select></label>`:''}
   <div class="field-l">Reminder</div><div class="chips">${[['','None'],['oil','Engine oil'],['gear','Gearbox oil']].map(([k,l])=>`<button data-t="${k}" aria-pressed="${(s.tag||'')===k}">${l}</button>`).join('')}</div>
   <div class="field-l">Parts that come with it</div><div class="list" id="spl"></div>
   <select class="field" id="spa"><option value="">＋ Add a part…</option>${DB.parts.map(p=>`<option value="${p.id}">${esc(p.name)} · ${f3(p.price)}</option>`).join('')}</select>
@@ -130,7 +131,7 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
     if(g==='__new'){g=scn.value.trim();if(!g){toast('Type the group name');return;}const ex=DB.scats.find(x=>x.name.toLowerCase()===g.toLowerCase());if(ex)g=ex.name;else DB.scats.push({id:uid('g'),name:g,ic:'🔧'});}
     const t=s0||{id:uid('s'),custom:true};if(!s0)DB.services.push(t);
     Object.assign(t,{name:n,ar:$('#sar').value.trim(),cat:g,p:[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value)),from:$('#sfr').checked,min:parseInt($('#smin').value)||0,war:$('#swar').value.trim(),tag,parts:s.parts,out:outOn?s.out:null,lockP:$('#slk').checked,hidden:$('#shd').checked});
-    const cm=$('#scm');if(cm)t.comm=num(cm.value);
+    const cm=$('#scm');if(cm)t.comm=num(cm.value);const rxe=$('#srx');if(rxe){if(rxe.value==='auto')delete t.rx;else t.rx=rxe.value;}
     if(outOn&&!partners.includes(s.out.who)){let L=DB.mlists.find(L=>/partner|workshop/i.test(L.name));if(!L){L={id:uid('ml'),name:'Partner workshops',ic:'🏪',note:'Workshops that do work for us.',items:[],inMenu:true};DB.mlists.push(L);}L.items.push({id:uid('li'),name:s.out.who,note:''});}
     save();closeSheet();render();};
   const d=el.querySelector('#sdel');if(d)d.onclick=()=>confirmSheet(`Delete “${esc(s0.name)}”? Old invoices keep it.`,'Delete service',()=>{DB.services=DB.services.filter(x=>x!==s0);save();render();});});}
