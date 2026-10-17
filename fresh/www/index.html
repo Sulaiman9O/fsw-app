@@ -10,8 +10,14 @@
   function set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
   function txt(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();});}
   function run(c){var b=document.getElementById('boot');if(b)b.remove();var st=document.createElement('style');st.textContent=c.css;document.head.appendChild(st);var sc=document.createElement('script');sc.textContent=c.js;document.body.appendChild(sc);}
+  /* updates must be signed with our key (ECDSA P-256). Unsigned or changed code is refused. */
+  var PUB='MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQ8AOwQ/KnjhVbQh/Sw7r0NFGqGXW+gaQT3GoQ+LpgesWv3qDYVvgU01avPAMfSJWfXxTX0mNU/aqxMbthVcMUQ==';
+  function b64(s){var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+  function verify(v,css,js,sig){var S=window.crypto&&crypto.subtle;if(!S)return Promise.resolve(false);
+    return S.importKey('spki',b64(PUB),{name:'ECDSA',namedCurve:'P-256'},false,['verify']).then(function(k){return S.verify({name:'ECDSA',hash:'SHA-256'},k,b64(sig),new TextEncoder().encode(v+'\n'+css+'\n'+js));}).catch(function(){return false;});}
   function check(cur){txt(BASE+'version.json?t='+Date.now()).then(function(t){var rv=JSON.parse(t);if(!(rv.v>cur.v))return;
-    return Promise.all([txt(BASE+'app.css?v='+rv.v),txt(BASE+'app.js?v='+rv.v)]).then(function(p){if(set('ws_code',{v:rv.v,name:rv.name,css:p[0],js:p[1]}))window.dispatchEvent(new CustomEvent('ws-update',{detail:rv}));});}).catch(function(){});}
+    return Promise.all([txt(BASE+'app.css?v='+rv.v),txt(BASE+'app.js?v='+rv.v),txt(BASE+'sig.json?v='+rv.v)]).then(function(p){var sg=JSON.parse(p[2]);if(sg.v!==rv.v)return;
+      return verify(rv.v,p[0],p[1],sg.sig).then(function(ok){if(!ok){console.warn('update refused: bad signature');return;}if(set('ws_code',{v:rv.v,name:rv.name,css:p[0],js:p[1]}))window.dispatchEvent(new CustomEvent('ws-update',{detail:rv}));});});}).catch(function(){});}
   var saved=get('ws_code');
   txt('app/version.json').then(function(t){return JSON.parse(t);}).catch(function(){return {v:0};}).then(function(bv){
     if(saved&&saved.v>=bv.v){run(saved);check(saved);setTimeout(function(){var r=document.getElementById('root');if(r&&!r.children.length){try{localStorage.removeItem('ws_code');}catch(e){}location.reload();}},4000);return;}

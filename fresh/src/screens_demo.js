@@ -48,12 +48,12 @@ function loadDemo(){if(hasDemo()){toast('Test data is already in the app');retur
   DB.jobs.filter(j=>j.id==='demo_j2').forEach(j=>{try{makeReminders(j);}catch(e){}});
   // an open supplier order for the low parts
   DB.pos.push({id:'demo_o1',no:(DB.pos.length?Math.max(...DB.pos.map(x=>x.no)):0)+1,vendor:'demo_v2',items:[{part:'demo_p6',q:6,cost:1.3},{part:'demo_p10',q:2,cost:6.5}],status:'open',t:T-D,by:'Test'});
-  save();render();toast('Test data added. Everything with 🧪 is fake.');}
+  audit('demo','Test data added');save();render();toast('Test data added. Everything with 🧪 is fake.');}
 function removeDemo(){const ids=new Set();['customers','vehicles','vendors','parts','jobs','pos'].forEach(k=>DB[k].forEach(x=>{if(isDemo(x))ids.add(x.id);}));
   ['customers','vehicles','vendors','parts','jobs','pos'].forEach(k=>DB[k]=DB[k].filter(x=>!isDemo(x)));
   DB.reminders=DB.reminders.filter(r=>!ids.has(r.veh)&&!ids.has(r.cust));DB.moves=(DB.moves||[]).filter(m=>!ids.has(m.part));DB.counts=DB.counts.filter(c=>!ids.has(c.part));
   DB.parts.forEach(p=>{if(p.alts)p.alts=p.alts.filter(a=>!ids.has(a));if(p.vprices)Object.keys(p.vprices).forEach(v=>{if(ids.has(v))delete p.vprices[v];});});
   DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(ids.has(i.ref))delete i.ref;}));
   if(!DB.jobs.length){DB.ws.nextJob=1;DB.ws.nextInv=DB.ws.invStart||1001;}
-  save();render();toast('Test data removed');}
+  audit('demo','Test data removed');save();render();toast('Test data removed');}
 function demoBanner(){return hasDemo()?`<div class="demob"><span>🧪 <b>Test data is in the app.</b> Names with 🧪 are fake.</span>${can.settings()?'<button id="demox">Remove</button>':''}</div>`:'';}

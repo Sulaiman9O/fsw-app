@@ -22,7 +22,7 @@ SCREENS.exp=m=>{const f=rangeOf('month');const list=DB.expenses.slice().sort((a,
   ${sec('All')}<div class="list">${list.map(e=>`<button class="row" data-ee="${e.id}"><div><b>${esc(e.cat)}</b><span>${fmtD(e.t)}${e.note?' · '+esc(e.note):''}${e.monthly?' · monthly':''}</span></div><span class="v">${f3(e.amt)}</span></button>`).join('')||empty('🧾','No expenses yet. Add rent and salaries first.')}</div>`;
   const edit=e=>{const isNew=!e;e=e||{cat:DB.ecats[0],amt:0,t:now()};openSheet(`<h3>${isNew?'New expense':'Edit expense'}</h3><select class="field" id="ec">${DB.ecats.map(c=>`<option ${e.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select><input class="field" id="ea" inputmode="decimal" placeholder="Amount" value="${e.amt?f3(e.amt):''}"><input class="field" id="en" placeholder="Note" value="${esc(e.note||'')}"><label class="chk"><input type="checkbox" id="em" ${e.monthly?'checked':''}> Every month (rent, salaries…)</label><button class="btn" id="eok">Save</button>${!isNew?'<button class="btn ghost jb-del" id="edel">Delete</button>':''}`,el=>{
     el.querySelector('#eok').onclick=()=>{const a=num($('#ea').value);if(!a){toast('Type the amount');return;}if(isNew){e.id=uid('e');e.by=S.user.name;DB.expenses.push(e);}e.cat=$('#ec').value;e.amt=a;e.note=$('#en').value.trim();e.monthly=$('#em').checked;save();closeSheet();render();};
-    const d=el.querySelector('#edel');if(d)d.onclick=()=>{DB.expenses=DB.expenses.filter(x=>x!==e);save();closeSheet();render();};});};
+    const d=el.querySelector('#edel');if(d)d.onclick=()=>{audit('delete','Expense '+e.cat+' '+f3(e.amt));DB.expenses=DB.expenses.filter(x=>x!==e);save();closeSheet();render();};});};
   $('#eadd').onclick=()=>edit();$$('[data-ee]').forEach(b=>b.onclick=()=>edit(DB.expenses.find(x=>x.id===b.dataset.ee)));};
 SCREENS.close=m=>{const td=sumRange(rangeOf('today'));const cash=td.byM.Cash||0;const cashExp=DB.expenses.filter(e=>dayKey(e.t)===today()&&e.cash).reduce((a,e)=>a+e.amt,0);
   const last=DB.closes.slice().sort((a,b)=>b.t-a.t)[0];const opening=last?last.counted:(+DB.openingCash||0);const expect=opening+cash-cashExp;const done=DB.closes.find(c=>c.date===today());
@@ -33,7 +33,7 @@ SCREENS.close=m=>{const td=sumRange(rangeOf('today'));const cash=td.byM.Cash||0;
   :`<label class="field-l">Cash counted in the drawer<input class="field" id="ccnt" inputmode="decimal" placeholder="0.000"></label><button class="btn" id="cok">Close the day</button>`}
   ${openJ.length?sec('Still open · '+openJ.length,'close them or write why')+`<div class="list">${openJ.map(carRow).join('')}</div>`:''}
   ${sec('Past closes')}<div class="list">${DB.closes.slice().sort((a,b)=>b.t-a.t).slice(0,14).map(c=>`<div class="row"><div><b>${fmtD(c.t)}</b><span>${esc(c.by)} · expected ${f3(c.expected)}</span></div><span class="v ${Math.abs(c.diff)>0.0005?'bad':''}">${f3(c.counted)}<small>${Math.abs(c.diff)>0.0005?(c.diff>0?'+':'')+f3(c.diff):'✓'}</small></span></div>`).join('')||empty('🔒','No closes yet.')}</div>`;
-  const ok=$('#cok');if(ok)ok.onclick=()=>{const v=$('#ccnt').value.trim();if(v===''){toast('Count the cash first');return;}const c=num(v);DB.closes.push({date:today(),t:now(),by:S.user.name,expected:expect,counted:c,diff:c-expect});save();render();};};
+  const ok=$('#cok');if(ok)ok.onclick=()=>{const v=$('#ccnt').value.trim();if(v===''){toast('Count the cash first');return;}const c=num(v);audit('close','Daily close');DB.closes.push({date:today(),t:now(),by:S.user.name,expected:expect,counted:c,diff:c-expect});save();render();};};
 SCREENS.reports=m=>{if(!can.money()){go('home');return;}const k=S.p.k||'month';const R=sumRange(rangeOf(k));
   const svc={},prt={};R.inv.forEach(j=>(j.items||[]).forEach(i=>{const o=i.k==='part'?prt:svc;o[i.d]=o[i.d]||{n:0,a:0};o[i.d].n+=(+i.q||0);o[i.d].a+=(+i.q||0)*(+i.p||0);}));
   const top=o=>Object.entries(o).sort((a,b)=>b[1].a-a[1].a).slice(0,10);
@@ -83,22 +83,19 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <p class="hint">Fake customers, cars, suppliers, parts and jobs to try the app. All have 🧪 in the name. Remove them before real work.</p>
   ${hasDemo()?'<button class="btn ghost sm" id="sdemox">Remove test data</button>':'<button class="btn ghost sm" id="sdemo">🧪 Add test data</button>'}
   ${sec('Backup')}
-  <p class="hint">This test app keeps everything on this device only. Make a backup copy often.</p>
+  <p class="hint">Everything stays on this device only. Make a locked backup every week.</p>
   <div class="two"><button class="btn ghost sm" id="sbk">⬇️ Make backup</button><button class="btn ghost sm" id="srs">⬆️ Restore</button></div>
   <button class="btn ghost jb-del" id="swipe">Delete all data on this device</button>`;
   $('#slogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);w.logo=c.toDataURL('image/png');save();render();};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#slogox');if(lx)lx.onclick=()=>{w.logo='';save();render();};
   $('#ssave').onclick=()=>{w.name=$('#sname').value.trim()||w.name;w.phone=$('#sphone').value.trim();w.addr=$('#saddr').value.trim();w.cr=$('#scr').value.trim();w.nextInv=Math.max(1,parseInt($('#sinv').value)||w.nextInv);w.invStart=w.invStart||w.nextInv;w.credDays=parseInt($('#scred').value)||30;w.vat=$('#svat').checked;w.vatDecided=true;w.warranty=$('#swar').value.trim();
     w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;
-    DB.openingCash=num($('#soc').value);save();toast('Saved');render();};
+    DB.openingCash=num($('#soc').value);audit('settings','Settings saved');save();toast('Saved');render();};
   $('#ssmart').onchange=e=>{DB.ws.sxOff=DB.ws.sxOff||{};if(e.target.checked)delete DB.ws.sxOff.smart;else DB.ws.sxOff.smart=1;save();toast(e.target.checked?'Smart services on':'Smart services off');};
   $('#smo').onchange=e=>{w.motionOff=!e.target.checked;save();toast(w.motionOff?'Animations off':'Animations on');MV.key='';render();};
   const sd=$('#sdemo');if(sd)sd.onclick=()=>{loadDemo();};const sdx=$('#sdemox');if(sdx)sdx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
-  $('#sbk').onclick=async()=>{const txt=JSON.stringify(DB);DB.backups=(DB.backups||0)+1;save();const name='workshop-backup-'+today()+'.json';
-    try{if(navigator.canShare&&navigator.canShare({files:[new File([txt],name)]})){await navigator.share({files:[new File([txt],name,{type:'application/json'})],title:name});return;}}catch(e){}
-    try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=name;a.click();}catch(e){}
-    if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast('Backup copied. Paste it in a note or WhatsApp to yourself.')).catch(()=>{});};
-  $('#srs').onclick=()=>openSheet(`<h3>Restore a backup</h3><p class="hint">This replaces everything on this device.</p><input type="file" accept="application/json,.json" id="rf" class="field"><textarea class="field" id="rt" rows="5" placeholder="…or paste the backup text here"></textarea><button class="btn" id="rok">Restore</button>`,el=>el.querySelector('#rok').onclick=async()=>{let t=$('#rt').value.trim();const f=$('#rf').files[0];if(f)t=await f.text();try{const d=JSON.parse(t);if(!d.ws)throw 0;DB=Object.assign(blankDB(),d);save();closeSheet();S.user=null;render();toast('Restored');}catch(e){toast('That is not a backup file');}});
+  $('#sbk').onclick=backupSheet;
+  $('#srs').onclick=restoreSheet;
   $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();S.user=null;OB.step=0;render();});};
 /* ---------- USERS ---------- */
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
@@ -121,8 +118,8 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
      draw();el.querySelector('#urst').onclick=()=>{pm={};draw();};
      el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();const pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
        if(!isNew&&u.role==='owner'&&role!=='owner'&&DB.users.filter(x=>x.role==='owner').length===1){toast('Keep at least one owner');return;}
-       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}u.name=n;u.role=role;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
-     const d=el.querySelector('#udel');if(d)d.onclick=()=>confirmSheet('Remove '+esc(u.name)+'?','Remove',()=>{DB.users=DB.users.filter(x=>x!==u);save();render();});});};
+       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}audit('user',(isNew?'Added user ':'Changed user ')+n+' · '+ROLE[role]+(Object.keys(pm).length&&role!=='owner'?' · permissions: '+Object.entries(pm).map(([k,v])=>(v?'+':'−')+k).join(' '):'')+(pin?' · new PIN':''));u.name=n;u.role=role;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
+     const d=el.querySelector('#udel');if(d)d.onclick=()=>confirmSheet('Remove '+esc(u.name)+'?','Remove',()=>{audit('user','Removed user '+u.name);DB.users=DB.users.filter(x=>x!==u);save();render();});});};
   $('#uadd').onclick=()=>edit();$$('[data-ue]').forEach(b=>b.onclick=()=>edit(DB.users.find(x=>x.id===b.dataset.ue)));};
 /* ---------- MORE ---------- */
 SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&routeOk(r)&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
@@ -141,7 +138,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('reports','📊','Reports','Sales, profit, top items',can.money())}
   </div>
   ${ml.length?sec('Your lists')+`<div class="list">${ml.map(L=>it('list:'+L.id,L.ic||'📝',esc(L.name),L.items.length+' items')).join('')}</div>`:''}
-  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('msgs','💬','WhatsApp messages','Customers, reminders, suppliers')}${it('users','👥','Users','Who sees what')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
+  ${can.settings()?sec('Customize')+`<div class="list">${it('lists','🗂','Lists','Groups, categories, units, payment methods, your own lists')}${it('audit','📜','Activity log','Who did what and when')}${it('msgs','💬','WhatsApp messages','Customers, reminders, suppliers')}${it('users','👥','Users','Who sees what')}${it('settings','⚙️','Settings','Workshop, invoices, backup')}</div>`:''}
   <button class="btn ghost" id="lo">Log out (${esc(S.user.name)})</button><p class="hint" id="verh" style="text-align:center">Test version ${esc(window.WS_VN||"")} · data stays on this device · updates by itself</p>`;
   $('#lo').onclick=()=>{S.user=null;render();};};
 /* ---------- print CSS ---------- */

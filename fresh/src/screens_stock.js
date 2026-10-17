@@ -80,13 +80,14 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
      const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||(nm&&x.num===nm)));if(dup){toast('This part already exists: '+dup.name);return;}
      let t=p;if(isNew){t={id:uid('p'),t:now(),stock:0};DB.parts.push(t);}
      const ns=num($('#pst').value),os=+t.stock||0;
+     if(!isNew&&(Math.abs(num($('#ppr').value)-(+t.price||0))>0.0005))audit('price','Part '+t.name+': '+f3(t.price)+' → '+f3(num($('#ppr').value)));
      Object.assign(t,{grade:$('#pcat').value==='Engine oil'?grade:t.grade,name:n,num:nm,cat:$('#pcat').value,unit,price:num($('#ppr').value),reorder:num($('#pro').value)});const co=$('#pco');if(co)t.cost=num(co.value);
      const g=id=>{const e=el.querySelector(id);return e?e.value.trim():undefined;};if(g('#ploc')!==undefined)t.loc=g('#ploc');if(g('#pfit')!==undefined)t.fits=g('#pfit');
      if(el.querySelector('#palt')){const old=t.alts||[];t.alts=w.alts;old.filter(i=>!w.alts.includes(i)).forEach(i=>{const x=byId('parts',i);if(x)x.alts=(x.alts||[]).filter(y=>y!==t.id);});w.alts.forEach(i=>{const x=byId('parts',i);if(x){x.alts=x.alts||[];if(!x.alts.includes(t.id))x.alts.push(t.id);}});}
      if(el.querySelector('#pvp'))t.vprices=w.vprices;
-     if(Math.abs(ns-os)>0.0001)mv(t,ns-os,isNew?'Opening stock':'Changed by hand');
+     if(Math.abs(ns-os)>0.0001){mv(t,ns-os,isNew?'Opening stock':'Changed by hand');if(!isNew)audit('stock','Stock of '+t.name+' changed by hand: '+os+' → '+ns);}
      save();closeSheet();if(onSaved)onSaved(t);else render();};
-   const d=el.querySelector('#pdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(p.name)+'?','Delete part',()=>{DB.parts=DB.parts.filter(x=>x!==p);save();render();});});}
+   const d=el.querySelector('#pdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(p.name)+'?','Delete part',()=>{audit('delete','Part '+p.name+' (stock '+(+p.stock||0)+')');DB.parts=DB.parts.filter(x=>x!==p);save();render();});});}
 /* add-to-job part list: fits first, alternatives when out */
 function partOpts(v,ps){const fit=sx('fits');const L=ps.map(p=>({p,f:fit&&fitsCar(p,v)})).sort((a,b)=>(b.f-a.f));
   return L.slice(0,60).map(({p,f})=>{let alt='';if(sx('alts')&&(+p.stock||0)<=0){const a=(p.alts||[]).map(i=>byId('parts',i)).filter(x=>x&&(+x.stock||0)>0)[0];if(a)alt=`<button class="opt alt" data-pt="${a.id}"><div class="tx"><b>↳ Instead: ${esc(a.name)}</b><span>${+a.stock}${unitS(a)?' '+unitS(a):''} in stock${sx('loc')&&a.loc?' · 📍 '+esc(a.loc):''}</span></div><span class="v">${f3(a.price)}</span></button>`;}

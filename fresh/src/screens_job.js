@@ -31,14 +31,14 @@ SCREENS.job=m=>{
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);
   $$('[data-it]').forEach(b=>b.onclick=()=>{if(isInvoiced(j)){toast('Invoice made. Return it to change items.');return;}editItemSheet(j,+b.dataset.it);});
-  const ds=$('#jdisc');if(ds)ds.onclick=()=>openSheet(`<h3>Discount</h3><div class="in2"><input class="field" id="dam" inputmode="decimal" placeholder="Amount (${DB.ws.currency})" value="${j.discPct?'':j.disc||''}"><input class="field" id="dpc" inputmode="decimal" placeholder="or %" value="${j.discPct||''}"></div><button class="btn" id="dok">Save</button>`,el=>el.querySelector('#dok').onclick=()=>{const p=num($('#dpc').value),a=num($('#dam').value);j.discPct=p||0;j.disc=p?0:a;logJ(j,'Discount '+(p?p+'%':f3(a)));save();closeSheet();render();});
+  const ds=$('#jdisc');if(ds)ds.onclick=()=>openSheet(`<h3>Discount</h3><div class="in2"><input class="field" id="dam" inputmode="decimal" placeholder="Amount (${DB.ws.currency})" value="${j.discPct?'':j.disc||''}"><input class="field" id="dpc" inputmode="decimal" placeholder="or %" value="${j.discPct||''}"></div><button class="btn" id="dok">Save</button>`,el=>el.querySelector('#dok').onclick=()=>{const p=num($('#dpc').value),a=num($('#dam').value);j.discPct=p||0;j.disc=p?0:a;audit('discount','Discount on #'+j.no+': '+(p?p+'%':f3(a)));logJ(j,'Discount '+(p?p+'%':f3(a)));save();closeSheet();render();});
   $('#jnotes').onchange=e=>{j.notes=e.target.value;save();};
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
   const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);
   $('#jstk').onclick=()=>stickerSheet(j);
   const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
-  const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
+  const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{audit('delete',(j.stage==='estimate'?'Estimate':'Job')+' #'+j.no+' deleted ('+carName(vehOf(j))+')');DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };
 function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{location.href=u;}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
 function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
@@ -101,7 +101,7 @@ function makeInvoice(j){
   const T=jobTotals(j);if(!(j.items||[]).length){toast('Add services or parts first');return;}
   if((j.items||[]).some(i=>i.pend)){toast('Some items have no price yet');return;}
   confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{
-    j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name};(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
+    j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
     if(j.stage==='new'||j.stage==='work')j.stage='ready';logJ(j,'Invoice #'+j.inv.no);save();go('inv',{id:j.id});});
 }
 SCREENS.inv=m=>{
@@ -113,10 +113,10 @@ SCREENS.inv=m=>{
   <div class="two"><button class="btn" id="iwa">WhatsApp</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
   <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>
   ${can.del()&&!j.returned?`<button class="btn ghost jb-del" id="iret">Return / cancel invoice</button>`:''}`;
-  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
+  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
   $('#iwa').onclick=()=>shareText(c.phone,docText(j,'invoice'));
   $('#ipr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>',210,297,'Invoice '+j.inv.no);
-  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
+  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();audit('return','Invoice #'+j.inv.no+' returned');j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
 };
 function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=0;
   const tr=k=>(j.items||[]).filter(i=>(k==='part'?i.k==='part':i.k!=='part')&&!i.pend).map(i=>{n++;return `<tr><td class="n">${n}</td><td>${esc(i.d)}${i.num?`<small>${esc(i.num)}</small>`:''}${i.ar?`<div class="ar" style="font-size:2.7mm;color:#444">${esc(i.ar)}</div>`:''}${i.war?`<div style="font-size:2.4mm;color:#555">Warranty: ${esc(i.war)}</div>`:''}</td><td class="q">${+i.q}${i.u?' '+esc(i.u):''}</td><td class="u">${f3(i.p)}</td><td class="a">${f3(i.q*i.p)}</td></tr>`;}).join('');

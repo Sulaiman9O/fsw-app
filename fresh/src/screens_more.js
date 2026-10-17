@@ -35,7 +35,7 @@ SCREENS.custd=m=>{
   $('#cedit').onclick=()=>custSheet(c);$('#vadd').onclick=()=>vehSheet(c);
   $$('[data-ve]').forEach(b=>b.onclick=()=>vehSheet(c,byId('vehicles',b.dataset.ve)));
   const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,msg('hello',{name:c.name||''}));
-  const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});
+  const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{audit('delete','Customer '+c.name);DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});
 };
 /* ---------- STOCK ---------- */
 /* daily count */
@@ -72,7 +72,7 @@ SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=b
   const pa=$('#poadd');if(pa)pa.onchange=()=>{if(!pa.value)return;if(pa.value==='__new'){pa.value='';partSheet(null,pt=>{p.items.push({part:pt.id,q:1,cost:+pt.cost||0});save();render();toast('Part added to stock and to this order');});return;}const pt=byId('parts',pa.value);p.items.push({part:pt.id,q:1,cost:+(((pt.vprices||{})[p.vendor]||{}).cost||pt.cost||0)});save();render();};
   $('#pomsg').onclick=()=>shareText(v.phone,msg('po',{supplier:v.name||'',no:p.no,items:p.items.map(i=>{const pt=byId('parts',i.part)||{};return '• '+(pt.name||'')+(pt.num?' ('+pt.num+')':'')+' × '+i.q+(pt.unit&&pt.unit!=='pc'?' '+pt.unit:'');}).join('\n')}));
   const rc=$('#porec');if(rc)rc.onclick=()=>receivePo(p);
-  const dl=$('#podel');if(dl)dl.onclick=()=>{DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
+  const dl=$('#podel');if(dl)dl.onclick=()=>{audit('delete','Supplier order #'+p.no);DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
 /* ---------- SERVICES ---------- */
 SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=perm('svcEdit');
   const vis=g=>DB.services.filter(s=>s.cat===g.name&&!s.hidden&&(!q||(s.name+' '+(s.ar||'')).toLowerCase().includes(q)));const hid=DB.services.filter(s=>s.hidden);
@@ -129,12 +129,13 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
   el.querySelector('#soo').onchange=e=>{keepO();outOn=e.target.checked;drawO();};drawO();
   el.querySelector('#sok').onclick=()=>{const n=$('#sn').value.trim();if(!n){toast('Type a name');return;}keepO();if(outOn&&!s.out.who){toast('Type which workshop does it');return;}let g=sc.value;
     if(g==='__new'){g=scn.value.trim();if(!g){toast('Type the group name');return;}const ex=DB.scats.find(x=>x.name.toLowerCase()===g.toLowerCase());if(ex)g=ex.name;else DB.scats.push({id:uid('g'),name:g,ic:'🔧'});}
+    if(s0){const np=[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value));if(np.some((x,i)=>Math.abs(x-(+s0.p[i]||0))>0.0005))audit('price','Service '+s0.name+': '+s0.p.map(f3).join('/')+' → '+np.map(f3).join('/'));}
     const t=s0||{id:uid('s'),custom:true};if(!s0)DB.services.push(t);
     Object.assign(t,{name:n,ar:$('#sar').value.trim(),cat:g,p:[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value)),from:$('#sfr').checked,min:parseInt($('#smin').value)||0,war:$('#swar').value.trim(),tag,parts:s.parts,out:outOn?s.out:null,lockP:$('#slk').checked,hidden:$('#shd').checked});
     const cm=$('#scm');if(cm)t.comm=num(cm.value);const rxe=$('#srx');if(rxe){if(rxe.value==='auto')delete t.rx;else t.rx=rxe.value;}
     if(outOn&&!partners.includes(s.out.who)){let L=DB.mlists.find(L=>/partner|workshop/i.test(L.name));if(!L){L={id:uid('ml'),name:'Partner workshops',ic:'🏪',note:'Workshops that do work for us.',items:[],inMenu:true};DB.mlists.push(L);}L.items.push({id:uid('li'),name:s.out.who,note:''});}
     save();closeSheet();render();};
-  const d=el.querySelector('#sdel');if(d)d.onclick=()=>confirmSheet(`Delete “${esc(s0.name)}”? Old invoices keep it.`,'Delete service',()=>{DB.services=DB.services.filter(x=>x!==s0);save();render();});});}
+  const d=el.querySelector('#sdel');if(d)d.onclick=()=>confirmSheet(`Delete “${esc(s0.name)}”? Old invoices keep it.`,'Delete service',()=>{audit('delete','Service '+s0.name);DB.services=DB.services.filter(x=>x!==s0);save();render();});});}
 /* canned jobs */
 SCREENS.canned=m=>{m.innerHTML=head('Canned jobs',`<button class="lnk" id="cjadd">＋ New</button>`)+`<p class="hint">A canned job is a set you add in one tap, e.g. “Camry 2.5 oil service” = oil 4.4 L + filter + labour.</p>
   <div class="list">${DB.canned.map(c=>`<button class="row" data-cj="${c.id}"><div><b>${esc(c.name)}</b><span>${c.items.map(i=>esc(i.d)).join(' + ')}</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`).join('')||empty('📦','No canned jobs yet.')}</div>`;
@@ -149,10 +150,10 @@ function cannedSheet(c){const isNew=!c;c=c||{name:'',items:[]};const items=c.ite
    el.querySelector('#cjs').onchange=e=>{const s=byId('services',e.target.value);if(s)items.push({k:'labour',ref:s.id,d:s.name,q:1,u:'',p:s.p[0],tag:s.tag});e.target.value='';draw(el);};
    el.querySelector('#cjp').onchange=e=>{const p=byId('parts',e.target.value);if(p)items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:p.unit==='L'?4:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});e.target.value='';draw(el);};
    el.querySelector('#cjok').onclick=()=>{const n=$('#cjn').value.trim();if(!n||!items.length){toast('Name and at least one item');return;}if(isNew){c.id=uid('t');DB.canned.push(c);}c.name=n;c.items=items;save();closeSheet();render();};
-   const d=el.querySelector('#cjdel');if(d)d.onclick=()=>{DB.canned=DB.canned.filter(x=>x!==c);save();closeSheet();render();};});}
+   const d=el.querySelector('#cjdel');if(d)d.onclick=()=>{audit('delete','Canned job '+c.name);DB.canned=DB.canned.filter(x=>x!==c);save();closeSheet();render();};});}
 /* inspections */
 SCREENS.insp=m=>{m.innerHTML=head('Inspection checklists',`<button class="lnk" id="iadd">＋ New</button>`)+`<p class="hint">Keep them short: 15 to 20 items. Workers tap green, yellow or red.</p><div class="list">${DB.insp.map(t=>`<button class="row" data-ie="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">Edit</span></button>`).join('')}</div>`;
   const edit=t=>{const isNew=!t;t=t||{name:'',items:[]};openSheet(`<h3>${isNew?'New checklist':'Edit checklist'}</h3><input class="field" id="in" placeholder="Name" value="${esc(t.name)}"><label class="field-l">One item per line<textarea class="field" id="ii" rows="10">${esc(t.items.join('\n'))}</textarea></label><button class="btn" id="iok">Save</button>${!isNew?'<button class="btn ghost jb-del" id="idel">Delete</button>':''}`,el=>{
    el.querySelector('#iok').onclick=()=>{const n=$('#in').value.trim();const it=$('#ii').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!n||!it.length){toast('Name and items');return;}if(isNew){t.id=uid('i');DB.insp.push(t);}t.name=n;t.items=it;save();closeSheet();render();};
-   const d=el.querySelector('#idel');if(d)d.onclick=()=>{DB.insp=DB.insp.filter(x=>x!==t);save();closeSheet();render();};});};
+   const d=el.querySelector('#idel');if(d)d.onclick=()=>{audit('delete','Checklist '+t.name);DB.insp=DB.insp.filter(x=>x!==t);save();closeSheet();render();};});};
   $('#iadd').onclick=()=>edit();$$('[data-ie]').forEach(b=>b.onclick=()=>edit(DB.insp.find(x=>x.id===b.dataset.ie)));};

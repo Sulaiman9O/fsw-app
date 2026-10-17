@@ -26,7 +26,7 @@ const LISTS={
     items:()=>DB.scats.map(g=>({id:g.id,n:g.name,ic:g.ic,c:DB.services.filter(s=>s.cat===g.name).length})),
     add:(n,ic)=>{if(DB.scats.some(g=>g.name.toLowerCase()===n.toLowerCase()))return 'Already in the list';DB.scats.push({id:uid('g'),name:n,ic:ic||'🔧'});},
     ren:(id,n,ic)=>{const g=DB.scats.find(x=>x.id===id);if(n!==g.name&&DB.scats.some(x=>x!==g&&x.name.toLowerCase()===n.toLowerCase()))return 'Already in the list';DB.services.forEach(s=>{if(s.cat===g.name)s.cat=n;});g.name=n;if(ic)g.ic=ic;},
-    del:(id,to)=>{const g=DB.scats.find(x=>x.id===id);if(to){const t=DB.scats.find(x=>x.id===to);DB.services.forEach(s=>{if(s.cat===g.name)s.cat=t.name;});}else DB.services=DB.services.filter(s=>s.cat!==g.name);DB.scats=DB.scats.filter(x=>x!==g);},
+    del:(id,to)=>{const g=DB.scats.find(x=>x.id===id);if(to){const t=DB.scats.find(x=>x.id===to);DB.services.forEach(s=>{if(s.cat===g.name)s.cat=t.name;});}else DB.services=DB.services.filter(s=>s.cat!==g.name);audit('delete','Service group '+g.name);DB.scats=DB.scats.filter(x=>x!==g);},
     move:(i,d)=>{const a=DB.scats,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];},cw:'services',
     delMsg:'services',delAll:'Delete the services too'},
   pcat:strList('Part categories','Categories for parts in Stock.',()=>DB.pcats,n=>DB.parts.filter(p=>p.cat===n).length,(o,n)=>DB.parts.forEach(p=>{if(p.cat===o)p.cat=n;})),

@@ -24,6 +24,14 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Android project
         run: npx cap add android && sed -i 's#<application#<uses-permission android:name="android.permission.CAMERA" />\n    <application#' android/app/src/main/AndroidManifest.xml
+      - name: No Android backup of app data (privacy)
+        run: |
+          sed -i 's/android:allowBackup="true"/android:allowBackup="false" android:fullBackupContent="false"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'allowBackup="false"' android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/res/xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<data-extraction-rules>\n  <cloud-backup><exclude domain="root"/><exclude domain="file"/><exclude domain="database"/><exclude domain="sharedpref"/><exclude domain="external"/></cloud-backup>\n  <device-transfer><exclude domain="root"/><exclude domain="file"/><exclude domain="database"/><exclude domain="sharedpref"/><exclude domain="external"/></device-transfer>\n</data-extraction-rules>\n' > android/app/src/main/res/xml/data_extraction_rules.xml
+          sed -i 's#android:allowBackup="false"#android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules"#' android/app/src/main/AndroidManifest.xml
+          grep -n "allowBackup" android/app/src/main/AndroidManifest.xml
       - name: Print plugin
         run: |
           D=android/app/src/main/java/om/fsw/garage
