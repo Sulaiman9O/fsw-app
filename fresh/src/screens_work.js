@@ -44,10 +44,19 @@ SCREENS.work=m=>{
   m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.p.f=b.dataset.f;render();});
 };
 /* ---------- NEW JOB (customer → car → job) ---------- */
+/* same phone = same person: 968 / 00968 / spaces don't matter */
+const phoneKey=x=>{let d=String(x||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.length>8&&d.startsWith('968'))d=d.slice(3);return d;};
+const isWalk=c=>!c.name||/^walk-?in$/i.test(c.name.trim());
+function custByPhone(ph){const k=phoneKey(ph);if(k.length<7)return null;const all=DB.customers.filter(c=>phoneKey(c.phone)===k);return all.find(c=>!isWalk(c))||all[0]||null;}
+/* walk-ins that have the phone of a named customer are the same person: move their cars and jobs to that customer */
+function mergeWalkins(){let n=0;const named={};DB.customers.forEach(c=>{const k=phoneKey(c.phone);if(k.length>=7&&!isWalk(c)&&!named[k])named[k]=c;});
+  DB.customers.slice().forEach(c=>{const k=phoneKey(c.phone);const to=named[k];if(!to||to===c||!isWalk(c))return;
+    ['vehicles','jobs','reminders'].forEach(t=>(DB[t]||[]).forEach(x=>{if(x.cust===c.id)x.cust=to.id;}));DB.customers=DB.customers.filter(x=>x!==c);n++;});
+  if(n){try{audit('merge','Joined '+n+' walk-in customer(s) into the customer with the same phone');}catch(e){}}return n;}
 SCREENS.newjob=m=>{
   const N=S.p.n||(S.p.n={phone:'',name:'',plate:'',make:'',model:'',year:'',km:'',vin:'',engine:'',est:false,custId:null,vehId:null});
   const cust=N.custId&&byId('customers',N.custId);
-  const fHtml=()=>{const found=N.phone.length>=4?DB.customers.filter(c=>(c.phone||'').includes(N.phone)).slice(0,4):[];return found.length?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${found.map(c=>`<button class="row" data-pc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone)} · known customer</span></div><span class="v">Use ›</span></button>`).join('')}</div>`:'';};
+  const fHtml=()=>{const pk=phoneKey(N.phone);let found=pk.length>=4?DB.customers.filter(c=>phoneKey(c.phone).includes(pk)):[];found=found.filter(c=>!isWalk(c)||!found.some(o=>o!==c&&!isWalk(o)&&phoneKey(o.phone)===phoneKey(c.phone))).slice(0,4);return found.length?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${found.map(c=>`<button class="row" data-pc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone)} · known customer</span></div><span class="v">Use ›</span></button>`).join('')}</div>`:'';};
   const vfHtml=()=>{const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];return vfound.length&&!cust?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:'';};const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
   m.innerHTML=head('New car in')+`
   <div class="steps3"><span class="on">1 Customer</span><span class="${cust?'on':''}">2 Car</span><span>3 Services</span></div>
@@ -79,7 +88,7 @@ SCREENS.newjob=m=>{
   const wk=$('#nwalk');if(wk)wk.onclick=()=>{keep();N.name='Walk-in';render();};
   $('#nest').onchange=e=>{keep();N.est=e.target.checked;render();};
   $('#ngo').onclick=()=>{keep();
-    let c=cust;if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
+    let c=cust;if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||ex.name.trim().toLowerCase()===N.name.trim().toLowerCase()))c=ex;}if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     let v=N.vehId&&byId('vehicles',N.vehId);
     if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);

@@ -47,6 +47,10 @@ function render(){
   try{motionAfterRender(m);}catch(e){}
   try{attachPress(m);}catch(e){}
 }
+/* search boxes: hide rows that do not match instead of drawing the screen again (drawing again resets the phone keyboard) */
+function liveFilter(inp,sel,after){if(!inp)return;const run=()=>{const q=inp.value.trim().toLowerCase();S.p.q=inp.value;
+  document.querySelectorAll(sel).forEach(r=>{const t=((r.dataset.s||'')+' '+r.textContent).toLowerCase();r.hidden=!!q&&!t.includes(q);});if(after)after(q);};
+  inp.oninput=run;run();}
 const head=(t,right='')=>`<div class="nh-head"><button class="nh-bk" data-back aria-label="Back">‹</button><b>${t}</b>${right?`<span class="hr">${right}</span>`:''}</div>`;
 const sec=(t,r='')=>`<div class="ops-sec"><b>${t}</b><span>${r}</span></div>`;
 const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span><span>${t}</span></div>`;

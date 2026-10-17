@@ -1,16 +1,16 @@
 /* ---------- CUSTOMERS ---------- */
 function custRow(c){const vs=DB.vehicles.filter(v=>v.cust===c.id);const due=DB.jobs.filter(j=>j.cust===c.id&&isInvoiced(j)).reduce((a,j)=>a+jobTotals(j).due,0);
-  return `<button class="row" data-go="custd:${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone||'no phone')} · ${vs.map(v=>esc(carName(v))).join(', ')||'no car'}</span></div><span class="v">${due>0.0005?`<em style="color:var(--warn)">${f3(due)}</em>`:'›'}</span></button>`;}
+  return `<button class="row" data-go="custd:${c.id}" data-s="${esc((c.name||'')+' '+(c.phone||'')+' '+vs.map(v=>(v.plate||'')+' '+carName(v)).join(' '))}"><div><b>${esc(c.name)}</b><span>${esc(c.phone||'no phone')} · ${vs.map(v=>esc(carName(v))).join(', ')||'no car'}</span></div><span class="v">${due>0.0005?`<em style="color:var(--warn)">${f3(due)}</em>`:'›'}</span></button>`;}
 SCREENS.cust=m=>{
   const rd=remindersDue();const q=(S.p.q||'').toLowerCase();
-  const list=DB.customers.filter(c=>!q||[c.name,c.phone].some(x=>(x||'').toLowerCase().includes(q))).sort((a,b)=>b.t-a.t);
+  const list=DB.customers.slice().sort((a,b)=>b.t-a.t);
   m.innerHTML=head('Customers',`<button class="lnk" id="cadd">＋ Add</button>`)+`
   ${sec('Due for a reminder · '+rd.length,'30 days late → next 7 days')}
   ${rd.length?`<div class="list">${rd.map(r=>{const v=byId('vehicles',r.veh)||{},c=byId('customers',r.cust)||{};const d=Math.round((r.due-now())/864e5);return `<div class="card"><div class="h"><b>${esc(c.name||'')}</b><span>${d<0?'due '+(-d)+' days ago':d===0?'due today':'due in '+d+' days'}</span></div><span class="sub">${esc(carName(v))} · ${r.kind==='gear'?'gearbox oil':'engine oil'}${r.dueKm?' · at '+kmf(r.dueKm)+' km':''}</span><div class="two"><button class="btn wa sm" data-rwa="${r.id}">WhatsApp</button><button class="btn ghost sm" data-rs="${r.id}">Mark sent</button></div></div>`;}).join('')}</div>`:empty('🔔','No reminders due. They are made when a job with an oil service is delivered.')}
   ${sec('All customers · '+DB.customers.length)}
   <input class="field" id="cq" placeholder="Search name or phone" value="${esc(S.p.q||'')}">
-  ${list.length?`<div class="list">${list.slice(0,80).map(custRow).join('')}</div>`:empty('👥','No customers yet.')}`;
-  const cq=$('#cq');cq.oninput=()=>{S.p.q=cq.value;const pos=cq.value.length;render();const e=$('#cq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
+  ${list.length?`<div class="list" id="clist">${list.slice(0,600).map(custRow).join('')}</div><p class="hint" id="cnone" hidden>Nothing found.</p>`:empty('👥','No customers yet.')}`;
+  liveFilter($('#cq'),'#clist>.row',q=>{const n=$('#cnone');if(n)n.hidden=!q||!!document.querySelector('#clist>.row:not([hidden])');});
   $$('[data-rs]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rs);r.sent=now();save();render();});
   $$('[data-rwa]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rwa);const v=byId('vehicles',r.veh)||{},c=byId('customers',r.cust)||{};
     const t=msg('remind',{name:c.name||'',car:carName(v),plate:v.plate||'',service:r.kind==='gear'?'تغيير زيت ناقل الحركة':'تغيير زيت المحرك'});shareText(c.phone,t);r.sent=now();save();});
@@ -75,17 +75,17 @@ SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=b
   const dl=$('#podel');if(dl)dl.onclick=()=>{audit('delete','Supplier order #'+p.no);DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
 /* ---------- SERVICES ---------- */
 SCREENS.svc=m=>{const q=(S.p.q||'').toLowerCase(),fc=S.p.g||'';const own=perm('svcEdit');
-  const vis=g=>DB.services.filter(s=>s.cat===g.name&&!s.hidden&&(!q||(s.name+' '+(s.ar||'')).toLowerCase().includes(q)));const hid=DB.services.filter(s=>s.hidden);
+  const vis=g=>DB.services.filter(s=>s.cat===g.name&&!s.hidden);const hid=DB.services.filter(s=>s.hidden);
   const tags=s=>[s.from?'<span class="tg tgr">FROM</span>':'',s.out&&s.out.who?'<span class="tg tb">OUTSIDE</span>':'',s.lockP?'<span class="tg tgr">🔒</span>':''].join('');
   const sub=s=>[s.ar?'<bdi>'+esc(s.ar)+'</bdi>':'',s.min?'⏱ '+s.min+' min':'',s.out&&s.out.who?'at '+esc(s.out.who)+' · '+({pass:'not in our sales',share:'we keep '+f3(s.out.amt),pay:'we pay '+f3(s.out.amt)})[s.out.mode]:'',(s.parts||[]).length?'+ '+s.parts.length+' parts':'',s.tag?(s.tag==='oil'?'oil reminder':'gearbox reminder'):'',s.war?'warranty '+esc(s.war):''].filter(Boolean).join(' · ');
-  const row=s=>`<button class="row" data-se="${s.id}"><div><b>${esc(s.name)}${tags(s)}</b>${sub(s)?`<span>${sub(s)}</span>`:''}</div><span class="v">${f3(s.p[sizeOf(null)]??s.p[0])}<small>${DB.sizes.length>1?DB.sizes.map((z,k)=>f3(s.p[k]??s.p[s.p.length-1])).filter((x,i,a)=>a.indexOf(x)===i).length>1?'by size':'all sizes':''}</small></span></button>`;
+  const row=s=>`<button class="row" data-se="${s.id}" data-s="${esc(s.name+' '+(s.ar||'')+' '+T_(s.name))}"><div><b>${esc(s.name)}${tags(s)}</b>${sub(s)?`<span>${sub(s)}</span>`:''}</div><span class="v">${f3(s.p[sizeOf(null)]??s.p[0])}<small>${DB.sizes.length>1?DB.sizes.map((z,k)=>f3(s.p[k]??s.p[s.p.length-1])).filter((x,i,a)=>a.indexOf(x)===i).length>1?'by size':'all sizes':''}</small></span></button>`;
   m.innerHTML=head('Services',own?`<button class="lnk" id="sadd">＋ Service</button>`:'')+`
   ${!DB.ws.svcReviewed&&own?`<div class="card note"><b>These are starter services.</b><span class="sub">Check the prices, delete what you won't do, add your own, and change the groups as you like. Then tap “Prices checked”.</span><button class="btn okb sm" id="srev">Prices checked ✓</button></div>`:''}
   <input class="field" id="sq" placeholder="Search services" value="${esc(S.p.q||'')}">
   <div class="chips"><button data-g="" aria-pressed="${!fc}">All ${DB.services.length-hid.length}</button>${DB.scats.map(g=>`<button data-g="${g.id}" aria-pressed="${fc===g.id}">${g.ic} ${esc(g.name)} ${DB.services.filter(s=>s.cat===g.name&&!s.hidden).length}</button>`).join('')}${own?'<button data-go="list:scat">⚙️ Groups</button><button data-go="list:size">🚙 Car sizes</button>':''}</div>
-  ${DB.scats.filter(g=>!fc||g.id===fc).map(g=>{const l=vis(g);if(!l.length&&(q||!own))return '';return sec(`${g.ic} ${esc(g.name)}`,l.length?sizeOf(null)!=null?DB.sizes[sizeOf(null)]+' price':'':'')+`<div class="list">${l.map(row).join('')}${own&&!q?`<button class="row addr" data-sa="${g.id}"><div><b>＋ Add to ${esc(g.name)}</b></div></button>`:''}</div>`;}).join('')}
+  ${DB.scats.filter(g=>!fc||g.id===fc).map(g=>{const l=vis(g);if(!l.length&&!own)return '';return sec(`${g.ic} ${esc(g.name)}`,l.length?sizeOf(null)!=null?DB.sizes[sizeOf(null)]+' price':'':'')+`<div class="list">${l.map(row).join('')}${own?`<button class="row addr" data-sa="${g.id}"><div><b>＋ Add to ${esc(g.name)}</b></div></button>`:''}</div>`;}).join('')}
   ${hid.length&&own&&!fc?sec('🙈 Hidden · '+hid.length,'not shown when adding to a job')+`<div class="list">${hid.map(row).join('')}</div>`:''}`;
-  const sq=$('#sq');sq.oninput=()=>{S.p.q=sq.value;const pos=sq.value.length;render();const e=$('#sq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
+  liveFilter($('#sq'),'[data-se]',q=>{$$('[data-sa]').forEach(b=>b.hidden=!!q);$$('#main .list').forEach(l=>{if(!l.querySelector('[data-se],[data-sa]'))return;const any=!!l.querySelector('[data-se]:not([hidden])')||(!q&&!!l.querySelector('[data-sa]'));l.hidden=!any;const h=l.previousElementSibling;if(h&&h.classList.contains('ops-sec'))h.hidden=!any;});});
   $$('[data-g]').forEach(b=>b.onclick=()=>{S.p.g=b.dataset.g;render();});
   const rv=$('#srev');if(rv)rv.onclick=()=>{DB.ws.svcReviewed=true;save();render();};
   const sa=$('#sadd');if(sa)sa.onclick=()=>svcSheet(null,(DB.scats.find(g=>g.id===fc)||DB.scats[0]||{}).name);

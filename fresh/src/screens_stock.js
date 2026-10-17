@@ -32,7 +32,7 @@ function findByCode(c){c=(c||'').trim();return DB.parts.find(p=>p.num&&p.num.tri
 /* stock screen */
 SCREENS.stock=m=>{
   const q=(S.p.q||'').toLowerCase(),cat=S.p.cat||'';
-  const list=DB.parts.filter(p=>(!cat||p.cat===cat)&&(!q||(p.name+' '+(p.num||'')+' '+(p.loc||'')+' '+(p.fits||'')).toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  const list=DB.parts.filter(p=>(!cat||p.cat===cat)).sort((a,b)=>a.name.localeCompare(b.name));
   const low=lowParts();const val=DB.parts.reduce((a,p)=>a+(+p.stock||0)*(+p.cost||0),0);
   m.innerHTML=head('Stock',`<button class="lnk" id="padd">＋ Part</button>`)+`
   <div class="kpis3"><div class="kpi"><b>${DB.parts.length}</b><span>Parts</span></div><button class="kpi ${low.length?'red':''}" id="plow"><b>${low.length}</b><span>To order</span></button>${can.cost()?`<button class="kpi" ${sx('value')?'data-go="stockval"':''}><b>${f3(val)}</b><span>On the shelf (cost)</span></button>`:`<button class="kpi" data-go="count"><b>${countToday().length}</b><span>To count</span></button>`}</div>
@@ -42,8 +42,8 @@ SCREENS.stock=m=>{
   ${sec('All parts')}
   <div class="srow"><input class="field" id="pq" placeholder="Search name, number${sx('loc')?', shelf':''}" value="${esc(S.p.q||'')}">${sx('scan')?'<button class="scanb" id="pscan">📷</button>':''}</div>
   <div class="chips">${['',...DB.pcats].map(c=>`<button data-cat="${esc(c)}" aria-pressed="${cat===c}">${c||'All'}</button>`).join('')}</div>
-  ${list.length?`<div class="list">${list.map(partRow).join('')}</div>`:empty('🛢',DB.parts.length?'Nothing found.':'No parts yet. Tap <b>＋ Part</b> to add your first one.')}`;
-  const pq=$('#pq');pq.oninput=()=>{S.p.q=pq.value;const pos=pq.value.length;render();const e=$('#pq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
+  ${list.length?`<div class="list" id="plist">${list.map(p=>partRow(p).replace(/^<(\w+)/,`<$1 data-s="${esc(p.name+' '+(p.num||'')+' '+(p.loc||'')+' '+(p.fits||''))}"`)).join('')}</div><p class="hint" id="pnone" hidden>Nothing found.</p>`:empty('🛢',DB.parts.length?'Nothing found.':'No parts yet. Tap <b>＋ Part</b> to add your first one.')}`;
+  liveFilter($('#pq'),'#plist>*',q=>{const n=$('#pnone');if(n)n.hidden=!q||!!document.querySelector('#plist>*:not([hidden])');});
   $$('[data-cat]').forEach(b=>b.onclick=()=>{S.p.cat=b.dataset.cat;render();});
   $('#padd').onclick=()=>partSheet();$$('[data-pe]').forEach(b=>b.onclick=()=>partSheet(byId('parts',b.dataset.pe)));
   const mk=$('#mkpo');if(mk)mk.onclick=()=>newPoFromLow();
