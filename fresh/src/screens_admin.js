@@ -88,6 +88,9 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   ${sec('🧪 Test data')}
   <p class="hint">Fake customers, cars, suppliers, parts and jobs to try the app. All have 🧪 in the name. Remove them before real work.</p>
   ${hasDemo()?'<button class="btn ghost sm" id="sdemox">Remove test data</button>':'<button class="btn ghost sm" id="sdemo">🧪 Add test data</button>'}
+  ${sec('📥 Services and parts list')}
+  <p class="hint">Bring in a ready list of services and parts from a file. It replaces the ones on this device.</p>
+  <button class="btn ghost sm" id="scat">📥 Import services and parts</button>
   ${sec('Storage')}<p class="hint" id="stor">💾 ${storeLabel()}</p>
   ${sec('Backup')}
   <p class="hint">Everything stays on this device only. Make a locked backup every week.</p>
@@ -104,6 +107,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $$('#sthm [data-t]').forEach(b=>b.onclick=()=>{w.theme=b.dataset.t;save();lookApply();render();});
   $('#smo').onchange=e=>{w.motionOff=!e.target.checked;save();toast(w.motionOff?'Animations off':'Animations on');MV.key='';render();};
   const sd=$('#sdemo');if(sd)sd.onclick=()=>{loadDemo();};const sdx=$('#sdemox');if(sdx)sdx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
+  $('#scat').onclick=catalogSheet;
   $('#sbk').onclick=backupSheet;
   $('#srs').onclick=restoreSheet;
   $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();save();S.user=null;OB.step=0;render();});};
