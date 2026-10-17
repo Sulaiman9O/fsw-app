@@ -242,3 +242,11 @@ html.lang-ar main *,html.lang-ar .sheet *,html.lang-ar .top *{unicode-bidi:plain
 .jb-r.add small{color:inherit;opacity:.85;font-size:.76rem}
 .jb-r.add em{font-style:normal;font-size:1.3rem;opacity:.8}
 .jb-r.add:active{transform:scale(.98)}
+/* matches while typing plate / phone: looks like a pop-up under the box, not part of the page */
+.sug{position:relative;z-index:2;margin-top:-4px;border:1.5px solid var(--red);border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.sug .sh{font-size:.74rem;font-weight:600;padding:7px 14px;color:var(--red2);background:color-mix(in srgb,var(--red) 14%,var(--panel))}
+.sug .row{border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;background:transparent!important;min-height:62px}
+.sug .row:active{background:color-mix(in srgb,var(--red) 10%,transparent)!important}
+.sug .row .v{background:var(--red);color:#fff!important;font:600 .82rem var(--f-body);padding:8px 14px;border-radius:10px}
+html.m-light .sug .sh{color:color-mix(in srgb,var(--red) 70%,#000)}
+.sug .sh{font-size:.78rem}
