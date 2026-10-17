@@ -25,6 +25,7 @@ window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');
 
 function logoImg(cls){return DB.ws&&DB.ws.logo?`<img class="${cls}" src="${DB.ws.logo}" alt="">`:`<span class="${cls} wsmark">${esc(initials(DB.ws?DB.ws.name:'W'))}</span>`;}
 function render(){
+  try{lookApply();langApply();}catch(e){}
   if(!DB.ws){renderOnboard();return;}
   if(!S.user){renderLogin();return;}
   ensureLists();

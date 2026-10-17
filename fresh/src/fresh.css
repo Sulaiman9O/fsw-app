@@ -224,3 +224,13 @@ html.sheet-open,html.sheet-open body{overflow:hidden!important;overscroll-behavi
 .sheet .pnl{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .sheet .pnl *{touch-action:pan-y}
 .sheet .pnl input,.sheet .pnl textarea,.sheet .pnl select{touch-action:manipulation}
+/* ---------- look: colour themes picker + Arabic text ---------- */
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.themes button{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;min-height:54px;text-align:left}
+.themes button[aria-pressed="true"]{border-color:var(--red);box-shadow:0 0 0 2px color-mix(in srgb,var(--red) 35%,transparent)}
+.themes i{width:30px;height:30px;border-radius:9px;flex:0 0 auto}
+.themes b{font-weight:600}
+html.lang-ar body{font-family:"FSW Rubik","Noto Sans Arabic","Noto Naskh Arabic","Segoe UI",Tahoma,system-ui,sans-serif}
+html.lang-ar .lbl,html.lang-ar .navb{letter-spacing:0;text-transform:none}
+.btn.ghost{color:var(--text)}
+html.lang-ar main *,html.lang-ar .sheet *,html.lang-ar .top *{unicode-bidi:plaintext}

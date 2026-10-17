@@ -78,6 +78,12 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   ${sec('✨ Smart services')}
   <label class="chk"><input type="checkbox" id="ssmart" ${sx('smart')?'checked':''}> Compare options when adding oil change, plugs, pads, battery (off = always add normally)</label>
   ${sec('✨ Look')}
+  <label class="field-l">Language / اللغة</label>
+  <div class="chips" id="slang" data-notr><button data-l="en" aria-pressed="${(w.lang||'en')==='en'}">English</button><button data-l="ar" aria-pressed="${w.lang==='ar'}">العربية</button></div>
+  <label class="field-l">Light or dark</label>
+  <div class="chips" id="smode">${[['auto','◐ Auto (like the phone)'],['light','☀️ Light'],['dark','🌙 Dark']].map(([k,t])=>`<button data-m="${k}" aria-pressed="${(w.mode||'auto')===k}">${t}</button>`).join('')}</div>
+  <label class="field-l">Colours</label>
+  <div class="themes" id="sthm">${LOOKS.map(([k,t,a,b])=>`<button data-t="${k}" aria-pressed="${(w.theme||'red')===k}"><i style="background:linear-gradient(135deg,${a},${b})"></i><b>${t}</b></button>`).join('')}</div>
   <label class="chk"><input type="checkbox" id="smo" ${w.motionOff?'':'checked'}> Motion and animations (smooth screens, numbers count up)</label>
   ${sec('🧪 Test data')}
   <p class="hint">Fake customers, cars, suppliers, parts and jobs to try the app. All have 🧪 in the name. Remove them before real work.</p>
@@ -93,6 +99,9 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
     w.remMonths=parseInt($('#srm').value)||6;w.remKm=parseInt($('#srk').value)||7000;
     DB.openingCash=num($('#soc').value);audit('settings','Settings saved');save();toast('Saved');render();};
   $('#ssmart').onchange=e=>{DB.ws.sxOff=DB.ws.sxOff||{};if(e.target.checked)delete DB.ws.sxOff.smart;else DB.ws.sxOff.smart=1;save();toast(e.target.checked?'Smart services on':'Smart services off');};
+  $$('#slang [data-l]').forEach(b=>b.onclick=()=>{w.lang=b.dataset.l;save();audit('settings','Language '+w.lang);render();});
+  $$('#smode [data-m]').forEach(b=>b.onclick=()=>{w.mode=b.dataset.m;save();lookApply();render();});
+  $$('#sthm [data-t]').forEach(b=>b.onclick=()=>{w.theme=b.dataset.t;save();lookApply();render();});
   $('#smo').onchange=e=>{w.motionOff=!e.target.checked;save();toast(w.motionOff?'Animations off':'Animations on');MV.key='';render();};
   const sd=$('#sdemo');if(sd)sd.onclick=()=>{loadDemo();};const sdx=$('#sdemox');if(sdx)sdx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
   $('#sbk').onclick=backupSheet;
@@ -107,10 +116,12 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
   const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role;let pm=Object.assign({},u.perm||{});
     openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}">
      <div class="chips" id="uro"></div>
+     <label class="field-l">Language for this person</label><div class="chips" id="ulg" data-notr></div>
      <input class="field" id="up" inputmode="numeric" maxlength="4" placeholder="${isNew?'4-number PIN':'New PIN (leave empty to keep)'}">
      <div class="field-l" style="display:flex;justify-content:space-between;align-items:center">What ${isNew?'they':esc(u.name)} can see and do <button class="lnk" id="urst" style="min-height:0;padding:0">Reset to ${'role'}</button></div>
      <div class="list" id="upm"></div>
      <button class="btn" id="uok">Save</button>${!isNew&&u.id!==S.user.id?'<button class="btn ghost jb-del" id="udel">Remove user</button>':''}`,el=>{
+     let ulang=u.lang||'';const dl=()=>{el.querySelector('#ulg').innerHTML=[['',T_('Same as workshop')],['en','English'],['ar','العربية']].map(([k,t])=>`<button data-ul="${k}" aria-pressed="${ulang===k}">${t}</button>`).join('');el.querySelectorAll('[data-ul]').forEach(b=>b.onclick=()=>{ulang=b.dataset.ul;dl();});};dl();
      const draw=()=>{el.querySelector('#uro').innerHTML=['owner','manager','worker'].map(r=>`<button data-r="${r}" aria-pressed="${role===r}">${ROLE[r]}</button>`).join('');
        el.querySelector('#urst').hidden=role==='owner'||!Object.keys(pm).length;
        el.querySelector('#upm').innerHTML=role==='owner'?'<p class="hint">The owner can see and do everything.</p>':PERMS.map(([k,t,d])=>{const on=k in pm?!!pm[k]:roleDef(role,k);return `<label class="lrow tgl2"><span class="lname"><div><b>${t}${k in pm?' <span class="tg tgr">changed</span>':''}</b><span>${d}</span></div></span><input type="checkbox" data-pk="${k}" ${on?'checked':''}></label>`;}).join('');
@@ -119,7 +130,7 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
      draw();el.querySelector('#urst').onclick=()=>{pm={};draw();};
      el.querySelector('#uok').onclick=async()=>{const n=$('#un').value.trim();const pin=$('#up').value.trim();if(!n){toast('Type a name');return;}if(isNew&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}if(pin&&!/^\d{4}$/.test(pin)){toast('PIN must be 4 numbers');return;}
        if(!isNew&&u.role==='owner'&&role!=='owner'&&DB.users.filter(x=>x.role==='owner').length===1){toast('Keep at least one owner');return;}
-       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}audit('user',(isNew?'Added user ':'Changed user ')+n+' · '+ROLE[role]+(Object.keys(pm).length&&role!=='owner'?' · permissions: '+Object.entries(pm).map(([k,v])=>(v?'+':'−')+k).join(' '):'')+(pin?' · new PIN':''));u.name=n;u.role=role;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
+       if(isNew){u.id=uid('u');u.color=COLORS[DB.users.length%COLORS.length];DB.users.push(u);}audit('user',(isNew?'Added user ':'Changed user ')+n+' · '+ROLE[role]+(Object.keys(pm).length&&role!=='owner'?' · permissions: '+Object.entries(pm).map(([k,v])=>(v?'+':'−')+k).join(' '):'')+(pin?' · new PIN':''));u.name=n;u.role=role;if(ulang)u.lang=ulang;else delete u.lang;u.perm=role==='owner'?{}:pm;if(pin)u.pin=await hashPin(pin);save();closeSheet();render();};
      const d=el.querySelector('#udel');if(d)d.onclick=()=>confirmSheet('Remove '+esc(u.name)+'?','Remove',()=>{audit('user','Removed user '+u.name);DB.users=DB.users.filter(x=>x!==u);save();render();});});};
   $('#uadd').onclick=()=>edit();$$('[data-ue]').forEach(b=>b.onclick=()=>edit(DB.users.find(x=>x.id===b.dataset.ue)));};
 /* ---------- MORE ---------- */
