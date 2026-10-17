@@ -638,3 +638,11 @@ html.lang-ar body{font-family:"FSW Rubik","Noto Sans Arabic","Noto Naskh Arabic"
 html.lang-ar .lbl,html.lang-ar .navb{letter-spacing:0;text-transform:none}
 .btn.ghost{color:var(--text)}
 html.lang-ar main *,html.lang-ar .sheet *,html.lang-ar .top *{unicode-bidi:plaintext}
+/* add service / part: a clear button, not a faint link */
+.jb-r.add{margin:10px;width:calc(100% - 20px);border:0;border-radius:14px;background:var(--red);color:#fff;padding:12px 14px;gap:12px;justify-content:flex-start;box-shadow:0 6px 18px color-mix(in srgb,var(--red) 30%,transparent)}
+.jb-r.add .plus2{width:36px;height:36px;border-radius:11px;border:2px solid currentColor;display:grid;place-items:center;font-size:1.3rem;font-weight:700;flex:0 0 auto;opacity:.95}
+.jb-r.add div{flex:1;display:grid;gap:2px}
+.jb-r.add b{font:600 1rem var(--f-body);color:inherit;white-space:normal}
+.jb-r.add small{color:inherit;opacity:.85;font-size:.76rem}
+.jb-r.add em{font-style:normal;font-size:1.3rem;opacity:.8}
+.jb-r.add:active{transform:scale(.98)}

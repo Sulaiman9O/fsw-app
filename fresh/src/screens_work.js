@@ -46,20 +46,20 @@ SCREENS.work=m=>{
 /* ---------- NEW JOB (customer → car → job) ---------- */
 SCREENS.newjob=m=>{
   const N=S.p.n||(S.p.n={phone:'',name:'',plate:'',make:'',model:'',year:'',km:'',vin:'',engine:'',est:false,custId:null,vehId:null});
-  const found=N.phone.length>=4?DB.customers.filter(c=>(c.phone||'').includes(N.phone)).slice(0,4):[];
-  const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];
-  const cust=N.custId&&byId('customers',N.custId);const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
+  const cust=N.custId&&byId('customers',N.custId);
+  const fHtml=()=>{const found=N.phone.length>=4?DB.customers.filter(c=>(c.phone||'').includes(N.phone)).slice(0,4):[];return found.length?`<div class="list">${found.map(c=>`<button class="row" data-pc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone)} · known customer</span></div><span class="v">Use ›</span></button>`).join('')}</div>`:'';};
+  const vfHtml=()=>{const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];return vfound.length&&!cust?`<div class="list">${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:'';};const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
   m.innerHTML=head('New car in')+`
   <div class="steps3"><span class="on">1 Customer</span><span class="${cust?'on':''}">2 Car</span><span>3 Services</span></div>
   ${sec('Customer')}
   ${cust?`<div class="card sel"><div class="h"><b>${esc(cust.name)}</b><button class="lnk" id="nchg">Change</button></div><span class="sub">${esc(cust.phone||'')} · ${cars.length} car${cars.length===1?'':'s'}</span></div>`
   :`<div class="in2"><input class="field" id="nphone" inputmode="tel" placeholder="Phone" value="${esc(N.phone)}"><input class="field" id="nname" placeholder="Name" value="${esc(N.name)}"></div>
-   ${found.length?`<div class="list">${found.map(c=>`<button class="row" data-pc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone)} · known customer</span></div><span class="v">Use ›</span></button>`).join('')}</div>`:''}
+   <div id="nfound">${fHtml()}</div>
    <button class="btn ghost sm" id="nwalk">Walk-in (no name)</button>`}
   ${sec('Car')}
   ${cars.length&&!N.vehNew?`<div class="list">${cars.map(v=>`<button class="row${N.vehId===v.id?' selr':''}" data-pv="${v.id}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${v.km?'last '+kmf(v.km)+' km':''}</span></div><span class="v">${N.vehId===v.id?'✓':'›'}</span></button>`).join('')}<button class="row" id="nvnew"><div><b>＋ Another car</b></div></button></div>`
-  :`<div class="in2"><input class="field" id="nplate" placeholder="Plate (12345 A)" value="${esc(N.plate)}" style="text-transform:uppercase"><input class="field" id="nkm" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}"></div>
-   ${vfound.length&&!cust?`<div class="list">${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:''}
+  :`<div class="in2"><input class="field" id="nplate" placeholder="Plate (12345 A)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${esc(N.plate)}" style="text-transform:uppercase"><input class="field" id="nkm" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}"></div>
+   <div id="nvfound">${vfHtml()}</div>
    <button class="carpick" id="ncp">${N.make?`<b>${esc([N.make,N.model,N.year].filter(Boolean).join(' '))}</b><span>${N.engine?esc(N.engine):'Tap to choose the engine'}</span>`:'<b>🚗 Choose make, model, year, engine</b><span>Type “toy” for Toyota…</span>'}<em>›</em></button>
    <input type="hidden" id="nmake" value="${esc(N.make)}"><input type="hidden" id="nmodel" value="${esc(N.model)}"><input type="hidden" id="nyear" value="${esc(N.year)}">
    <input class="field" id="nvin" placeholder="VIN (optional)" maxlength="17" value="${esc(N.vin)}" style="text-transform:uppercase">`}
@@ -67,10 +67,12 @@ SCREENS.newjob=m=>{
   <label class="chk"><input type="checkbox" id="nest" ${N.est?'checked':''}> Estimate only (customer has not agreed yet)</label>
   <button class="btn" id="ngo">Open ${N.est?'estimate':'job card'} ›</button>`;
   const keep=()=>{['nphone','nname','nplate','nkm','nmake','nmodel','nyear','nvin','nkm2'].forEach(id=>{const e=$('#'+id);if(e)N[{nphone:'phone',nname:'name',nplate:'plate',nkm:'km',nmake:'make',nmodel:'model',nyear:'year',nvin:'vin',nkm2:'km'}[id]]=e.value;});};
-  ['nphone','nplate'].forEach(id=>{const e=$('#'+id);if(e)e.oninput=()=>{keep();const pos=e.value.length;render();const e2=$('#'+id);e2.focus();try{e2.setSelectionRange(pos,pos);}catch(x){}};});
-  $$('[data-pc]').forEach(b=>b.onclick=()=>{keep();N.custId=b.dataset.pc;const vs=DB.vehicles.filter(v=>v.cust===N.custId);N.vehId=vs.length===1?vs[0].id:null;render();});
+  /* typing only refreshes the suggestions; the box stays, so the keyboard does not jump back to letters */
+  const bindSug=()=>{$$('[data-pc]').forEach(b=>b.onclick=()=>{keep();N.custId=b.dataset.pc;const vs=DB.vehicles.filter(v=>v.cust===N.custId);N.vehId=vs.length===1?vs[0].id:null;render();});
+    $$('[data-pvf]').forEach(b=>b.onclick=()=>{keep();const v=byId('vehicles',b.dataset.pvf);N.custId=v.cust;N.vehId=v.id;render();});};
+  [['nphone','nfound',fHtml],['nplate','nvfound',vfHtml]].forEach(([id,box,fn])=>{const e=$('#'+id);if(e)e.oninput=()=>{keep();const b=$('#'+box);if(b){b.innerHTML=fn();bindSug();}};});
+  bindSug();
   $$('[data-pv]').forEach(b=>b.onclick=()=>{keep();N.vehId=b.dataset.pv;render();});
-  $$('[data-pvf]').forEach(b=>b.onclick=()=>{keep();const v=byId('vehicles',b.dataset.pvf);N.custId=v.cust;N.vehId=v.id;render();});
   const ncp=$('#ncp');if(ncp)ncp.onclick=()=>{keep();carPicker(N,r=>{Object.assign(N,r);render();});};
   const nv=$('#nvnew');if(nv)nv.onclick=()=>{keep();N.vehNew=true;N.vehId=null;render();};
   const ch=$('#nchg');if(ch)ch.onclick=()=>{N.custId=null;N.vehId=null;N.vehNew=false;render();};
