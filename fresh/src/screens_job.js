@@ -50,22 +50,50 @@ function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;retur
 /* add / edit items */
 function svcUse(){const u={};DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.ref)u[i.ref]=(u[i.ref]||0)+1;}));return u;}
 function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',p:svcPrice(s,v),tag:s.tag,war:s.war||'',min:+s.min||0,comm:+s.comm||0,by:S.user.name,lockP:!!s.lockP,from:!!s.from,out:s.out&&s.out.who?Object.assign({},s.out):null};}
+/* search that forgives spaces, dashes and case: "5w30" finds "5W-30"; Arabic names count too */
+const normQ=x=>String(x||'').toLowerCase().replace(/[\s\-_.\/]+/g,'');
+const qHit=(q,...xs)=>{const n=normQ(q);if(!n)return true;return xs.some(x=>normQ(x).includes(n)||normQ(T_(x||'')).includes(n));};
+function lastVisit(j){const v=vehOf(j);if(!v)return null;return DB.jobs.filter(x=>x.id!==j.id&&x.veh===v.id&&(x.items||[]).length).sort((a,b)=>b.t-a.t)[0]||null;}
+function repeatVisit(j,from){const v=vehOf(j);let n=0;(from.items||[]).forEach(i=>{
+    if(i.k==='labour'&&i.ref){const sv=byId('services',i.ref);if(sv){j.items.push(svcItem(sv,v));n++;return;}}
+    if(i.k==='part'&&i.ref&&!i.custPart){const p=byId('parts',i.ref);if(p){j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:+i.q||1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});n++;return;}}
+    const c=Object.assign({},i);delete c.pend;c.by=S.user.name;j.items.push(c);n++;});
+  logJ(j,'Repeated visit #'+from.no);return n;}
 function addItemSheet(j,opt){opt=opt||{};
-  let q=opt.q||'';const v=vehOf(j);const use=svcUse();
-  const draw=el=>{const ql=q.toLowerCase();const f=x=>!ql||x.toLowerCase().includes(ql);const sz=sizeOf(v);
+  let q=opt.q||'',tab=opt.tab||'';const v=vehOf(j);const use=svcUse();const lv=lastVisit(j);
+  const svRow=s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${scatIc(s.cat)} ${esc(s.name)}</b><span>${esc(s.cat)}${s.min?' · '+s.min+' min':''}${s.out&&s.out.who?' · at '+esc(s.out.who):''}${(s.parts||[]).length?' · + '+s.parts.length+' parts':''}</span></div><span class="v">${s.from?'<small>from</small>':''}${f3(svcPrice(s,v))}</span></button>`;
+  const cjRow=c=>`<button class="opt" data-cj="${c.id}"><div class="tx"><b>${esc(c.name)}</b><span>${c.items.length} items</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`;
+  const byUse=(a,b)=>(use[b.id]||0)-(use[a.id]||0);
+  const draw=el=>{const sz=sizeOf(v);
     el.querySelector('#asz').innerHTML=DB.sizes.map((n,k)=>`<button data-sz="${k}" aria-pressed="${k===sz}">${esc(n)}</button>`).join('');
-    const sv=DB.services.filter(s=>!s.hidden&&f(s.name+' '+(s.ar||'')+' '+s.cat)).sort((a,b)=>(use[b.id]||0)-(use[a.id]||0));const ps=DB.parts.filter(p=>f(p.name+' '+(p.num||'')+' '+p.cat));const cj=DB.canned.filter(c=>f(c.name));
-    el.querySelector('#alist').innerHTML=
-     (cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(c=>`<button class="opt" data-cj="${c.id}"><div class="tx"><b>${esc(c.name)}</b><span>${c.items.length} items</span></div><span class="v">${f3(c.items.reduce((a,i)=>a+i.q*i.p,0))}</span></button>`).join(''):'')+
-     (sv.length?`<div class="lbl">Services${!ql&&Object.keys(use).length?' · most used first':''}</div>`+sv.slice(0,ql?60:16).map(s=>`<button class="opt" data-sv="${s.id}"><div class="tx"><b>${scatIc(s.cat)} ${esc(s.name)}</b><span>${esc(s.cat)}${s.min?' · '+s.min+' min':''}${s.out&&s.out.who?' · at '+esc(s.out.who):''}${(s.parts||[]).length?' · + '+s.parts.length+' parts':''}</span></div><span class="v">${s.from?'<small>from</small>':''}${f3(svcPrice(s,v))}</span></button>`).join(''):'')+
-     (ps.length?`<div class="lbl">Parts</div>`+partOpts(v,ps):DB.parts.length?'':`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`);
+    const svAll=DB.services.filter(s=>!s.hidden);
+    const gs=DB.scats.filter(g=>svAll.some(s=>s.cat===g.name));const pcs=DB.pcats.filter(c=>DB.parts.some(p=>p.cat===c));
+    el.querySelector('#atabs').innerHTML=q?'':`<div class="atabs"><button data-tab="" aria-pressed="${!tab}">⭐ Most used</button>${DB.canned.length?`<button data-tab="cj" aria-pressed="${tab==='cj'}">📋 Canned jobs</button>`:''}${gs.map(g=>`<button data-tab="s:${esc(g.name)}" aria-pressed="${tab==='s:'+g.name}">${g.ic} ${esc(g.name)}</button>`).join('')}</div>
+      ${pcs.length?`<div class="atabs pc"><span>Parts</span>${pcs.map(c=>`<button data-tab="p:${esc(c)}" aria-pressed="${tab==='p:'+c}">${esc(c)}</button>`).join('')}</div>`:''}`;
+    let h='';
+    if(q){const sv=svAll.filter(s=>qHit(q,s.name,s.ar,s.cat)).sort(byUse);const ps=DB.parts.filter(p=>qHit(q,p.name,p.num,p.cat,(p.codes||[]).join(' ')));const cj=DB.canned.filter(c=>qHit(q,c.name));
+      h=(cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(cjRow).join(''):'')+(sv.length?`<div class="lbl">Services</div>`+sv.slice(0,60).map(svRow).join(''):'')+(ps.length?`<div class="lbl">Parts</div>`+partOpts(v,ps.slice(0,80)):'')+(!sv.length&&!ps.length&&!cj.length?`<p class="hint">Nothing found. Use “Something else” to type it.</p>`:'');}
+    else if(tab==='cj')h=DB.canned.map(cjRow).join('');
+    else if(tab.startsWith('s:')){const g=tab.slice(2);h=svAll.filter(s=>s.cat===g).sort(byUse).map(svRow).join('');}
+    else if(tab.startsWith('p:')){const c=tab.slice(2);const ps=DB.parts.filter(p=>p.cat===c).sort((a,b)=>((+b.stock||0)>0)-((+a.stock||0)>0)||a.name.localeCompare(b.name));h=partOpts(v,ps);}
+    else{const fit=sx('fits')&&v?DB.parts.filter(p=>fitsCar(p,v)).slice(0,6):[];
+      if(v&&(lv||fit.length)){h+=`<div class="forcar"><div class="fh">🚗 For this car · ${esc(carName(v)||'')}</div>`;
+        if(lv){const T=jobTotals(lv);h+=`<button class="rep" id="arep"><span class="ri">🔁</span><div><b>Repeat last visit</b><small>${fmtDs(lv.t)} · ${lv.items.length} items · ${esc(lv.items.slice(0,3).map(i=>i.d).join(', '))}${lv.items.length>3?'…':''}</small></div><em>${f3(T.total)}</em></button>`;}
+        if(fit.length)h+=`<div class="lbl">Parts that fit this car</div>`+partOpts(v,fit);
+        h+=`</div>`;}
+      const top=svAll.slice().sort(byUse).slice(0,10);
+      h+=`<div class="lbl">Services${Object.keys(use).length?' · most used first':''}</div>`+top.map(svRow).join('');
+      if(!DB.parts.length)h+=`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`;}
+    el.querySelector('#alist').innerHTML=h;
+    el.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;draw(el);const a=el.querySelector('#alist');if(a)a.scrollIntoView({block:'nearest'});});
+    const rp=el.querySelector('#arep');if(rp)rp.onclick=()=>{const n=repeatVisit(j,lv);save();closeSheet();render();toast('Added '+n+' items from the last visit. Check the prices.');};
     el.querySelectorAll('[data-sz]').forEach(b=>b.onclick=()=>{v.size=+b.dataset.sz;save();draw(el);});
     el.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const s=byId('services',b.dataset.sv);if(!opt.manual&&smartOk(s)){smartSheet(j,s);return;}j.items.push(svcItem(s,v));const at=j.items.length-1;
       (s.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});
       logJ(j,'Added '+s.name);save();if(s.from){editItemSheet(j,at);return;}closeSheet();render();});
     el.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.pt);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelectorAll('[data-cj]').forEach(b=>b.onclick=()=>{const c=DB.canned.find(x=>x.id===b.dataset.cj);c.items.forEach(i=>j.items.push(Object.assign({},i)));logJ(j,'Added '+c.name);save();closeSheet();render();});};
-  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="alist"></div>`,el=>{
+  openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="atabs"></div><div id="alist"></div>`,el=>{
     el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};const asc=el.querySelector('#ascan');if(asc)asc.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(!p){toast('No part with '+c);return;}j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
     el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
     draw(el);});

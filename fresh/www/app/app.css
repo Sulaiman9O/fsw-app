@@ -658,3 +658,17 @@ html.m-light .sug .sh{color:color-mix(in srgb,var(--red) 70%,#000)}
 html.m-light{--ok:#15803d;--warn:#b45309;--bad:#dc2626;--red2:color-mix(in srgb,var(--red) 78%,#000)}
 html.m-light .bd{color:#fff}
 .oc .bd{font-size:.72rem;padding:3px 10px;top:-11px}
+/* add sheet: group tabs (scroll sideways), "for this car" box, repeat last visit */
+.atabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.atabs::-webkit-scrollbar{display:none}
+.atabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;min-height:40px;padding:0 14px;font-size:.86rem;font-weight:600;white-space:nowrap}
+.atabs button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.atabs.pc{align-items:center}.atabs.pc span{flex:0 0 auto;font-size:.72rem;color:var(--muted);font-weight:700;padding-right:2px}
+.atabs.pc button{min-height:34px;font-size:.8rem;font-weight:500}
+.forcar{border:1.5px solid color-mix(in srgb,var(--red) 55%,var(--line));border-radius:16px;padding:10px;display:grid;gap:8px;background:color-mix(in srgb,var(--red) 6%,var(--panel))}
+.forcar .fh{font-weight:700;font-size:.9rem}
+.rep{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:14px;background:var(--red);color:#fff;padding:12px 14px}
+.rep .ri{font-size:1.3rem}.rep div{flex:1;display:grid;gap:2px;min-width:0}.rep b{font-weight:700;color:inherit}
+.rep small{color:inherit;opacity:.85;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rep em{font-style:normal;font:400 1.05rem var(--f-brand);color:inherit}
+.sheet .pnl>*,#atabs,#alist,#smb{min-width:0;max-width:100%}
+.atabs{width:100%;max-width:100%}
