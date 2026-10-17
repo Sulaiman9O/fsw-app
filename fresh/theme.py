@@ -77,6 +77,8 @@ def light(c, role):
     if neutral:
         if a < 0.999 and l < 0.01:
             return rgb(h, 0, 0, a * 0.75 if a >= 0.4 else a * 0.6)   # black overlays and the screen behind popups
+        if role == 'fg' and l < 0.15 and a > 0.9:
+            return c                                    # dark text was already on a light/coloured spot
         if role == 'fg':
             nl = 0.1 if l > 0.9 else max(0.08, min(0.75, 1.02 - l))
         elif role == 'bd':
@@ -145,7 +147,7 @@ def build(css):
         out.append(css[pos:m.start(2)])
         pos = m.end(2)
         last = sel.split('{')[-1]
-        if re.search(r'\.inv\b|\.wstk|@font-face', last) or re.match(r'\s*(html\.m-light|html\.t-indigo)', last):
+        if re.search(r'\.inv\b|\.wstk|@font-face', last) or re.search(r'html\.m-light|html\.t-indigo', last):
             out.append(body)
             continue
         decls = body.split(';')
@@ -163,8 +165,8 @@ def build(css):
             def rep(mm):
                 lit = mm.group(0)
                 c = parse(lit)
-                if role == 'fg' and accent_bg and c and hls(c)[1] > 0.9:
-                    return lit                          # white text on a coloured button stays white
+                if role == 'fg' and accent_bg and c:
+                    return lit                          # text on a coloured button keeps its colour
                 return var_for(lit, role, keep)
             nd.append(prop + ':' + COL.sub(rep, val))
         out.append(';'.join(nd))

@@ -250,3 +250,7 @@ html.lang-ar main *,html.lang-ar .sheet *,html.lang-ar .top *{unicode-bidi:plain
 .sug .row .v{background:var(--red);color:#fff!important;font:600 .82rem var(--f-body);padding:8px 14px;border-radius:10px}
 html.m-light .sug .sh{color:color-mix(in srgb,var(--red) 70%,#000)}
 .sug .sh{font-size:.78rem}
+/* light mode: status colours a bit darker so text on light backgrounds is easy to read */
+html.m-light{--ok:#15803d;--warn:#b45309;--bad:#dc2626;--red2:color-mix(in srgb,var(--red) 78%,#000)}
+html.m-light .bd{color:#fff}
+.oc .bd{font-size:.72rem;padding:3px 10px;top:-11px}
