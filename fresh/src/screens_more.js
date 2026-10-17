@@ -13,7 +13,7 @@ SCREENS.cust=m=>{
   const cq=$('#cq');cq.oninput=()=>{S.p.q=cq.value;const pos=cq.value.length;render();const e=$('#cq');e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}};
   $$('[data-rs]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rs);r.sent=now();save();render();});
   $$('[data-rwa]').forEach(b=>b.onclick=()=>{const r=DB.reminders.find(x=>x.id===b.dataset.rwa);const v=byId('vehicles',r.veh)||{},c=byId('customers',r.cust)||{};
-    const t=msg('remind',{name:c.name||'',car:carName(v),plate:v.plate||'',service:r.kind==='gear'?'تغيير زيت الجير':'تغيير زيت المحرك'});shareText(c.phone,t);r.sent=now();save();});
+    const t=msg('remind',{name:c.name||'',car:carName(v),plate:v.plate||'',service:r.kind==='gear'?'تغيير زيت ناقل الحركة':'تغيير زيت المحرك'});shareText(c.phone,t);r.sent=now();save();});
   $('#cadd').onclick=()=>custSheet();
 };
 function custSheet(c){const isNew=!c;c=c||{};openSheet(`<h3>${isNew?'New customer':'Edit customer'}</h3><input class="field" id="cn" placeholder="Name" value="${esc(c.name||'')}"><input class="field" id="cp" inputmode="tel" placeholder="Phone" value="${esc(c.phone||'')}"><textarea class="field" id="cnt" rows="2" placeholder="Notes">${esc(c.notes||'')}</textarea><button class="btn" id="cok">Save</button>`,el=>el.querySelector('#cok').onclick=()=>{const n=$('#cn').value.trim();if(!n){toast('Type a name');return;}
@@ -97,7 +97,7 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
   const pr=k=>s.p[k]!=null?s.p[k]:s.p[s.p.length-1];
   openSheet(`<h3>${isNew?'New service':'Edit service'}</h3>
   <input class="field" id="sn" placeholder="Name" value="${esc(s.name||'')}">
-  <input class="field ar" id="sar" dir="rtl" placeholder="الاسم بالعربي (يطلع في الفاتورة)" value="${esc(s.ar||'')}">
+  <input class="field ar" id="sar" dir="rtl" placeholder="الاسم بالعربية (يظهر في الفاتورة)" value="${esc(s.ar||'')}">
   <select class="field" id="sc">${DB.scats.map(g=>`<option value="${esc(g.name)}" ${g.name===s.cat?'selected':''}>${g.ic} ${esc(g.name)}</option>`).join('')}<option value="__new">＋ New group…</option></select>
   <input class="field" id="scn" placeholder="New group name" hidden>
   <div class="field-l" style="display:flex;justify-content:space-between;align-items:center">Price by car size <button class="lnk" data-go2="list:size" style="min-height:0;padding:0">Edit sizes ›</button></div>

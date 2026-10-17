@@ -13,6 +13,8 @@ function trCore(s){
   for(const [re,v,k] of I18N.tpl){const m=s.match(re);if(!m)continue;let out=v,ni=0;
     m.slice(1).forEach((g,i)=>{if(k[i]==='n')out=out.replace('{'+(ni++)+'}',g);else out=out.replace('{x}',trStr(g));});return out;}
   return null;}
+function dedupeSegs(t){const core=x=>x.replace(/^[^\u0600-\u06FFA-Za-z]+/,'').replace(/\s*\(\d+\)$/,'').trim(),out=[];
+  for(const x of t){const k=out.findIndex(y=>core(y)===core(x));if(k<0){out.push(x);continue;}const m=x.match(/\s*\(\d+\)$/);if(m&&!/\(\d+\)$/.test(out[k]))out[k]+=m[0];}return out;}
 const AR_MON={Jan:'يناير',Feb:'فبراير',Mar:'مارس',Apr:'أبريل',May:'مايو',Jun:'يونيو',Jul:'يوليو',Aug:'أغسطس',Sep:'سبتمبر',Oct:'أكتوبر',Nov:'نوفمبر',Dec:'ديسمبر'};
 const AR_RE=/[؀-ۿ]/;
 /* translate one piece of text; returns the same text when nothing fits */
@@ -26,8 +28,9 @@ function trStr(raw){
   if(r==null){const dm=s.match(/^(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d{4})?( \d\d:\d\d)?$/);if(dm)r=dm[1]+' '+AR_MON[dm[2]]+(dm[3]||'')+(dm[4]||'');}
   if(r==null){const nm=s.match(/^(.*[^\d\s]) (\d+)$/);if(nm){const x=trStr(nm[1]);if(x!==nm[1])r=x+' '+nm[2];}}
   if(r==null&&s.includes(', ')){const segs=s.split(', '),t=segs.map(x=>trStr(x));if(t.every((x,i)=>x!==segs[i]))r=t.join('، ');}
-  if(r==null&&s.includes(' · ')){const segs=s.split(' · '),t=segs.map(x=>trStr(x));if(t.some((x,i)=>x!==segs[i]))r=t.join(' · ');}
+  if(r==null&&s.includes(' · ')){const segs=s.split(' · '),t=segs.map(x=>trStr(x));if(t.some((x,i)=>x!==segs[i]))r=dedupeSegs(t).join(' · ');}
   if(r==null&&/ → /.test(s)){const segs=s.split(' → '),t=segs.map(x=>trStr(x));if(t.some((x,i)=>x!==segs[i]))r=t.join(' ← ');}
+  if(r!=null&&r.includes(' · '))r=dedupeSegs(r.split(' · ')).join(' · ');
   const out=r==null?raw:lead+r+trail;
   if(I18N.cache.size>20000)I18N.cache.clear();I18N.cache.set(raw,out);return out;}
 /* T(): use in code for text that is not in the page (search, WhatsApp is NOT translated) */

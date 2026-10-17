@@ -51,7 +51,7 @@ function smartSheet(j,s){let O=smartOptions(j,s),sel=O.opts.findIndex(o=>o.last)
     const qi=el.querySelector('#smq');if(qi){qi.onfocus=()=>qi.select();qi.onchange=()=>{const q=num(qi.value);if(q>0){O.qty=q;O.qSrc='';}draw();};}
     el.querySelector('#smonly').onclick=()=>{j.items.push(svcItem(s,v));logJ(j,'Added '+s.name);save();closeSheet();render();};
     el.querySelector('#smwa').onclick=()=>{const c=custOf(j);const cur2=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;const nums=['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
-      const items=O.opts.slice(0,9).map((o,i)=>nums[i]+' '+(o.g?{mineral:'زيت عادي',semi:'زيت نص صناعي',full:'زيت صناعي'}[o.g]+' · ':'')+o.p.name.replace(/^🧪\s*/,'')+': '+f3(o.total)+' '+cur2+(o.next?'\n   (التغيير الجاي بعد '+kmf(o.next)+' كم)':'')+(o.last?' ⭐ اختياركم المرة الماضية':'')).join('\n');
+      const items=O.opts.slice(0,9).map((o,i)=>nums[i]+' '+(o.g?{mineral:'زيت عادي',semi:'زيت شبه صناعي',full:'زيت صناعي'}[o.g]+' · ':'')+o.p.name.replace(/^🧪\s*/,'')+': '+f3(o.total)+' '+cur2+(o.next?'\n   (التغيير القادم بعد '+kmf(o.next)+' كم)':'')+(o.last?' ⭐ اختياركم في المرة السابقة':'')).join('\n');
       shareText(c.phone,msg('options',{name:c.name||'',car:carName(v),plate:v.plate||'',service:s.ar||s.name,items}));};
     const ok=el.querySelector('#smok');if(ok)ok.onclick=()=>{if(sel<0)return;const o=O.opts[sel];const it=svcItem(s,v);if(o.next)it.nextKm=o.next;it.rxk=O.k;it.rxg=o.g;j.items.push(it);
       j.items.push({k:'part',ref:o.p.id,d:o.p.name,num:o.p.num,q:o.q,u:o.p.unit==='L'?'L':'',p:+o.p.price,cost:+o.p.cost||0,rxk:O.k});
