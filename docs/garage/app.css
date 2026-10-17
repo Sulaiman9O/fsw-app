@@ -614,3 +614,7 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .jb-r.selm>div{flex:1}
 .undob{position:fixed;left:12px;right:12px;bottom:calc(var(--navh) + 12px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;align-items:center;gap:12px;background:#222;border:1px solid #444;color:#fff;border-radius:14px;padding:8px 8px 8px 14px;max-width:560px;margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,.6)}
 .undob span{flex:1;font-size:.9rem}.undob button{min-height:40px;padding:0 16px;border-radius:10px;background:var(--red);color:#fff;font-weight:700}
+/* app feel: no text selection / copy popup on long press (inputs still work) */
+html,body,#root,.sheet,.sghost,#tour{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea,select,[contenteditable="true"],.selectable{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img{-webkit-user-drag:none;user-drag:none}
