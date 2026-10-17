@@ -2,5 +2,15 @@
   "appId": "om.fsw.garage",
   "appName": "Workshop (test)",
   "webDir": "www",
-  "android": { "backgroundColor": "#000000" }
+  "android": {
+    "backgroundColor": "#000000"
+  },
+  "plugins": {
+    "CapacitorSQLite": {
+      "androidIsEncryption": false,
+      "androidBiometric": {
+        "biometricAuth": false
+      }
+    }
+  }
 }

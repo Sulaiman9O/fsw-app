@@ -82,6 +82,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   ${sec('🧪 Test data')}
   <p class="hint">Fake customers, cars, suppliers, parts and jobs to try the app. All have 🧪 in the name. Remove them before real work.</p>
   ${hasDemo()?'<button class="btn ghost sm" id="sdemox">Remove test data</button>':'<button class="btn ghost sm" id="sdemo">🧪 Add test data</button>'}
+  ${sec('Storage')}<p class="hint" id="stor">💾 ${storeLabel()}</p>
   ${sec('Backup')}
   <p class="hint">Everything stays on this device only. Make a locked backup every week.</p>
   <div class="two"><button class="btn ghost sm" id="sbk">⬇️ Make backup</button><button class="btn ghost sm" id="srs">⬆️ Restore</button></div>
@@ -96,7 +97,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   const sd=$('#sdemo');if(sd)sd.onclick=()=>{loadDemo();};const sdx=$('#sdemox');if(sdx)sdx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
   $('#sbk').onclick=backupSheet;
   $('#srs').onclick=restoreSheet;
-  $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();S.user=null;OB.step=0;render();});};
+  $('#swipe').onclick=()=>confirmSheet('Delete ALL data on this device? This cannot be undone.','Delete everything',()=>{localStorage.removeItem(KEY);DB=blankDB();save();S.user=null;OB.step=0;render();});};
 /* ---------- USERS ---------- */
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
   const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
