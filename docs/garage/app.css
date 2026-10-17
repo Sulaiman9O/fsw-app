@@ -583,3 +583,18 @@ select.field{appearance:none;background-image:linear-gradient(45deg,transparent 
 .oc .pf{font-size:.72rem;color:var(--ok);margin-left:auto}
 .oc .bd{position:absolute;top:-9px;right:12px;background:var(--ok);color:#000;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:8px}.oc .bd.bk{background:#8db8ff}
 .btn:disabled{opacity:.5}
+/* motion polish (only when .mo is on <html>) */
+.mo .btn,.mo .bigbtn,.mo .g,.mo .row,.mo .mitem,.mo .car,.mo .oc,.mo .kpi,.mo .chips button,.mo .navb,.mo .key,.mo .person{transition:transform .12s ease,box-shadow .2s ease,background-color .2s ease}
+.mo .btn:active,.mo .bigbtn:active,.mo .g:active,.mo .row:active,.mo .mitem:active,.mo .car:active,.mo .oc:active,.mo .kpi:active,.mo .chips button:active,.mo .key:active,.mo .person:active{transform:scale(.97)}
+.mo .bigbtn{position:relative;overflow:hidden}
+.mo .bigbtn::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%);animation:shine 4.5s ease-in-out 1.2s infinite;pointer-events:none}
+@keyframes shine{0%{transform:translateX(-120%)}22%,100%{transform:translateX(120%)}}
+.mo .dots i{transition:transform .18s cubic-bezier(.3,1.8,.5,1),background-color .15s}.mo .dots i.on{transform:scale(1.25)}
+.mo .setupbar .ring{transition:background .6s}
+.mo .navb[aria-current="page"] svg{animation:navpop .3s ease}
+@keyframes navpop{0%{transform:scale(.8)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.mo .login::before{content:"";position:fixed;inset:-20%;background:radial-gradient(40% 30% at 30% 30%,rgba(238,58,57,.18),transparent 70%),radial-gradient(35% 30% at 70% 70%,rgba(242,123,33,.12),transparent 70%);animation:drift 14s ease-in-out infinite alternate;pointer-events:none;z-index:0}
+.mo .login>*{position:relative;z-index:1}
+@keyframes drift{0%{transform:translate(0,0)}100%{transform:translate(-6%,4%)}}
+.sghost{position:fixed;inset:0;z-index:29;display:flex;align-items:flex-end;justify-content:center}
+.sghost .pnl{background:#121214;border:1px solid var(--line);width:100%;max-width:640px;border-radius:22px 22px 0 0;max-height:84vh;overflow:hidden;padding:16px;display:grid;gap:10px}

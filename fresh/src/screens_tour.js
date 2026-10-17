@@ -2,6 +2,9 @@ const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['jo
 const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'1.8.0',ic:'✨',t:'حركة ناعمة (GSAP)',d:'الشاشات تدخل بنعومة، الأرقام تعدّ، النوافذ تنزلق من تحت، زر «New car in» يلمع، والأزرار تتجاوب مع الضغط. تقدر تطفيها من الإعدادات.',tour:[
+  {go:'home',sel:'.kpis3',t:'✨ الأرقام تعدّ لين توصل، والشاشة تدخل بالتدريج.'},
+  {go:'settings',sel:'#smo',up:'label',t:'لو ما عجبتك أو التابلت ثقل، طفّها من هنا.'}]},
  {v:'1.7.0',ic:'✨',t:'الخدمات الذكية',d:'تغيير الزيت يعرض الخيارات جنب بعض مع الفلتر المناسب والأجرة والكيلومتر الجاي. نفس الشي للبواجي والفحمات والبطارية وزيت القير والرديتر. البرنامج يتعلم كمية الزيت لكل محرك.',tour:[
   {go:lastJob,sel:'#jadd',t:'✨ في الشغلة اضغط <b>Add service or part</b> واختر <b>Engine oil change</b>: تطلع لك الخيارات جنب بعض.',alt:'سوّ شغلة جديدة وأضف تغيير زيت عشان تشوف الخيارات.'},
   {t:'كل خيار فيه: الزيت × اللترات، والفلتر اللي يناسب السيارة، والأجرة، والكيلومتر الجاي (عادي 5,000، نص صناعي 7,000، صناعي 10,000). الكرت الأخضر هو اختيار الزبون المرة الماضية.'},
@@ -89,6 +92,7 @@ function drawTour(s,el){let o=$('#tour');if(!o){o=document.createElement('div');
   const below=r?(r.bottom+170<innerHeight):true;const top=r?(below?r.bottom+14:Math.max(10,r.top-14)):innerHeight/2;
   o.innerHTML=hole+`<div class="tb ${r?(below?'dn':'upb'):'mid'}" style="${r?(below?'top:'+top+'px':'bottom:'+(innerHeight-top)+'px'):''}"><div class="tt" dir="rtl">${s.t}${s.sel&&!el?'<br><small style="opacity:.7">(هذا الجزء مو ظاهر الحين، ممكن تحتاج تضيف بيانات أول)</small>':''}</div>
     <div class="tn"><button id="tsk">Skip</button><span>${i+1} / ${n}</span>${i?'<button id="tpv">‹ Back</button>':''}<button id="tnx" class="go">${i===n-1?'Done ✓':'Next ›'}</button></div></div>`;
+  try{motionPop(o.querySelector('.tb'));}catch(e){}
   o.querySelector('#tsk').onclick=endTour;o.querySelector('#tnx').onclick=()=>{TOUR.i++;runStep();};const pv=o.querySelector('#tpv');if(pv)pv.onclick=()=>{TOUR.i--;runStep();};}
 window.addEventListener('resize',()=>{if(TOUR)runStep();});
 /* ---------- full app tour, by chapter ---------- */

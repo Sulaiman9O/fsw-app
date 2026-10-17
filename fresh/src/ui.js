@@ -43,16 +43,17 @@ function render(){
   m.querySelectorAll('[data-go]').forEach(b=>{if(!routeOk(b.dataset.go.split(':')[0]))b.remove();});
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
+  try{motionAfterRender(m);}catch(e){}
 }
 const head=(t,right='')=>`<div class="nh-head"><button class="nh-bk" data-back aria-label="Back">‹</button><b>${t}</b>${right?`<span class="hr">${right}</span>`:''}</div>`;
 const sec=(t,r='')=>`<div class="ops-sec"><b>${t}</b><span>${r}</span></div>`;
 const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span><span>${t}</span></div>`;
 
 /* ---------- sheets ---------- */
-function openSheet(html,bind){let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
+function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
   el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)closeSheet();};
-  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;if(bind)bind(el);}
-function closeSheet(){const el=$('#sheet');if(el)el.remove();S.sheet=null;}
+  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
+function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 
 /* ---------- onboarding (first run) ---------- */
@@ -94,6 +95,6 @@ function renderLogin(){
    ${pick?dots(pinBuf.length)+pad():'<p>Tap your name</p>'}<div class="err" id="err"></div></div></div>`;
   $$('.person').forEach(b=>b.onclick=()=>{pick=b.dataset.u;pinBuf='';renderLogin();});
   bindPad(async k=>{if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;
-    if(pinBuf.length===4){const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){S.user=u;S.r='home';render();setTimeout(showNewsPrompt,500);return;}renderLogin();$('#err').textContent='Wrong PIN. Try again.';return;}
+    if(pinBuf.length===4){const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){S.user=u;S.r='home';render();setTimeout(showNewsPrompt,500);return;}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
     renderLogin();});
 }
