@@ -33,6 +33,7 @@ const PERMS=[
  ['reports','Reports','Sales and top items',0,1],
  ['cost','Costs & profit','See cost prices and profit',0,0],
  ['stock','Stock','Parts and stock',1,1],
+ ['checks','Invoice checks','Warnings about wrong items on job cards',1,1],
  ['vendors','Suppliers','Suppliers and supplier orders',1,1],
  ['count','Daily count','Count 5 parts a day',1,1],
  ['svcEdit','Services','Change services, groups and prices',0,0],
@@ -42,7 +43,7 @@ const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0
 function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
 const perm=k=>permOf(S.user,k);
 const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
-const ROUTE_P={debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
+const ROUTE_P={checks:'checks',debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
 const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);
