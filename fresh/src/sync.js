@@ -85,6 +85,11 @@ function syncBind(){const i=$('#syin');if(i)i.onclick=async()=>{const em=$('#sye
   const ms=$('#symst');if(ms)ms.onchange=e=>{DB.ws.mainStockOff=!e.target.checked;save();};
   const r=$('#syre');if(r)r.onclick=async()=>{await syncPushNow();toast('Synced');render();};
   const o=$('#syout');if(o)o.onclick=()=>confirmSheet('Sign out of online sync on this phone? The data stays on the phone.','Sign out',async()=>{localStorage.setItem('ws_sync','0');syncStop();await FBA.signOut();render();});}
+/* delete everything in this workshop's online space, then sign this phone out */
+async function syncWipeCloud(){if(!SYNC.user||!FBS)return 0;syncStop();let n=0;
+  for(const c of ['kv','rec']){for(;;){const q=await wsRef().collection(c).limit(400).get();if(q.empty)break;const bt=FBS.batch();q.forEach(d=>bt.delete(d.ref));await bt.commit();n+=q.size;}}
+  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+  SYNC.last=null;try{await FBA.signOut();}catch(e){}return n;}
 function syncBoot(){if(!fbCfg())return;try{if(localStorage.getItem('ws_sync')==='1')fbInit();}catch(e){}}
 /* ---------- daily update from the main shop system: prices, costs and stock of parts (matched by part number) ----------
    o.parts = [[num,name,cat,unit,price,cost,stock,reorder], …]. New part numbers are added. Nothing is deleted. */
