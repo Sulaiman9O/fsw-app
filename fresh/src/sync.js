@@ -39,7 +39,7 @@ function applyRemote(t,k,v){
 const tsGet=()=>{try{return +localStorage.getItem('ws_sync_ts')||0;}catch(e){return 0;}};
 const tsSet=v=>{try{if(v>tsGet())localStorage.setItem('ws_sync_ts',String(v));}catch(e){}};
 /* only changes since the last time this phone looked (keeps Firebase free-plan reads low) */
-function syncListen(){syncUnlisten();const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));
+function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').onSnapshot(qs=>{qs.forEach(d=>{if(d.id==='reset'){const at=+((d.data()||{}).at)||0;if(at>sinceGet()&&DB.ws)wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));}});},()=>{}));const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
     qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;
       applyRemote(t,x.k,x.del?null:x.v);n++;});
@@ -48,14 +48,20 @@ function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);
 /* ---- start / stop ---- */
+const sinceGet=()=>{try{return +localStorage.getItem('ws_sync_since')||0;}catch(e){return 0;}};
+const sinceSet=()=>{try{localStorage.setItem('ws_sync_since',String(Date.now()));}catch(e){}};
+async function resetAt(){try{const r=await wsRef().collection('meta').doc('reset').get();return r.exists?(+((r.data()||{}).at)||0):0;}catch(e){return 0;}}
+/* the workshop was deleted from another device: this device's copy belongs to the deleted workshop, so it is removed too */
+async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+  try{await FBA.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});closeSheet();render();if(msg)toast(msg);}
 async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;
-  /* first time on this phone: take the online data, or send ours if online is empty */
-  try{const seeded=localStorage.getItem('ws_sync_seeded')==='1';
-    if(!seeded){const any=await wsRef().collection('kv').limit(1).get();
-      if(any.empty){SYNC.last=null;await syncPushNow();}
-      else{await syncPull();}
-      localStorage.setItem('ws_sync_seeded','1');}
+  try{const ra=await resetAt();
+    if(ra&&ra>sinceGet()&&DB.ws){await wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));return;}
+    const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
+    if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
+    else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
     else{SYNC.last=syncLoadLast();await syncPushNow();}
+    localStorage.setItem('ws_sync_seeded','1');
     syncListen();SYNC.status='ok';}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
   try{if(S.r==='settings')render();}catch(e){}}
 function syncStop(){SYNC.on=false;syncUnlisten();if(SYNC.status!=='err')SYNC.status='off';}
@@ -82,14 +88,15 @@ function syncSection(){
    <div class="two"><button class="btn ghost sm" id="syre">🔄 Sync now</button><button class="btn ghost sm" id="syout">Sign out</button></div>
    <label class="chk"><input type="checkbox" id="symst" ${DB.ws.mainStockOff?'':'checked'}> Daily update from the main system: take the stock too</label>${DB.ws.mainAt?`<p class="hint">Last daily update ${fmtDs(DB.ws.mainAt)}</p>`:''}`;}
 function syncBind(){const i=$('#syin');if(i)i.onclick=async()=>{const em=$('#syem').value.trim(),pw=$('#sypw').value;if(!em||!pw)return;if(!fbInit())return;
-    try{localStorage.setItem('ws_sync','1');await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
+    try{localStorage.setItem('ws_sync','1');['ws_sync_seeded','ws_sync_last','ws_sync_ts'].forEach(k=>localStorage.removeItem(k));sinceSet();await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
   const ms=$('#symst');if(ms)ms.onchange=e=>{DB.ws.mainStockOff=!e.target.checked;save();};
   const r=$('#syre');if(r)r.onclick=async()=>{await syncPushNow();toast('Synced');render();};
   const o=$('#syout');if(o)o.onclick=()=>confirmSheet('Sign out of online sync on this phone? The data stays on the phone.','Sign out',async()=>{localStorage.setItem('ws_sync','0');syncStop();await FBA.signOut();render();});}
 /* delete everything in this workshop's online space, then sign this phone out */
 async function syncWipeCloud(){if(!SYNC.user||!FBS)return 0;syncStop();let n=0;
   for(const c of ['kv','rec']){for(;;){const q=await wsRef().collection(c).limit(400).get();if(q.empty)break;const bt=FBS.batch();q.forEach(d=>bt.delete(d.ref));await bt.commit();n+=q.size;}}
-  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+  await wsRef().collection('meta').doc('reset').set({at:Date.now(),t:firebase.firestore.FieldValue.serverTimestamp(),d:syncDev()});
+  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since'].forEach(k=>localStorage.removeItem(k));}catch(e){}
   SYNC.last=null;try{await FBA.signOut();}catch(e){}return n;}
 /* first screen of a new phone/tablet: join an existing workshop by signing in (no local workshop yet) */
 function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;}
@@ -99,7 +106,7 @@ function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;
       try{try{localStorage.setItem('ws_sync','0');}catch(e){}await SYNC.ready;await FBA.signInWithEmailAndPassword(em,pw);
         const any=await wsRef().collection('kv').limit(1).get();
         if(any.empty){await FBA.signOut();throw {code:T_('This account has no workshop online yet. Set up the workshop on the main phone and turn on online sync there first.')};}
-        await syncPull();try{localStorage.setItem('ws_sync_seeded','1');localStorage.setItem('ws_sync','1');}catch(e){}
+        await syncPull();sinceSet();try{localStorage.setItem('ws_sync_seeded','1');localStorage.setItem('ws_sync','1');}catch(e){}
         closeSheet();SYNC.on=false;syncStart();audit('settings','Joined the workshop by online sign-in');toast('Signed in. Choose your name.');render();}
       catch(e){bt.disabled=false;bt.textContent=T_('Sign in');er.textContent=(e&&e.code&&String(e.code).startsWith('auth/'))?T_('Wrong email or password.'):String(e&&e.code||e&&e.message||e);}};});}
 function syncBoot(){if(!fbCfg())return;try{if(localStorage.getItem('ws_sync')==='1')fbInit();}catch(e){}}
