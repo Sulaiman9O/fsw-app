@@ -96,6 +96,7 @@ const MSGS=[
  ['estimate','🧾','Estimate','Customer',['name','car','plate','no','date','items','total','warranty','workshop','phone'],'السلام عليكم {name}،\nتقدير سعر رقم {no} لسيارتكم {car} {plate}:\n\n{items}\n\nالمجموع: {total}\n\n{workshop} · {phone}'],
  ['invoice','🧾','Invoice','Customer',['name','car','plate','no','date','items','total','paid','due','warranty','workshop','phone'],'{workshop}\nفاتورة رقم {no} · {date}\nالعميل: {name}\nالسيارة: {car} {plate}\n\n{items}\n\nالمجموع: {total}\nالمدفوع: {paid}\nالمتبقي: {due}\n\n{warranty}\n{phone}'],
  ['remind','🔔','Service reminder','Customer',['name','car','plate','service','workshop','phone'],'السلام عليكم {name}،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}'],
+ ['payreq','💳','Payment reminder','Customer',['name','due','items','workshop','phone'],'السلام عليكم {name}،\nنود تذكيركم بوجود مبلغ متبقٍ قدره {due}:\n{items}\n\nشاكرين لكم تعاونكم.\n{workshop} · {phone}'],
  ['hello','👋','WhatsApp a customer','Customer',['name','workshop','phone'],'السلام عليكم {name}،\n'],
  ['options','🛢','Service options (compare)','Customer',['name','car','plate','service','items','workshop','phone'],'السلام عليكم {name}،\nخيارات {service} لسيارتكم {car}:\n\n{items}\n\nالسعر شامل القطع والأجرة.\nرد برقم الخيار 👍\n{workshop}'],
  ['po','🚚','Order to a supplier','Supplier',['supplier','no','items','workshop','phone'],'السلام عليكم {supplier}،\nنرجو توفير الطلب رقم {no}:\n{items}\n\n{workshop} · {phone}']];

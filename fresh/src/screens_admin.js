@@ -155,6 +155,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   const ml=DB.mlists.filter(L=>L.inMenu!==false);
   m.innerHTML=head('More')+`<div class="list">
   ${it('news','🎉','What\'s new · how to use',newsUnseen().length?'<b style="color:var(--red2)">'+newsUnseen().length+' new</b> · tap to see':'Tours of every new thing')}${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
+  ${it('debts','💳','Debts',(()=>{const n=DB.customers.filter(c=>custDebt(c.id).list.length).length;return n?n+' customers owe money':'Nobody owes money';})())}
   ${it('svc','🛠','Services',DB.services.length+' services · '+DB.scats.length+' groups')}
   ${it('stock','🛢','Stock',DB.parts.length+' parts')}
   ${it('vendors','🚚','Suppliers & orders',DB.vendors.length+' suppliers')}

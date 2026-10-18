@@ -1,7 +1,7 @@
 /* ---------- HOME ---------- */
 const SCREENS={};
-function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j),[sl,sc]=STAGE[j.stage];
-  const right=j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
+function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let [sl,sc]=STAGE[j.stage];const unpaid=isInvoiced(j)&&!j.returned&&T.due>=0.005&&j.stage!=='ready';if(unpaid){sl='Not paid';sc='var(--bad)';}
+  const right=unpaid?f3(T.due):j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
   return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div><div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small></div></button>`;}
 SCREENS.home=m=>{
   const open=openJobs(),[pd,pt]=stepsProgress(),due=dueInvoices().reduce((a,j)=>a+jobTotals(j).due,0),low=lowParts().length,rem=remindersDue().length;
@@ -12,7 +12,7 @@ SCREENS.home=m=>{
   ${pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
   ${sec(`In the workshop now · ${open.length}`,open.length?'<a data-go="work">All ›</a>':'')}
   ${open.length?`<div class="list">${open.slice(0,4).map(carRow).join('')}</div>`:empty('🚗','No cars in the workshop. Tap <b>New car in</b> when one arrives.')}
-  <div class="kpis3">${can.money()?`<button class="kpi org" data-go="money"><b>${f3(due)}</b><span>Due · ${DB.ws.currency}</span></button>`:''}<button class="kpi ${low?'red':''}" data-go="stock"><b>${low}</b><span>To order</span></button><button class="kpi" data-go="cust"><b>${rem}</b><span>Reminders</span></button></div>
+  <div class="kpis3">${can.money()?`<button class="kpi org" data-go="debts"><b>${f3(due)}</b><span>Due · ${DB.ws.currency}</span></button>`:''}<button class="kpi ${low?'red':''}" data-go="stock"><b>${low}</b><span>To order</span></button><button class="kpi" data-go="cust"><b>${rem}</b><span>Reminders</span></button></div>
   <div class="grp">
    <button class="g" data-go="work" style="--tc:color-mix(in srgb,var(--red) 20%,var(--panel));--glow:color-mix(in srgb,var(--red) 28%,transparent)"><span class="ic">🔧</span><b>Work</b><div class="sub"><span><i>${open.length}</i> in workshop</span><span><i>${est.length}</i> estimates open</span><span><i>${todayInv.length}</i> invoices today</span></div></button>
    <button class="g" data-go="cust" style="--tc:color-mix(in srgb,var(--v530) 20%,var(--panel));--glow:color-mix(in srgb,var(--v530) 30%,transparent)"><span class="ic">🚗</span><b>Customers</b><div class="sub"><span><i>${rem}</i> reminders due</span><span><i>${DB.customers.length}</i> customers</span><span><i>${DB.vehicles.length}</i> cars</span></div></button>
@@ -61,7 +61,7 @@ SCREENS.newjob=m=>{
   m.innerHTML=head('New car in')+`
   <div class="steps3"><span class="on">1 Customer</span><span class="${cust?'on':''}">2 Car</span><span>3 Services</span></div>
   ${sec('Customer')}
-  ${cust?`<div class="card sel"><div class="h"><b>${esc(cust.name)}</b><button class="lnk" id="nchg">Change</button></div><span class="sub">${esc(cust.phone||'')} · ${cars.length} car${cars.length===1?'':'s'}</span></div>`
+  ${cust?`<div class="card sel"><div class="h"><b>${esc(cust.name)}</b><button class="lnk" id="nchg">Change</button></div><span class="sub">${esc(cust.phone||'')} · ${cars.length} car${cars.length===1?'':'s'}</span></div>${debtNote(cust.id)}`
   :`<div class="in2"><input class="field" id="nphone" inputmode="tel" placeholder="Phone" value="${esc(N.phone)}"><input class="field" id="nname" placeholder="Name" value="${esc(N.name)}"></div>
    <div id="nfound">${fHtml()}</div>
    <button class="btn ghost sm" id="nwalk">Walk-in (no name)</button>`}

@@ -28,6 +28,7 @@ SCREENS.custd=m=>{
   m.innerHTML=head(esc(c.name),`<button class="lnk" id="cedit">Edit</button>`)+`
   <div class="card"><span class="sub">${esc(c.phone||'no phone')}${c.notes?' · '+esc(c.notes):''}</span>${c.phone?`<div class="two"><button class="btn wa sm" id="cwa">WhatsApp</button><a class="btn ghost sm" href="tel:${esc(c.phone)}">Call</a></div>`:''}</div>
   <div class="kpis3">${can.money()?`<div class="kpi"><b>${f3(spent)}</b><span>Spent</span></div><div class="kpi ${due>0?'org':''}"><b>${f3(due)}</b><span>Due</span></div>`:''}<div class="kpi"><b>${js.length}</b><span>Visits</span></div></div>
+  ${can.money()?debtBox(c):''}
   ${sec('Cars · '+vs.length,`<button class="lnk" id="vadd">＋ Add car</button>`)}
   <div class="list">${vs.map(v=>`<button class="row" data-ve="${v.id}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${v.km?kmf(v.km)+' km':''}${v.vin?' · '+esc(v.vin):''}</span></div><span class="v">Edit</span></button>`).join('')||empty('🚗','No cars yet.')}</div>
   ${sec('History · '+js.length)}<div class="list">${js.map(carRow).join('')||empty('🧾','No visits yet.')}</div>
@@ -35,6 +36,7 @@ SCREENS.custd=m=>{
   $('#cedit').onclick=()=>custSheet(c);$('#vadd').onclick=()=>vehSheet(c);
   $$('[data-ve]').forEach(b=>b.onclick=()=>vehSheet(c,byId('vehicles',b.dataset.ve)));
   const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,msg('hello',{name:c.name||''}));
+  debtBind(c);
   const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{audit('delete','Customer '+c.name);DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});
 };
 /* ---------- STOCK ---------- */
@@ -157,3 +159,32 @@ SCREENS.insp=m=>{m.innerHTML=head('Inspection checklists',`<button class="lnk" i
    el.querySelector('#iok').onclick=()=>{const n=$('#in').value.trim();const it=$('#ii').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!n||!it.length){toast('Name and items');return;}if(isNew){t.id=uid('i');DB.insp.push(t);}t.name=n;t.items=it;save();closeSheet();render();};
    const d=el.querySelector('#idel');if(d)d.onclick=()=>{audit('delete','Checklist '+t.name);DB.insp=DB.insp.filter(x=>x!==t);save();closeSheet();render();};});};
   $('#iadd').onclick=()=>edit();$$('[data-ie]').forEach(b=>b.onclick=()=>edit(DB.insp.find(x=>x.id===b.dataset.ie)));};
+
+/* ---------- money owed: on the customer page, when the customer comes back, and the Debts list ---------- */
+function debtText(c){const d=custDebt(c.id),cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;const items=d.list.map(x=>{const v=vehOf(x.j);return '• فاتورة رقم '+x.j.inv.no+' · '+fmtD(x.j.inv.t||x.j.t)+(v&&v.make?' · '+carName(v):'')+': '+f3(x.due)+' '+cur;}).join('\n');
+  return msg('payreq',{name:c.name||'',due:f3(d.due)+' '+cur,items});}
+function debtBox(c){const d=custDebt(c.id);if(!d.list.length)return '';
+  return `<div class="debtbox"><div class="dh"><b>⚠️ ${T_('Owes '+f3(d.due)+' OMR')}</b>${c.payRem?`<span>${T_('Reminded')} ${fmtD(c.payRem)}</span>`:''}</div>
+   ${d.list.map(x=>`<button class="row" data-go="inv:${x.j.id}"><div><b>#${x.j.inv.no} · ${f3(x.due)}</b><span>${fmtD(x.j.inv.t||x.j.t)} · ${T_(x.days+' days')}${vehOf(x.j).make?' · '+esc(carName(vehOf(x.j))):''}</span></div><span class="v">${T_('Record payment')} ›</span></button>`).join('')}
+   ${c.phone?`<button class="btn wa sm" id="dbrem">💳 ${T_('Payment reminder')}</button>`:''}</div>`;}
+function debtBind(c){const b=$('#dbrem');if(b)b.onclick=()=>{shareText(c.phone,debtText(c));c.payRem=now();audit('money','Payment reminder · '+(c.name||''));save();render();};}
+function debtNote(cid){if(!can.money())return '';const d=custDebt(cid);if(!d.list.length)return '';const o=d.list[0];
+  return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}</div>`;}
+SCREENS.debts=m=>{if(!can.money()){go('home');return;}
+  const rows=DB.customers.map(c=>({c,d:custDebt(c.id)})).filter(x=>x.d.list.length).sort((a,b)=>b.d.list[0].days-a.d.list[0].days);
+  const tot=rows.reduce((a,x)=>a+x.d.due,0);const sel=S.debtSel||(S.debtSel=null);
+  m.innerHTML=head('Debts',rows.length?`<button class="lnk" id="dsel">${sel?'Cancel':'Select'}</button>`:'')+`
+  <div class="kpis2"><div class="kpi org"><b>${f3(tot)}</b><span>Due · ${esc(DB.ws.currency)}</span></div><div class="kpi"><b>${rows.length}</b><span>Customers</span></div></div>
+  ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}
+  ${sel?`<div class="selb2"><b>${sel.size} ${T_('selected')}</b><button class="btn sm" id="dsend" ${sel.size?'':'disabled'}>💳 ${T_('Send reminders')}</button></div>`:''}`;
+  const ds=$('#dsel');if(ds)ds.onclick=()=>{S.debtSel=sel?null:new Set();render();};
+  $$('[data-dc]').forEach(r=>{let tm=0,long=false;const id=r.dataset.dc;
+    r.onclick=e=>{if(e.target.closest('[data-dw]'))return;if(long){long=false;return;}if(S.debtSel){S.debtSel.has(id)?S.debtSel.delete(id):S.debtSel.add(id);render();}else go('custd',{id});};
+    r.addEventListener('pointerdown',()=>{tm=setTimeout(()=>{long=true;if(!S.debtSel)S.debtSel=new Set();S.debtSel.add(id);try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}render();},500);});
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>r.addEventListener(ev,()=>clearTimeout(tm)));});
+  $$('[data-dw]').forEach(b=>b.onclick=()=>{const c=byId('customers',b.dataset.dw);shareText(c.phone,debtText(c));c.payRem=now();save();render();});
+  const sd=$('#dsend');if(sd)sd.onclick=()=>{const cs=[...S.debtSel].map(id=>byId('customers',id)).filter(c=>c&&c.phone);
+    openSheet(`<h3>💳 ${T_('Send reminders')}</h3><p class="hint">${T_('Tap each one. WhatsApp opens with the message ready; come back for the next.')}</p><div class="list">${cs.map(c=>`<button class="row" data-ds="${c.id}"><div><b>${esc(c.name)}</b><span>${f3(custDebt(c.id).due)} ${esc(DB.ws.currency)}</span></div><span class="v">${c.payRem&&now()-c.payRem<36e5?'✓':T_('Send')+' ›'}</span></button>`).join('')}</div>`,el=>{
+      el.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{const c=byId('customers',b.dataset.ds);shareText(c.phone,debtText(c));c.payRem=now();save();b.querySelector('.v').textContent='✓';b.classList.add('done');});});
+    S.debtSel=null;};
+};

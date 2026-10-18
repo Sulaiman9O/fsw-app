@@ -42,7 +42,7 @@ const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0
 function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
 const perm=k=>permOf(S.user,k);
 const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
-const ROUTE_P={work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
+const ROUTE_P={debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
 const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);
@@ -57,5 +57,8 @@ function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j
 const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
+/* what a customer still owes: unpaid invoices, oldest first */
+function custDebt(cid){const t=now();const list=DB.jobs.filter(j=>j.cust===cid&&isInvoiced(j)&&!j.returned).map(j=>({j,due:jobTotals(j).due,days:Math.max(0,Math.floor((t-(j.inv.t||j.t))/864e5))})).filter(x=>x.due>=0.005).sort((a,b)=>(a.j.inv.t||a.j.t)-(b.j.inv.t||b.j.t));
+  return {due:list.reduce((a,x)=>a+x.due,0),list};}
 const dueInvoices=()=>DB.jobs.filter(j=>isInvoiced(j)&&jobTotals(j).due>0.0005);
 const lowParts=()=>DB.parts.filter(p=>(+p.reorder||0)>0&&(+p.stock||0)<=(+p.reorder||0));
