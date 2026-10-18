@@ -9,7 +9,8 @@ function syncDev(){if(SYNC.dev)return SYNC.dev;try{SYNC.dev=localStorage.getItem
 let FBA=null,FBS=null;
 function fbInit(){if(!syncReady())return false;if(FBA)return true;
   try{firebase.initializeApp(fbCfg());FBA=firebase.auth();FBS=firebase.firestore();
-    try{FBS.enablePersistence({synchronizeTabs:true}).catch(()=>{});}catch(e){}
+    /* no online-copy cache on the phone: the app's own locked database already keeps everything. Remove an old cache once. */
+    SYNC.ready=Promise.resolve();try{if(localStorage.getItem('ws_fbc0')!=='1'&&FBS.clearPersistence)SYNC.ready=FBS.clearPersistence().then(()=>{try{localStorage.setItem('ws_fbc0','1');}catch(e){}}).catch(()=>{});}catch(e){}
     FBA.onAuthStateChanged(u=>{SYNC.user=u;if(u&&localStorage.getItem('ws_sync')==='1')syncStart();else syncStop();try{if(S.r==='settings')render();}catch(e){}});return true;}
   catch(e){SYNC.err=String(e&&e.message||e);return false;}}
 /* each workshop account has its own space: ws/{account id}. Selling = each workshop signs in with its own account */
@@ -47,7 +48,7 @@ function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);
 /* ---- start / stop ---- */
-async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;SYNC.status='starting';SYNC.last=null;
+async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;
   /* first time on this phone: take the online data, or send ours if online is empty */
   try{const seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(!seeded){const any=await wsRef().collection('kv').limit(1).get();

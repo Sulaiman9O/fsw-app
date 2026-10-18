@@ -19,8 +19,29 @@ function diffSet(a,b){const set=[];
   b.rec.forEach((v,key)=>{if(!a||a.rec.get(key)!==v){const [c,id]=key.split('\u0001');set.push({statement:'INSERT OR REPLACE INTO rec(c,id,v) VALUES(?,?,?)',values:[c,id,v]});}});
   if(a)a.rec.forEach((v,key)=>{if(!b.rec.has(key)){const [c,id]=key.split('\u0001');set.push({statement:'DELETE FROM rec WHERE c=? AND id=?',values:[c,id]});}});
   return set;}
-async function sqlOpen(){try{await SQLP().createConnection({database:SQLDB,version:1,encrypted:false,mode:'no-encryption',readonly:false});}catch(e){}
-  try{await sq('open');}catch(e){}
+/* The database on the phone is locked (encrypted, SQLCipher). The key is made at random on this phone and kept by Android's
+   key store; nobody types it and it never leaves the phone. Older app files (built without encryption) keep working unlocked. */
+async function sqlKey(){const P=SQLP();if(!P.isSecretStored||!P.setEncryptionSecret)return false;
+  const st=await P.isSecretStored();if(st&&st.result)return true;
+  const b=new Uint8Array(32);crypto.getRandomValues(b);await P.setEncryptionSecret({passphrase:Array.from(b,x=>x.toString(16).padStart(2,'0')).join('')});return true;}
+async function sqlConn(enc,mode){try{await SQLP().closeConnection({database:SQLDB,readonly:false});}catch(e){}
+  await SQLP().createConnection({database:SQLDB,version:1,encrypted:enc,mode,readonly:false});await sq('open');}
+const sqlProbe=async()=>{await sq('query',{statement:'SELECT count(*) AS n FROM sqlite_master',values:[],isSQL92:true});};
+async function sqlOpen(){STORE.enc=false;STORE.encErr='';
+  try{if(await sqlKey()){let exists=false;try{exists=!!(await SQLP().isDatabase({database:SQLDB})).result;}catch(e){}
+      let ok=false;try{await sqlConn(true,'secret');await sqlProbe();ok=true;}catch(e){}
+      if(!ok&&exists){ /* first time: the file is still unlocked. Read everything, lock the file, check nothing was lost */
+        await sqlConn(false,'no-encryption');await sqlProbe();await sqlTables();const before=await sqlRead();
+        try{await sqlConn(true,'encryption');await sqlProbe();}catch(e){await sqlConn(false,'no-encryption');throw e;}
+        await sqlTables();const after=await sqlRead();
+        if(before&&(!after||countAll(after)!==countAll(before)||JSON.stringify(after.ws)!==JSON.stringify(before.ws))){const tmp=DB;DB=before;await sq('executeSet',{set:diffSet(null,snapshot()),transaction:true,isSQL92:true});DB=tmp;}
+        try{localStorage.removeItem(KEY+'_pre_sqlite');}catch(e){}ok=true;}
+      if(!ok)throw new Error('could not open locked database');
+      STORE.enc=true;}}
+  catch(e){STORE.enc=false;STORE.encErr=String(e&&e.message||e);}
+  if(!STORE.enc){try{await sqlConn(false,'no-encryption');}catch(e){try{await sq('open');}catch(_){}}}
+  await sqlTables();}
+async function sqlTables(){
   await sq('execute',{statements:'CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY NOT NULL, v TEXT);\nCREATE TABLE IF NOT EXISTS rec(c TEXT NOT NULL, id TEXT NOT NULL, v TEXT, PRIMARY KEY(c,id));',transaction:true,isSQL92:true});}
 async function sqlRead(){const rows=r=>((r&&r.values)||[]).filter(x=>x&&!x.ios_columns);
   const kv=rows(await sq('query',{statement:'SELECT k,v FROM kv',values:[],isSQL92:true}));
@@ -52,4 +73,4 @@ function flushNow(){clearTimeout(STORE.timer);
     catch(e){toast('Could not save to the device database. Try again.');}}).catch(()=>{});return STORE.q;}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushNow();});
 window.addEventListener('pagehide',()=>flushNow());
-function storeLabel(){return STORE.kind==='sqlite'?'Device database (SQLite) · '+countAll(DB)+' records':'Browser storage · '+Math.round((STORE.bytes||JSON.stringify(DB).length)/1024)+' KB of about 5,000 KB';}
+function storeLabel(){return STORE.kind==='sqlite'?'Device database (SQLite) · '+countAll(DB)+' records'+(STORE.enc?' · 🔒 locked':' · not locked (install the new app file to lock it)'):'Browser storage · '+Math.round((STORE.bytes||JSON.stringify(DB).length)/1024)+' KB of about 5,000 KB';}
