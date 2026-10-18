@@ -34,7 +34,7 @@ function applyRemote(t,k,v){
   else if(k.startsWith('#order:')){const c=k.slice(7);if(v==null)return;const ids=JSON.parse(v),arr=DB[c]||[],by=new Map(arr.map(x=>[String(x.id||x._k),x]));
     const out=ids.map(id=>by.get(id)).filter(Boolean);arr.forEach(x=>{if(!ids.includes(String(x.id||x._k)))out.push(x);});DB[c]=out;}
   else{const val=v==null?undefined:JSON.parse(v);
-    if(k==='ws'&&val&&DB.ws){val.nextInv=Math.max(+val.nextInv||0,+DB.ws.nextInv||0);val.nextJob=Math.max(+val.nextJob||0,+DB.ws.nextJob||0);}
+    if(k==='ws'&&val&&DB.ws&&(+val.resetAt||0)<=(+DB.ws.resetAt||0)){val.nextInv=Math.max(+val.nextInv||0,+DB.ws.nextInv||0);val.nextJob=Math.max(+val.nextJob||0,+DB.ws.nextJob||0);}
     if(val===undefined)delete DB[k];else DB[k]=val;}}
 const tsGet=()=>{try{return +localStorage.getItem('ws_sync_ts')||0;}catch(e){return 0;}};
 const tsSet=v=>{try{if(v>tsGet())localStorage.setItem('ws_sync_ts',String(v));}catch(e){}};

@@ -307,3 +307,5 @@ html.m-light .brandline{color:#0B1F3A}
 .ob-or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:.8rem;margin:14px 0 4px}.ob-or:before,.ob-or:after{content:'';flex:1;height:1px;background:var(--line)}
 .ob-hint{text-align:center;margin:6px 0 0}
 .ob-lang{justify-content:center;margin-top:18px}
+.wipebox{display:grid;gap:8px;margin:4px 0 12px}.wipebox p{margin:0;line-height:1.5}
+.btn.danger{background:var(--bad);color:#fff}.btn.danger:disabled{opacity:.45}

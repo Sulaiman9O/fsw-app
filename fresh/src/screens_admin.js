@@ -97,7 +97,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   ${sec('Backup')}
   <p class="hint">Everything stays on this device only. Make a locked backup every week.</p>
   <div class="two"><button class="btn ghost sm" id="sbk">⬇️ Make backup</button><button class="btn ghost sm" id="srs">⬆️ Restore</button></div>
-  <button class="btn ghost jb-del" id="swipe">${typeof SYNC!=='undefined'&&SYNC.user?'Delete all data (this phone and online)':'Delete all data on this device'}</button>`;
+  <button class="btn ghost jb-del" id="swipe">🗑 Delete all data</button>`;
   $('#slogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);w.logo=c.toDataURL('image/png');save();render();};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#slogox');if(lx)lx.onclick=()=>{w.logo='';save();render();};
   $('#ssave').onclick=()=>{w.name=$('#sname').value.trim()||w.name;w.phone=$('#sphone').value.trim();w.addr=$('#saddr').value.trim();w.cr=$('#scr').value.trim();w.nextInv=Math.max(1,parseInt($('#sinv').value)||w.nextInv);w.invStart=w.invStart||w.nextInv;w.credDays=parseInt($('#scred').value)||30;w.vat=$('#svat').checked;w.vatDecided=true;w.warranty=$('#swar').value.trim();
@@ -113,9 +113,17 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#scat').onclick=catalogSheet;
   $('#sbk').onclick=backupSheet;
   $('#srs').onclick=restoreSheet;
-  $('#swipe').onclick=()=>{const cl=typeof SYNC!=='undefined'&&SYNC.user;confirmSheet(cl?'Delete ALL data on this phone and in the online copy? Other phones must also delete or sign out. This cannot be undone.':'Delete ALL data on this device? This cannot be undone.','Delete everything',async()=>{
-    if(cl){toast('Deleting the online copy…');try{await syncWipeCloud();}catch(e){toast('Could not delete the online copy. Check the internet and try again.');return;}}
-    localStorage.removeItem(KEY);DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});render();toast('All data deleted');});};};
+  $('#swipe').onclick=wipeDataSheet;};
+/* delete the workshop's data on this device and online. Kept: the workshop name and settings, the users (names and PINs)
+   and the online sign-in. Other synced devices get the same deletion through sync. The delete button unlocks after 6 seconds. */
+function wipeDataSheet(){const cl=typeof SYNC!=='undefined'&&SYNC.user;let n=6,tm=0;
+  openSheet(`<h3>⚠️ Delete all data</h3><div class="wipebox"><p>${cl?'This deletes customers, cars, job cards, invoices, payments, services, parts and stock, suppliers, expenses and reports on this device, online and on every synced device.':'This deletes customers, cars, job cards, invoices, payments, services, parts and stock, suppliers, expenses and reports on this device.'}</p><p>${cl?'Kept: the workshop name and settings, the users and their PINs, and the online sign-in.':'Kept: the workshop name and settings, the users and their PINs.'}</p><p class="err">This cannot be undone. Make a backup first if you may need the data.</p></div><button class="btn danger" id="wdgo" disabled>Delete all data (${n})</button>`,el=>{
+    const bt=el.querySelector('#wdgo');tm=setInterval(()=>{n--;if(!document.body.contains(bt)){clearInterval(tm);return;}if(n<=0){clearInterval(tm);bt.disabled=false;bt.textContent=T_('Delete all data');}else bt.textContent=T_('Delete all data ({n})').replace('{n}',n).replace('{0}',n);},1000);
+    bt.onclick=async()=>{if(bt.disabled)return;bt.disabled=true;closeSheet();wipeData();await flushNow();if(cl){try{await syncPushNow();}catch(e){}}toast('All data deleted');go('home');};});}
+function wipeData(){const b=blankDB(),keep=['v','ws','users','pcats','ecats','insp','canned','seenNews'];
+  Object.keys(DB).forEach(k=>{if(keep.includes(k))return;if(k in b)DB[k]=b[k];else delete DB[k];});
+  DB.ws.nextJob=1;DB.ws.nextInv=DB.ws.invStart||1001;DB.ws.resetAt=Date.now();delete DB.ws.mainAt;
+  audit('settings','All data deleted · '+((S.user&&S.user.name)||''));save();}
 /* ---------- USERS ---------- */
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
   const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
