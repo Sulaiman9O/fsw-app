@@ -66,7 +66,7 @@ function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="bt
 const OB={step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''};
 function renderOnboard(){
   const st=OB;let body='';
-  if(st.step===0)body=`<div class="brandline" data-notr>ShopFlo</div><div class="ob-hero"><span class="wsmark big">＋</span><h2>New workshop</h2><p>Set up in 2 minutes. You can change everything later.</p></div>
+  if(st.step===0)body=`<div class="brandline" data-notr>${window.SF_LOGO||"ShopFlo"}</div><div class="ob-hero"><span class="wsmark big">＋</span><h2>New workshop</h2><p>Set up in 2 minutes. You can change everything later.</p></div>
     <input class="field" id="obn" placeholder="Workshop name" value="${esc(st.name)}" autocomplete="off">
     <input class="field" id="obp" placeholder="Workshop phone" inputmode="tel" value="${esc(st.phone)}">
     <input class="field" id="oba" placeholder="Area / city (optional)" value="${esc(st.addr)}">
@@ -95,7 +95,7 @@ function bindPad(f){$$('.pad button').forEach(b=>b.onclick=()=>f(b.dataset.k));}
 let pick=null,pinBuf='';
 function renderLogin(){
   const us=DB.users;if(us.length===1&&!pick)pick=us[0].id;
-  $('#root').innerHTML=`<div class="login"><div class="in"><div class="brandline" data-notr>ShopFlo</div>${DB.ws.logo?`<img class="logo" src="${DB.ws.logo}" alt="">`:`<div class="ob-hero"><span class="wsmark big">${esc(initials(DB.ws.name))}</span><h2 style="font:400 1.5rem var(--f-brand)">${esc(DB.ws.name)}</h2></div>`}
+  $('#root').innerHTML=`<div class="login"><div class="in"><div class="brandline" data-notr>${window.SF_LOGO||"ShopFlo"}</div>${DB.ws.logo?`<img class="logo" src="${DB.ws.logo}" alt="">`:`<div class="ob-hero"><span class="wsmark big">${esc(initials(DB.ws.name))}</span><h2 style="font:400 1.5rem var(--f-brand)">${esc(DB.ws.name)}</h2></div>`}
    <h2>Who is working today?</h2>
    <div class="people">${us.map(u=>`<button class="person${pick===u.id?' sel':''}" data-u="${u.id}"><span class="av" style="${pick===u.id?'':'background:'+u.color}">${initials(u.name)}</span>${esc(u.name)}<small>${ROLE[u.role]}</small></button>`).join('')}</div>
    ${pick?dots(pinBuf.length)+pad():'<p>Tap your name</p>'}<div class="err" id="err"></div></div></div>`;

@@ -54,7 +54,7 @@ function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j
     const o=it.out;if(o&&o.who){let x=0;if(o.mode==='pass'){passOut+=a;x=a;}else if(o.mode==='share'){x=Math.max(0,a-q*(+o.amt||0));cost+=x;}else{x=q*(+o.amt||0);cost+=x;}owe+=x;ow[o.who]=(ow[o.who]||0)+x;}});
   const sub=parts+labour;let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=Math.min(disc,sub);const total=Math.max(0,sub-disc);const paid=(j.pays||[]).reduce((a,p)=>a+(+p.amt||0),0);const sales=Math.max(0,total-passOut);
   return {parts,labour,sub,disc,total,paid,due:Math.max(0,total-paid),cost,passOut,owe,ow,sales,profit:sales-cost};}
-const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--red)'],work:['Working','var(--orange)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
+const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
 const dueInvoices=()=>DB.jobs.filter(j=>isInvoiced(j)&&jobTotals(j).due>0.0005);

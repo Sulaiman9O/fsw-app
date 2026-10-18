@@ -293,3 +293,13 @@ html.m-light .toast,html.m-light #tour .tb{box-shadow:0 10px 30px rgba(0,0,0,.25
 .ahint{margin:2px 0 0;font-size:.74rem}
 html.sheet-open .selb2{display:none}
 .brandline{text-align:center;font:400 1rem var(--f-brand);letter-spacing:.06em;color:var(--red);opacity:.9;margin-bottom:4px}
+/* ---------- ShopFlo identity: navy + blue, Manrope (English) and Tajawal (Arabic) ---------- */
+:root{--st-new:var(--red);--st-work:var(--orange)}
+html.t-shopflo{--f-brand:"SFBrand","Manrope",system-ui,sans-serif;--f-body:"Manrope","Tajawal",system-ui,-apple-system,Roboto,sans-serif;--ok:#5FD4A4;--bad:#E5484D;--warn:#F5A524;--st-new:#F5A524;--st-work:#2F80FF}
+html.m-light.t-shopflo{--ok:#139a63;--bad:#d4383d;--warn:#b7741a;--st-new:#c98410;--st-work:#1F6FEB}
+html.t-shopflo body,html.lang-ar.t-shopflo body{font-family:var(--f-body)}
+html.t-shopflo .num,html.t-shopflo .t,html.t-shopflo h2,html.t-shopflo b{letter-spacing:0}
+html.t-shopflo,html.m-light.t-shopflo{--red:#1F6FEB}
+.brandline{display:flex;justify-content:center;color:#fff;margin:0 auto 6px}
+.brandline svg{height:34px;width:auto;display:block}
+html.m-light .brandline{color:#0B1F3A}

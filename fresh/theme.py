@@ -12,6 +12,9 @@ BD_VARS = {'--line', '--line2'}
 INDIGO = 0.638   # #2a49f4 (blue)
 VIOLET = 0.73    # #7c3aed
 NAVY = 0.70      # dark backgrounds get a navy tint in Indigo
+SF_BLUE = 0.6     # ShopFlo blue #2F80FF
+SF_NAVY = 0.596   # ShopFlo navy #0B1F3A
+SF_AMBER = 0.108  # ShopFlo waiting #F5A524
 
 
 def parse(c):
@@ -64,6 +67,21 @@ def indigo(c, keep):
         return rgb(NAVY, l * 1.08, 0.32 if l < 0.2 else 0.2, a)
     if s <= 0.3 and l < 0.8:
         return rgb(NAVY, l, 0.1, a)
+    return c
+
+
+def shopflo(c, keep):
+    h, l, s, a = hls(c)
+    if keep:
+        return c
+    if s > 0.3 and (h < 0.045 or h > 0.94):            # red accent -> ShopFlo blue
+        return rgb(SF_BLUE, min(0.62, l * 1.02), 1.0, a)
+    if s > 0.3 and 0.045 <= h < 0.12:                   # orange -> amber (waiting)
+        return rgb(SF_AMBER, l, min(1, s * 1.05), a)
+    if s <= 0.3 and l < 0.35:                           # dark greys -> navy
+        return rgb(SF_NAVY, l * 1.25 + 0.01, 0.62 if l < 0.12 else 0.45, a)
+    if s <= 0.3 and l < 0.8:
+        return rgb(SF_NAVY, l, 0.16, a)
     return c
 
 
@@ -139,7 +157,8 @@ def build(css):
             name = '--k%d' % len(keys)
             keys[k] = name
             ind = indigo(c, keep)
-            vals.append((name, fmt(*c), fmt(*ind), fmt(*light(c, role)), fmt(*light(ind, role))))
+            sf = shopflo(c, keep)
+            vals.append((name, fmt(*c), fmt(*ind), fmt(*light(c, role)), fmt(*light(ind, role)), fmt(*sf), fmt(*light(sf, role))))
         return 'var(%s)' % keys[k]
 
     out = []
@@ -176,8 +195,10 @@ def build(css):
     css = ''.join(out)
     css = re.sub('\x00(\\d+)\x00', lambda m: masked[int(m.group(1))], css)
 
-    root = ':root{' + ';'.join('%s:%s' % (n, d) for n, d, _, _, _ in vals) + '}'
-    ti = 'html.t-indigo{' + ';'.join('%s:%s' % (n, i) for n, d, i, _, _ in vals if i != d) + '}'
-    ml = 'html.m-light{color-scheme:light;' + ';'.join('%s:%s' % (n, l) for n, d, _, l, _ in vals if l != d) + '}'
-    mli = 'html.m-light.t-indigo{' + ';'.join('%s:%s' % (n, li) for n, d, i, l, li in vals if li != l) + '}'
-    return root + '\n' + ti + '\n' + ml + '\n' + mli + '\n' + css, len(vals)
+    root = ':root{' + ';'.join('%s:%s' % (n, d) for n, d, *_ in vals) + '}'
+    ti = 'html.t-indigo{' + ';'.join('%s:%s' % (n, i) for n, d, i, *_ in vals if i != d) + '}'
+    ts = 'html.t-shopflo{' + ';'.join('%s:%s' % (n, sf) for n, d, i, l, li, sf, lsf in vals if sf != d) + '}'
+    ml = 'html.m-light{color-scheme:light;' + ';'.join('%s:%s' % (n, l) for n, d, i, l, *_ in vals if l != d) + '}'
+    mli = 'html.m-light.t-indigo{' + ';'.join('%s:%s' % (n, li) for n, d, i, l, li, *_ in vals if li != l) + '}'
+    mls = 'html.m-light.t-shopflo{' + ';'.join('%s:%s' % (n, lsf) for n, d, i, l, li, sf, lsf in vals if lsf != l) + '}'
+    return root + '\n' + ti + '\n' + ts + '\n' + ml + '\n' + mli + '\n' + mls + '\n' + css, len(vals)

@@ -3,7 +3,7 @@
   "appName": "ShopFlo",
   "webDir": "www",
   "android": {
-    "backgroundColor": "#000000"
+    "backgroundColor": "#0B1F3A"
   },
   "plugins": {
     "CapacitorSQLite": {

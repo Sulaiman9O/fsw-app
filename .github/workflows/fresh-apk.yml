@@ -40,7 +40,7 @@ jobs:
           cat $D/MainActivity.java
       - name: Icons
         continue-on-error: true
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#2F80FF' --splashBackgroundColor '#0B1F3A' --iconBackgroundColorDark '#2F80FF' --splashBackgroundColorDark '#0B1F3A'
       - name: Version
         run: |
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle

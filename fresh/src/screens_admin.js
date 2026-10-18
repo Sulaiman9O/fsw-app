@@ -83,7 +83,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <label class="field-l">Light or dark</label>
   <div class="chips" id="smode">${[['auto','◐ Auto (like the phone)'],['light','☀️ Light'],['dark','🌙 Dark']].map(([k,t])=>`<button data-m="${k}" aria-pressed="${(w.mode||'auto')===k}">${t}</button>`).join('')}</div>
   <label class="field-l">Colours</label>
-  <div class="themes" id="sthm">${LOOKS.map(([k,t,a,b])=>`<button data-t="${k}" aria-pressed="${(w.theme||'red')===k}"><i style="background:linear-gradient(135deg,${a},${b})"></i><b>${t}</b></button>`).join('')}</div>
+  <div class="themes" id="sthm">${LOOKS.map(([k,t,a,b])=>`<button data-t="${k}" aria-pressed="${(w.theme||'shopflo')===k}"><i style="background:linear-gradient(135deg,${a},${b})"></i><b>${t}</b></button>`).join('')}</div>
   <label class="chk"><input type="checkbox" id="smo" ${w.motionOff?'':'checked'}> Motion and animations (smooth screens, numbers count up)</label>
   ${sec('🧪 Test data')}
   <p class="hint">Fake customers, cars, suppliers, parts and jobs to try the app. All have 🧪 in the name. Remove them before real work.</p>
