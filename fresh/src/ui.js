@@ -70,18 +70,22 @@ function renderOnboard(){
     <input class="field" id="obn" placeholder="Workshop name" value="${esc(st.name)}" autocomplete="off">
     <input class="field" id="obp" placeholder="Workshop phone" inputmode="tel" value="${esc(st.phone)}">
     <input class="field" id="oba" placeholder="Area / city (optional)" value="${esc(st.addr)}">
-    <button class="btn" id="obnext">Next</button>`;
+    <button class="btn" id="obnext">Next</button>
+    ${typeof syncReady==='function'&&fbCfg()?`<div class="ob-or"><span>or</span></div><button class="btn ghost" id="objoin">☁️ I already have a workshop · Sign in</button><p class="hint ob-hint">For a second phone or tablet: sign in with the workshop account and everything comes from the online copy.</p>`:''}
+    <div class="chips ob-lang" id="oblang" data-notr><button data-l="en" aria-pressed="${I18N.lang!=='ar'}">English</button><button data-l="ar" aria-pressed="${I18N.lang==='ar'}">العربية</button></div>`;
   else if(st.step===1)body=`<h2>Owner name</h2><p>This is you. You add workers later.</p><input class="field" id="obo" placeholder="Your name" value="${esc(st.owner)}" autocomplete="off"><button class="btn" id="obnext">Next</button>`;
   else body=`<h2>${st.step===2?'Choose your PIN (4 numbers)':'Enter the PIN again'}</h2>${dots(st.pin.length)}${pad()}<div class="err" id="err"></div>`;
   $('#root').innerHTML=`<div class="login"><div class="in">${body}</div></div>`;
-  if(st.step===0){$('#obnext').onclick=()=>{st.name=$('#obn').value.trim();st.phone=$('#obp').value.trim();st.addr=$('#oba').value.trim();if(!st.name){toast('Type the workshop name');return;}st.step=1;renderOnboard();};return;}
+  if(st.step===0){$$('#oblang [data-l]').forEach(b=>b.onclick=()=>{try{localStorage.setItem('ws_lang',b.dataset.l);}catch(e){}langApply();renderOnboard();});
+    const jn=$('#objoin');if(jn)jn.onclick=joinSheet;
+    $('#obnext').onclick=()=>{st.name=$('#obn').value.trim();st.phone=$('#obp').value.trim();st.addr=$('#oba').value.trim();if(!st.name){toast('Type the workshop name');return;}st.step=1;renderOnboard();};return;}
   if(st.step===1){$('#obnext').onclick=()=>{st.owner=$('#obo').value.trim()||'Owner';st.step=2;renderOnboard();};return;}
   bindPad(async k=>{
     if(k==='⌫')st.pin=st.pin.slice(0,-1);else if(st.pin.length<4)st.pin+=k;
     if(st.pin.length===4){
       if(st.step===2){st.pin1=st.pin;st.pin='';st.step=3;renderOnboard();return;}
       if(st.pin!==st.pin1){st.pin='';st.step=2;renderOnboard();$('#err').textContent='PINs did not match. Try again.';return;}
-      DB.ws={name:st.name,phone:st.phone,addr:st.addr,logo:'',currency:'OMR',invStart:1001,nextInv:1001,nextJob:1,credDays:30,warranty:'',pay:['Cash','Card','Transfer','Credit'],vat:false,vatDecided:false,remMonths:6,remKm:7000,remMsg:'',svcReviewed:false,created:now()};
+      DB.ws={name:st.name,phone:st.phone,addr:st.addr,logo:'',currency:'OMR',invStart:1001,nextInv:1001,nextJob:1,credDays:30,warranty:'',pay:['Cash','Card','Transfer','Credit'],vat:false,vatDecided:false,lang:(I18N.lang==='ar'?'ar':'en'),remMonths:6,remKm:7000,remMsg:'',svcReviewed:false,created:now()};
       DB.services=DEFAULT_SERVICES.map(([cat,name,a,b,tag])=>({id:uid('s'),cat,name,p:[a,b],tag:tag||''}));
       const u={id:uid('u'),name:st.owner,role:'owner',pin:await hashPin(st.pin),color:COLORS[0]};DB.users=[u];save();S.user=u;DB.seenNews=window.WS_VN||'';save();render();setTimeout(()=>showNewsPrompt(true),400);return;}
     renderOnboard();

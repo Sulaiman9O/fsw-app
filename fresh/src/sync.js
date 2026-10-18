@@ -91,6 +91,17 @@ async function syncWipeCloud(){if(!SYNC.user||!FBS)return 0;syncStop();let n=0;
   for(const c of ['kv','rec']){for(;;){const q=await wsRef().collection(c).limit(400).get();if(q.empty)break;const bt=FBS.batch();q.forEach(d=>bt.delete(d.ref));await bt.commit();n+=q.size;}}
   try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts'].forEach(k=>localStorage.removeItem(k));}catch(e){}
   SYNC.last=null;try{await FBA.signOut();}catch(e){}return n;}
+/* first screen of a new phone/tablet: join an existing workshop by signing in (no local workshop yet) */
+function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;}
+  openSheet(`<h3>☁️ Sign in to your workshop</h3><p class="hint">Use the workshop account. Customers, jobs, stock and services come from the online copy.</p><input class="field" id="jem" type="email" placeholder="Workshop email" autocomplete="username"><input class="field" id="jpw" type="password" placeholder="Workshop password" autocomplete="current-password"><button class="btn" id="jgo">Sign in</button><p class="err" id="jer"></p>`,el=>{
+    el.querySelector('#jgo').onclick=async()=>{const em=el.querySelector('#jem').value.trim(),pw=el.querySelector('#jpw').value,er=el.querySelector('#jer');if(!em||!pw)return;
+      er.textContent='';const bt=el.querySelector('#jgo');bt.disabled=true;bt.textContent=T_('Signing in…');
+      try{try{localStorage.setItem('ws_sync','0');}catch(e){}await SYNC.ready;await FBA.signInWithEmailAndPassword(em,pw);
+        const any=await wsRef().collection('kv').limit(1).get();
+        if(any.empty){await FBA.signOut();throw {code:T_('This account has no workshop online yet. Set up the workshop on the main phone and turn on online sync there first.')};}
+        await syncPull();try{localStorage.setItem('ws_sync_seeded','1');localStorage.setItem('ws_sync','1');}catch(e){}
+        closeSheet();SYNC.on=false;syncStart();audit('settings','Joined the workshop by online sign-in');toast('Signed in. Choose your name.');render();}
+      catch(e){bt.disabled=false;bt.textContent=T_('Sign in');er.textContent=(e&&e.code&&String(e.code).startsWith('auth/'))?T_('Wrong email or password.'):String(e&&e.code||e&&e.message||e);}};});}
 function syncBoot(){if(!fbCfg())return;try{if(localStorage.getItem('ws_sync')==='1')fbInit();}catch(e){}}
 /* ---------- daily update from the main shop system: prices, costs and stock of parts (matched by part number) ----------
    o.parts = [[num,name,cat,unit,price,cost,stock,reorder], …]. New part numbers are added. Nothing is deleted. */
