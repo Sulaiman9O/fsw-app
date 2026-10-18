@@ -12,7 +12,8 @@ function fbInit(){if(!syncReady())return false;if(FBA)return true;
     try{FBS.enablePersistence({synchronizeTabs:true}).catch(()=>{});}catch(e){}
     FBA.onAuthStateChanged(u=>{SYNC.user=u;if(u&&localStorage.getItem('ws_sync')==='1')syncStart();else syncStop();try{if(S.r==='settings')render();}catch(e){}});return true;}
   catch(e){SYNC.err=String(e&&e.message||e);return false;}}
-const wsRef=()=>FBS.collection('ws').doc('main');
+/* each workshop account has its own space: ws/{account id}. Selling = each workshop signs in with its own account */
+const wsRef=()=>FBS.collection('ws').doc(SYNC.user.uid);
 const recDocId=key=>encodeURIComponent(key).replace(/\./g,'%2E').slice(0,1400);
 /* ---- local → online ---- */
 function syncSnap(){return snapshot();}
