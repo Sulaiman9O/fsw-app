@@ -92,7 +92,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   <div id="sysec">${syncSection()}</div>
   ${sec('📥 Services and parts list')}
   <p class="hint">Bring in a ready list of services and parts from a file. It replaces the ones on this device.</p>
-  <button class="btn ghost sm" id="scat">📥 Import services and parts</button>
+  <button class="btn ghost sm" id="scat">📥 Import services and parts</button><button class="btn ghost sm" id="scust">📥 Import customers and history</button>
   ${sec('Storage')}<p class="hint" id="stor">💾 ${storeLabel()}</p>
   ${sec('Backup')}
   <p class="hint">Everything stays on this device only. Make a locked backup every week.</p>
@@ -110,7 +110,7 @@ SCREENS.settings=m=>{if(!can.settings()){go('more');return;}const w=DB.ws;
   $('#smo').onchange=e=>{w.motionOff=!e.target.checked;save();toast(w.motionOff?'Animations off':'Animations on');MV.key='';render();};
   const sd=$('#sdemo');if(sd)sd.onclick=()=>{loadDemo();};const sdx=$('#sdemox');if(sdx)sdx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
   syncBind();
-  $('#scat').onclick=catalogSheet;
+  $('#scat').onclick=catalogSheet;$('#scust').onclick=custImportSheet;
   $('#sbk').onclick=backupSheet;
   $('#srs').onclick=restoreSheet;
   $('#swipe').onclick=wipeDataSheet;};

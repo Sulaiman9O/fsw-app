@@ -39,3 +39,15 @@ function catalogSheet(){if(!can.settings())return;openSheet(`<h3>📥 Import ser
     const ids=new Set(DB.parts.map(p=>p.id));(DB.pos||[]).forEach(o=>{if(o.status!=='received')o.items=(o.items||[]).filter(i=>ids.has(i.part));});
     DB.ws.svcReviewed=true;audit('import','Imported '+cat.services.length+' services and '+cat.parts.length+' parts (replaced '+old.services.length+' services, '+old.parts.length+' parts)');save();closeSheet();render();
     undoBar('Imported '+cat.services.length+' services and '+cat.parts.length+' parts',()=>{Object.assign(DB,old);save();render();});};});}
+
+/* customers, cars, past job cards/invoices and service reminders from the previous system (a file made for this workshop).
+   Replaces the customers, cars, jobs and reminders on this device (undo is offered). Numbering continues after the last old number. */
+function custImportSheet(){if(!can.settings())return;openSheet(`<h3>📥 Import customers and history</h3><p class="hint">Choose the customers file. It <b>replaces all customers, cars, job cards, invoices and reminders</b> on this device. Services, parts, users and settings stay.</p><input type="file" accept="application/json,.json" id="ccf" class="field"><div id="ccfi"></div><button class="btn" id="ccok" disabled>Import</button>`,el=>{let o=null;
+  el.querySelector('#ccf').onchange=async e=>{const f=e.target.files[0];o=null;el.querySelector('#ccok').disabled=true;if(!f)return;try{const x=JSON.parse(await f.text());if(x&&x.ws_customers&&Array.isArray(x.customers)&&Array.isArray(x.vehicles)&&Array.isArray(x.jobs))o=x;}catch(_){}
+    const due=o?o.jobs.filter(j=>j.inv).reduce((a,j)=>a+jobTotals(j).due,0):0;
+    el.querySelector('#ccfi').innerHTML=o?`<div class="card note"><b>${o.customers.length} customers · ${o.vehicles.length} cars</b><span class="sub">${o.jobs.length} job cards and invoices · ${(o.reminders||[]).filter(r=>!r.sent).length} open reminders · due ${f3(due)} ${esc(DB.ws.currency)}</span><span class="sub">Now on this device: ${DB.customers.length} customers · ${DB.vehicles.length} cars · ${DB.jobs.length} jobs. They will be removed.</span></div>`:'<p class="err">That is not a customers file.</p>';el.querySelector('#ccok').disabled=!o;};
+  el.querySelector('#ccok').onclick=()=>{if(!o)return;const old={customers:DB.customers,vehicles:DB.vehicles,jobs:DB.jobs,reminders:DB.reminders,nextJob:DB.ws.nextJob,nextInv:DB.ws.nextInv};
+    DB.customers=o.customers;DB.vehicles=o.vehicles;DB.jobs=o.jobs;DB.reminders=o.reminders||[];
+    DB.ws.nextJob=Math.max(+DB.ws.nextJob||1,(+o.maxJob||0)+1);DB.ws.nextInv=Math.max(+DB.ws.nextInv||1,(+o.maxInv||0)+1);
+    audit('import','Imported '+o.customers.length+' customers, '+o.vehicles.length+' cars, '+o.jobs.length+' jobs');save();closeSheet();go('home');
+    undoBar('Imported '+o.customers.length+' customers and '+o.jobs.length+' jobs',()=>{DB.customers=old.customers;DB.vehicles=old.vehicles;DB.jobs=old.jobs;DB.reminders=old.reminders;DB.ws.nextJob=old.nextJob;DB.ws.nextInv=old.nextInv;save();render();});};});}
