@@ -24,7 +24,11 @@ const keyLabel=(k,v)=>k==='veh'?T_('this car'):k==='mmd'?(v.make+' '+baseModel(v
 /* what an item is */
 let RPM=null;
 function rcpParts(){if(RPM&&RPM.n===DB.parts.length&&RPM.ref===DB.parts)return RPM;const num={},name={};DB.parts.forEach(p=>{if(p.num)num[nrmK(p.num)]=p;name[nrmK(p.name)]=p;});return RPM={n:DB.parts.length,ref:DB.parts,num,name};}
-function partOfItem(i){if(i.ref){const p=byId('parts',i.ref);if(p)return p;}const M=rcpParts();return (i.num&&M.num[nrmK(i.num)])||M.name[nrmK(i.d)]||null;}
+const pnToks=t=>(String(t||'').toUpperCase().match(/[A-Z0-9][A-Z0-9-]{3,}/g)||[]).map(nrmK).filter(x=>x.length>=4&&/\d/.test(x)&&!/^\d{1,2}w\d{2}$/.test(x)&&!/^\d+(ltrs?|l|ml|gm|w)$/.test(x));
+function partOfItem(i){if(i.ref){const p=byId('parts',i.ref);if(p)return p;}const M=rcpParts();const d=(i.num&&M.num[nrmK(i.num)])||M.name[nrmK(i.d)];if(d)return d;
+  if(!M.tok){M.tok={};DB.parts.forEach(p=>{if(/duplicate/i.test(p.name))return;new Set([...pnToks(p.num),...pnToks(p.name)]).forEach(t=>(M.tok[t]=M.tok[t]||[]).push(p));});}
+  const sc=new Map();new Set([...pnToks(i.num),...pnToks(i.d)]).forEach(t=>{const L=M.tok[t]||[];if(L.length>3)return;L.forEach(p=>sc.set(p,(sc.get(p)||0)+1));});
+  let best=null,bs=0,tie=false;sc.forEach((n,p)=>{if(n>bs){best=p;bs=n;tie=false;}else if(n===bs)tie=true;});return best&&!tie?best:null;}
 const isOilSvc=i=>i.k!=='part'&&(i.tag==='oil'||/engine oil change|oil change|oil service|تغيير زيت المحرك/i.test(i.d||''))&&!/gear|transmission|atf|cvt|differential|transfer|brake/i.test(i.d||'');
 const isFilterI=(i,p)=>i.k==='part'&&(p?p.cat==='Oil filters':/oil filter/i.test(i.d||''))&&!/a\/t|atf|transmission|cvt/i.test((p&&p.name)||i.d||'');
 const isOilI=(i,p)=>i.k==='part'&&(p?p.cat==='Engine oil':/(motor|engine) oil|\b\d{1,2}\s*w\s*-?\s*\d{2}\b/i.test(i.d||''))&&!/gear|atf|cvt|transmission|flush|\b(75|80|85)w/i.test((p&&p.name)||i.d||'');
@@ -37,7 +41,7 @@ function rcpIndex(){const st=rcpStamp();if(RCP_IDX&&RCP_IDX.st===st)return RCP_I
   DB.jobs.forEach(j=>{if(j.stage==='estimate'||j.returned)return;const v=byId('vehicles',j.veh);if(!v)return;const o=oilParts(j);if(o.svc==null&&!(o.filters.length&&o.oils.length))return;
     const w=Math.pow(0.5,Math.max(0,now0-(j.t||now0))/RCP_HALF);const litres=o.oils.reduce((a,x)=>a+(+x.i.q||0),0);const visc=o.oils.map(x=>viscTxt((x.p&&x.p.name)||x.i.d)).find(Boolean)||'';
     rcpKeys(v).forEach(([k,id])=>{const K=k+':'+id;const e=m[K]=m[K]||{n:0,w:0,f:{},vi:{},oil:{},q:[]};e.n++;e.w+=w;
-      o.filters.forEach(x=>{const fid=x.p?'p:'+x.p.id:'n:'+nrmK(x.i.num||x.i.d);const f=e.f[fid]=e.f[fid]||{w:0,n:0,label:(x.p&&x.p.name)||x.i.d,num:(x.p&&x.p.num)||x.i.num||'',pid:x.p&&x.p.id};f.w+=w;f.n++;});
+      o.filters.forEach(x=>{const fid=x.p?'p:'+x.p.id:'n:'+nrmK(x.i.num||x.i.d);const f=e.f[fid]=e.f[fid]||{w:0,n:0,label:(x.p&&x.p.name)||x.i.d,num:(x.p&&x.p.num)||x.i.num||'',pid:x.p&&x.p.id};f.w+=w;f.n++;f.t=Math.max(f.t||0,j.t||0);});
       if(visc){e.vi[visc]=(e.vi[visc]||0)+w;}
       o.oils.forEach(x=>{if(x.p)e.oil[x.p.id]=(e.oil[x.p.id]||0)+w;});
       if(litres>=2&&litres<=12)e.q.push([litres,w]);});});
@@ -81,14 +85,16 @@ function oilFor(visc,usual,mkBrand){const L=DB.parts.filter(p=>p.cat==='Engine o
 const BRAND={lexus:'toyota',toyota:'toyota',nissan:'nissan',infiniti:'nissan',honda:'honda',mazda:'mazda',mitsubishi:'mitsubishi',hyundai:'kia hyundai',kia:'kia hyundai',subaru:'subaru',gmc:'gm',chevrolet:'gm',cadillac:'gm',ford:'ford',lincoln:'ford',dodge:'chrysler',jeep:'chrysler',chrysler:'chrysler',ram:'chrysler',mercedes:'mercedes',bmw:'bmw',byd:'byd'};
 /* the recipe for a car. mode 'usual' = what we always do; 'maker' = the maker's recommendation */
 function oilRecipe(v,mode){if(!v)return null;const I=rcpIndex();const keys=rcpKeys(v);const pick=fn=>{for(const [k,id,min] of keys){const e=I[k+':'+id];if(e&&e.n>=min){const r=fn(e);if(r)return {r,k,n:e.n};}}return null;};
-  const F=pick(e=>{const t=Object.entries(e.f).sort((a,b)=>b[1].w-a[1].w);return t.length?t:null;});
   const VI=pick(e=>topOf(e.vi));const Q=pick(e=>e.q.length?wMedian(e.q):0);const OI=pick(e=>topOf(e.oil));
   const M=rcpParts();const fPart=f=>f&&(f.pid&&byId('parts',f.pid)||(f.num&&M.num[nrmK(f.num)])||M.name[nrmK(f.label)]||null);
-  let filter=null,fsrc=null;if(F){const lst=F.r.map(x=>x[1]);fsrc={k:F.k,n:F.n};
-    if(mode==='maker'){const mf=makerFilter(v);if(mf){filter=mf;fsrc={maker:1};}else{const b=BRAND[lc(v.make).trim()];filter=b&&lst.map(fPart).find(p=>p&&lc(p.name).startsWith(b))||null;}}
-    if(!filter)filter=lst.map(fPart).find(p=>p&&(+p.stock||0)>0)||lst.map(fPart).find(Boolean)||null;
-    if(!filter)fsrc.missing=lst[0].label;}
-  if(!filter&&mode==='maker'){const mf=makerFilter(v);if(mf){filter=mf;fsrc={maker:1};}}
+  /* the usual filter: the car's own latest one, else the one used most on the same model/engine. A generic name that matches no part
+     ("Toyota Oil Filter (P)") passes to the next, broader group. The usual filter is kept even when out of stock (its alternative is used if one is in stock). */
+  let filter=null,fsrc=null,missing='';
+  for(const [k,id,min] of keys){const e=I[k+':'+id];if(!e||e.n<min)continue;const t=Object.values(e.f);if(!t.length)continue;
+    t.sort((a,b)=>k==='veh'?((b.t||0)-(a.t||0)):(b.w-a.w));const p=fPart(t[0]);if(p){filter=p;fsrc={k,n:e.n};break;}if(!missing)missing=t[0].label;}
+  if(mode==='maker'){const mf=makerFilter(v);if(mf){filter=mf;fsrc={maker:1};}}
+  if(filter&&(+filter.stock||0)<=0){const a=(filter.alts||[]).map(x=>byId('parts',x)).find(x=>x&&(+x.stock||0)>0);if(a){fsrc=Object.assign({},fsrc,{alt:filter.name});filter=a;}}
+  if(!filter&&missing)fsrc={missing};
   const sp=specOf(v);let visc='',qty=0,vsrc=null,qsrc=null;
   if(mode==='maker'&&sp){visc=sp.visc[0];vsrc={maker:1,own:sp.own};if(sp.cap){qty=sp.cap;qsrc={maker:1,own:sp.own};}}
   if(!visc&&VI){visc=VI.r[0];vsrc={k:VI.k,n:VI.n};}
@@ -114,7 +120,7 @@ function rxAuto(j,added){if(!sx('smart')||isInvoiced(j))return null;const v=vehO
   const o=oilParts(j);const trig=added&&(isOilSvc(added)||isFilterI(added,partOfItem(added))||isOilI(added,partOfItem(added)));if(!trig)return null;
   if(o.svc!=null&&o.filters.length&&o.oils.length)return null;
   const mode=(DB.ws.rxMode)||'usual';return applyOilRecipe(j,mode);}
-const srcTxt=(s,v)=>!s?'':s.maker?(s.own?T_('your maker values'):T_('maker recommendation')):s.guess?T_('engine size'):T_('from '+s.n+' visits')+' · '+keyLabel(s.k,v);
+const srcTxt=(s,v)=>!s||(!s.k&&!s.maker&&!s.guess)?'':s.maker?(s.own?T_('your maker values'):T_('maker recommendation')):s.guess?T_('engine size'):T_('from '+s.n+' visits')+' · '+keyLabel(s.k,v);
 function rxBar(j){if(!j.rx||!j.rx.oil||isInvoiced(j)||!(j.items||[]).some(i=>i.grp==='rxoil'))return '';const v=vehOf(j);const m=j.rx.oil.mode;const R=oilRecipe(v,m)||{};const sp=specOf(v);
   return `<div class="rxbar"><div class="rh"><b>🛢 ${T_('Oil change')}</b><div class="chips" data-notr><button data-rxm="usual" aria-pressed="${m!=='maker'}">${T_('Usual')}</button><button data-rxm="maker" aria-pressed="${m==='maker'}" ${sp?'':'disabled'}>${T_('Maker')}</button></div></div>
    <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${m==='maker'&&sp&&sp.conf==='low'?` (${T_('not confirmed')})`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
@@ -141,7 +147,7 @@ function jobChecks(j){const out=[];const v=vehOf(j);if(!v||j.returned)return out
     if(R){const lit=o.oils.reduce((a,x)=>a+(+x.i.q||0),0);if(lit&&R.qsrc&&!R.qsrc.guess&&Math.abs(lit-R.qty)>Math.max(1,R.qty*0.25))out.push(['warn',T_(lit+' litres; usually '+R.qty+' litres for this car')]);
       const vis=o.oils.map(x=>viscTxt((x.p&&x.p.name)||x.i.d)).find(Boolean);const ok=[R.vsrc&&!R.vsrc.maker?R.visc:'',...(sp?sp.visc:[])].filter(Boolean);
       if(vis&&ok.length&&!ok.includes(vis))out.push(['warn',T_('Oil '+vis+' is not the usual or the maker viscosity')+' ('+ok.join(' / ')+')']);
-      if(R.fsrc&&o.filters.length){const I=rcpIndex();const e=I[R.fsrc.k+':'+rcpKeys(v).find(k=>k[0]===R.fsrc.k)[1]];const fx=o.filters[0];const fid=fx.p?'p:'+fx.p.id:'n:'+nrmK(fx.i.num||fx.i.d);
+      if(R.fsrc&&R.fsrc.k&&o.filters.length){const I=rcpIndex();const e=I[R.fsrc.k+':'+rcpKeys(v).find(k=>k[0]===R.fsrc.k)[1]];const fx=o.filters[0];const fid=fx.p?'p:'+fx.p.id:'n:'+nrmK(fx.i.num||fx.i.d);
         if(e&&R.fsrc.n>=RCP_MIN&&!e.f[fid]&&!(fx.p&&Object.values(e.f).some(f=>f.num&&nrmK(f.num)===nrmK(fx.p.num))))out.push(['warn',T_('This filter was never used on this car or engine')+' · '+T_('usual')+': '+(R.filter?R.filter.name:R.fsrc.missing||'')]);}}}
   (j.items||[]).forEach(i=>{if(i.pend||i.free||i.custPart)return;if(i.k==='part'){const p=i.ref&&byId('parts',i.ref);if(p&&(+i.p||0)<(+p.price||0)-0.0005)out.push(['warn',T_(i.d+' is below the list price')+' ('+f3(i.p)+' / '+f3(p.price)+')']);}
     else if(!(+i.p>0))out.push(['warn',T_(i.d+' has no price')]);});
