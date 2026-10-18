@@ -1,7 +1,7 @@
 /* ---------- ONLINE SYNC (Firebase): every phone that signs in with the workshop account shares the same data.
    Each customer, car, job, part… is its own online record. A change on one phone is sent within seconds and
    shows on the others. Without internet the app keeps working and sends the changes when the internet is back. ---------- */
-const FB_CONFIG=null; /* set when the Firebase project is ready */
+const FB_CONFIG={apiKey:"AIzaSyA_j9-62srvQvpUn7XDUGDRfVrwpIwpxC0",authDomain:"fsw-workshop-7e4ab.firebaseapp.com",projectId:"fsw-workshop-7e4ab",storageBucket:"fsw-workshop-7e4ab.firebasestorage.app",messagingSenderId:"851513368367",appId:"1:851513368367:web:764883bc15828373388bda"}; /* public app settings, not a password; the data is protected by Firestore rules */
 const fbCfg=()=>window.__FB_TEST_CFG||FB_CONFIG;
 const SYNC={on:false,user:null,unsub:[],last:null,dev:'',timer:0,busy:false,uiDirty:false,status:'off',err:'',pushQ:Promise.resolve(),got:0,sent:0,lastAt:0};
 const syncReady=()=>!!(fbCfg()&&window.firebase&&firebase.initializeApp);
