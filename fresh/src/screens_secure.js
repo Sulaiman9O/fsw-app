@@ -47,6 +47,10 @@ function custImportSheet(){if(!can.settings())return;openSheet(`<h3>📥 Import 
     const due=o?o.jobs.filter(j=>j.inv).reduce((a,j)=>a+jobTotals(j).due,0):0;
     el.querySelector('#ccfi').innerHTML=o?`<div class="card note"><b>${o.customers.length} customers · ${o.vehicles.length} cars</b><span class="sub">${o.jobs.length} job cards and invoices · ${(o.reminders||[]).filter(r=>!r.sent).length} open reminders · due ${f3(due)} ${esc(DB.ws.currency)}</span><span class="sub">Now on this device: ${DB.customers.length} customers · ${DB.vehicles.length} cars · ${DB.jobs.length} jobs. They will be removed.</span></div>`:'<p class="err">That is not a customers file.</p>';el.querySelector('#ccok').disabled=!o;};
   el.querySelector('#ccok').onclick=()=>{if(!o)return;const old={customers:DB.customers,vehicles:DB.vehicles,jobs:DB.jobs,reminders:DB.reminders,nextJob:DB.ws.nextJob,nextInv:DB.ws.nextInv};
+    /* clean the file: every job needs its lists and a known stage */
+    o.jobs.forEach(j=>{j.items=Array.isArray(j.items)?j.items:[];j.pays=Array.isArray(j.pays)?j.pays:[];j.log=Array.isArray(j.log)?j.log:[];if(!STAGE[j.stage])j.stage=j.inv?'done':'new';j.disc=+j.disc||0;j.t=+j.t||now();if(!j.id)j.id=uid('j');});
+    o.customers.forEach(c=>{c.name=c.name||'Customer';c.phone=c.phone||'';});o.vehicles.forEach(v=>{['make','model','year','plate','vin','engine'].forEach(k=>{v[k]=v[k]==null?'':String(v[k]);});});
+    if(!o.maxJob)o.maxJob=o.jobs.reduce((m,j)=>Math.max(m,+j.no||0),0);if(!o.maxInv)o.maxInv=o.jobs.reduce((m,j)=>j.inv?Math.max(m,+j.inv.no||0):m,0);
     DB.customers=o.customers;DB.vehicles=o.vehicles;DB.jobs=o.jobs;DB.reminders=o.reminders||[];
     DB.ws.nextJob=Math.max(+DB.ws.nextJob||1,(+o.maxJob||0)+1);DB.ws.nextInv=Math.max(+DB.ws.nextInv||1,(+o.maxInv||0)+1);
     audit('import','Imported '+o.customers.length+' customers, '+o.vehicles.length+' cars, '+o.jobs.length+' jobs');save();closeSheet();go('home');

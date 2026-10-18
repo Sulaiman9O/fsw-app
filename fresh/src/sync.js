@@ -41,9 +41,9 @@ const tsSet=v=>{try{if(v>tsGet())localStorage.setItem('ws_sync_ts',String(v));}c
 /* only changes since the last time this phone looked (keeps Firebase free-plan reads low) */
 function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').onSnapshot(qs=>{qs.forEach(d=>{if(d.id==='reset'){const at=+((d.data()||{}).at)||0;if(at>sinceGet()&&DB.ws)wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));}});},()=>{}));const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
-    qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;
+    qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(SYNC.last&&SYNC.last[t]&&SYNC.last[t].get(x.k)==='\u0000old'&&x.k!=='ws')return;
       applyRemote(t,x.k,x.del?null:x.v);n++;});
-    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';_flushNow0();uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);}));});}
+    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();_flushNow0();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);}));});}
 function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=[];}
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);
@@ -60,10 +60,22 @@ async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await 
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.last=syncLoadLast();await syncPushNow();}
+    else{SYNC.last=syncLoadLast();await syncCatchUp();await syncPushNow();}
     localStorage.setItem('ws_sync_seeded','1');
     syncListen();SYNC.status='ok';}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
   try{if(S.r==='settings')render();}catch(e){}}
+/* on start: take what other phones changed while this one was closed BEFORE sending, so old copies do not overwrite newer ones */
+async function syncCatchUp(){const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));const me=syncDev();let n=0;
+  for(const t of ['kv','rec']){const q=await wsRef().collection(t).where('t','>',since).get();const L=SYNC.last&&SYNC.last[t];q.forEach(doc=>{const x=doc.data();if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(L&&L.get(x.k)==='\u0000old'&&x.k!=='ws')return;/* changed here while offline: this phone's change is sent */applyRemote(t,x.k,x.del?null:x.v);n++;});}
+  if(n){SYNC.got+=n;const ch=fixDupNumbers();_flushNow0();syncSaveLast();if(ch)syncPush();}}
+/* two phones can give the same invoice or job number while apart. The phone that made the later one renumbers its own. */
+function fixDupNumbers(){const me=syncDev();let ch=0;
+  const fix=(list,get,setNo,label)=>{const by={};list.forEach(j=>{const k=get(j);if(k)(by[k]=by[k]||[]).push(j);});
+    Object.values(by).forEach(L=>{if(L.length<2)return;const tt=j=>label==='Invoice'?(j.inv.t||j.t):j.t;L.sort((a,b)=>(tt(a)-tt(b))||String(a.id).localeCompare(String(b.id)));L.slice(1).forEach(j=>{if(j.dev===me||(j.inv&&j.inv.dev===me&&label==='Invoice')){const old=get(j);setNo(j);(j.log=j.log||[]).push([now(),label+' number changed from '+old+' (the same number was used on another phone)']);ch++;}});});};
+  const mxI=()=>DB.jobs.reduce((m,j)=>j.inv?Math.max(m,+j.inv.no||0):m,0),mxJ=()=>DB.jobs.reduce((m,j)=>Math.max(m,+j.no||0),0);
+  fix(DB.jobs.filter(j=>j.inv&&!j.inv.void),j=>j.inv.no,j=>{DB.ws.nextInv=Math.max(+DB.ws.nextInv||1,mxI()+1);j.inv.no=DB.ws.nextInv++;},'Invoice');
+  fix(DB.jobs,j=>j.no,j=>{DB.ws.nextJob=Math.max(+DB.ws.nextJob||1,mxJ()+1);j.no=DB.ws.nextJob++;},'Job');
+  return ch;}
 function syncStop(){SYNC.on=false;syncUnlisten();if(SYNC.status!=='err')SYNC.status='off';}
 /* replace this phone's data with the online data */
 async function syncPull(){const d=blankDB();const kv=await wsRef().collection('kv').get(),rec=await wsRef().collection('rec').get();const by={};let mx=0;[kv,rec].forEach(q=>q.forEach(doc=>{const t=doc.data().t;if(t&&t.toMillis)mx=Math.max(mx,t.toMillis());}));

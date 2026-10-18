@@ -3,16 +3,21 @@ const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const f3=n=>(Math.round((+n||0)*1000)/1000).toFixed(3);
-const kmf=n=>(+n||0).toLocaleString('en-US');
+const NF0=new Intl.NumberFormat('en-US');const kmf=n=>NF0.format(+n||0);
 const uid=p=>(p||'x')+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=()=>Date.now();
-const dayKey=t=>new Date(t).toLocaleDateString('en-CA',{timeZone:'Asia/Muscat'});
+/* date formatters are made once: making one is slow, and lists format hundreds of dates */
+const DTF=o=>new Intl.DateTimeFormat(o[0],Object.assign({timeZone:'Asia/Muscat'},o[1]));const F_DK=DTF(['en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}]),F_D=DTF(['en-GB',{day:'numeric',month:'short',year:'numeric'}]),F_DS=DTF(['en-GB',{day:'numeric',month:'short'}]),F_HM=DTF(['en-GB',{hour:'2-digit',minute:'2-digit'}]);
+const tOk=t=>{const n=typeof t==='number'?t:(t==null||t===''?NaN:+new Date(t));return isFinite(n)?n:null;};
+const dayKey=t=>{const n=tOk(t);return n==null?'':F_DK.format(n);};
 const today=()=>dayKey(now());
-const fmtD=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Muscat'});
-const fmtDs=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Asia/Muscat'});
-const hm=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Muscat'});
+const fmtD=t=>{const n=tOk(t);return n==null?'':F_D.format(n);};
+const fmtDs=t=>{const n=tOk(t);return n==null?'':F_DS.format(n);};
+const hm=t=>{const n=tOk(t);return n==null?'':F_HM.format(n);};
 const ago=t=>{const d=Math.floor((now()-t)/864e5);return d<=0?'today':d===1?'1 day':d+' days';};
-const num=v=>{const n=parseFloat(String(v).replace(/[^\d.\-]/g,''));return isNaN(n)?0:n;};
+/* numbers typed with an Arabic keyboard: ٠-٩ / ۰-۹ digits and ٫ decimal point */
+const isCreditM=m=>/^(credit|on credit|آجل|اجل|دين)$/i.test(String(m||'').trim());
+const num=v=>{const s=String(v==null?'':v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/٫/g,'.').replace(/[٬,]/g,'');const n=parseFloat(s.replace(/[^\d.\-]/g,''));return isNaN(n)?0:n;};
 const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return d;};
 async function hashPin(pin){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ws:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return 'p:'+pin;}}
 let tt;function toast(s){const t=$('#toast');t.textContent=s;const was=t.hidden;t.hidden=false;if(was&&window.motionOn&&motionOn())gsap.fromTo(t,{y:20,opacity:0},{y:0,opacity:1,duration:.25,ease:'power2.out',clearProps:'transform,opacity'});clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400);}
@@ -53,7 +58,7 @@ const carName=v=>v?[v.make,v.model,v.year].filter(Boolean).join(' '):'';
 /* job maths */
 function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j.items||[]).forEach(it=>{if(it.pend)return;const q=+it.q||0,a=q*(+it.p||0);if(it.k==='part'){parts+=a;cost+=q*(+it.cost||0);}else labour+=a;
     const o=it.out;if(o&&o.who){let x=0;if(o.mode==='pass'){passOut+=a;x=a;}else if(o.mode==='share'){x=Math.max(0,a-q*(+o.amt||0));cost+=x;}else{x=q*(+o.amt||0);cost+=x;}owe+=x;ow[o.who]=(ow[o.who]||0)+x;}});
-  const sub=parts+labour;let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=Math.min(disc,sub);const total=Math.max(0,sub-disc);const paid=(j.pays||[]).reduce((a,p)=>a+(+p.amt||0),0);const sales=Math.max(0,total-passOut);
+  const sub=parts+labour;let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=Math.min(disc,sub);const total=Math.max(0,sub-disc);const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
   return {parts,labour,sub,disc,total,paid,due:Math.max(0,total-paid),cost,passOut,owe,ow,sales,profit:sales-cost};}
 const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);

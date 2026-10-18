@@ -2,6 +2,7 @@ const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['jo
 const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'2.12.0',ic:'🛠',t:'إصلاحات وتسريع',d:'التطبيق أسرع بعدة مرات مع البيانات الكبيرة. «آجل» لا يُحسب مدفوعاً بل يبقى ديناً (الفواتير القديمة المسجّلة آجل تظهر الآن في الديون). إرجاع الفاتورة يسجّل استرجاع المبلغ بدل حذفه. الإقفال اليومي يخصم المصروفات النقدية. أرقام عربية مقبولة في الأرقام. أرقام الفواتير لا تتكرر بين الهواتف. وإصلاحات في استقبال السيارة والمزامنة والصلاحيات.',tour:[]},
  {v:'2.11.0',ic:'💬',t:'سعر سريع',d:'زر «سعر سريع» في الرئيسية: اختر السيارة فيظهر سعر الخدمة كاملة (الزيت بكمية السيارة + الفلتر + الأجرة) لكل ماركة، مع المسافة والسعر لكل 1000 كم، وعرض كبير للعميل، وإرسال بالواتساب، وفتح أمر العمل بضغطة. وفي أمر العمل زر «إلغاء تغيير الزيت» للإضافة التلقائية.'},
  {v:'2.10.0',ic:'🔧',t:'محركات السيارات الصينية وبيانات المصنع',d:'أُضيفت محركات بي واي دي وشيري وأومودا وجايكو وإكسيد وجيتور وإم جي وجيلي وشانجان وجي إيه سي وهافال وجريت وول وجاك وهونشي وماكسيوس ودونغ فنغ وبايك. عند اختيار المحرك تظهر الكمية واللزوجة ورقم فلتر المصنع. السيارة المسجلة بدون محرك تأخذ محرك موديلها إذا كان واحداً.'},
  {v:'2.9.0',ic:'🛢',t:'تغيير الزيت الذكي وفحص الفواتير',d:'عند اختيار «تغيير زيت المحرك» أو فلتر أو زيت، يضيف التطبيق تلقائياً الخدمة والفلتر والزيت والكمية المعتادة لهذه السيارة، متعلّماً من الفواتير السابقة. ويمكنك التبديل إلى «المصنع» لتوصية المصنع. وصفحة «فحص الفواتير» في المزيد تعرض الأخطاء مثل تغيير زيت بدون فلتر أو كمية غير معتادة.'},
@@ -100,7 +101,7 @@ SCREENS.news=m=>{const un=new Set(newsUnseen().map(n=>n.v));
   <div class="card news full"><div class="h"><b>📘 <span dir="rtl">شرح التطبيق كاملاً</span></b><span>${FULL.reduce((a,c)=>a+c.steps.length,0)} steps</span></div><span class="sub ar" dir="rtl">من البداية: الرئيسية، والسيارة الجديدة، وأمر العمل، والفاتورة، والعملاء، والمخزون، والمالية، والإعدادات. أو اختر جزءاً واحداً فقط.</span>
    <button class="btn sm" id="tfull">▶ الشرح الكامل · Full tour</button><div class="chips">${FULL.map((c,i)=>`<button data-ch="${i}">${c.ic} <span dir="rtl">${c.t}</span></button>`).join('')}</div></div>
   ${sec('New in each version')}
-  ${NEWS.map(n=>`<div class="card news${un.has(n.v)?' nw':''}"><div class="h"><b>${n.ic} <span dir="rtl">${n.t}</span></b><span>${n.v}${un.has(n.v)?' · <b style="color:var(--red2)">NEW</b>':''}</span></div><span class="sub ar" dir="rtl">${n.d}</span><button class="btn sm" data-tour="${n.v}">▶ أرني · Show me (${n.tour.length})</button></div>`).join('')}`;
+  ${NEWS.map(n=>`<div class="card news${un.has(n.v)?' nw':''}"><div class="h"><b>${n.ic} <span dir="rtl">${n.t}</span></b><span>${n.v}${un.has(n.v)?' · <b style="color:var(--red2)">NEW</b>':''}</span></div><span class="sub ar" dir="rtl">${n.d}</span>${n.tour.length?`<button class="btn sm" data-tour="${n.v}">▶ أرني · Show me (${n.tour.length})</button>`:''}</div>`).join('')}`;
   $$('[data-tour]').forEach(b=>b.onclick=()=>startTour(NEWS.find(n=>n.v===b.dataset.tour)));
   $('#tfull').onclick=()=>startFull();$$('[data-ch]').forEach(b=>b.onclick=()=>startFull([FULL[+b.dataset.ch]]));};
 function markNewsSeen(){DB.seenNews=window.WS_VN||NEWS[0].v;save();}
@@ -182,3 +183,13 @@ const FULL=[
   {go:'settings',sel:'#sbk',t:'⬇️ مهم: النسخة الاحتياطية. البيانات محفوظة في هذا الجهاز فقط، فاحرص على أخذ نسخة كل أسبوع.'},
   {go:'more',sel:'[data-go="news"]',t:'🎉 وتجد هذا الشرح كله هنا في أي وقت.'}]}];
 function startFull(chs){startTour({tour:(chs||FULL).flatMap(c=>c.steps)});}
+
+/* short tours for the newer versions (every entry must have a tour list, even empty) */
+const NEWS_T={
+ '2.11.0':[{go:'home',sel:'.qbtn',t:'💬 «سعر سريع»: اختر السيارة فيظهر سعر الخدمة كاملة لكل ماركة زيت، ثم افتح أمر العمل بضغطة.'}],
+ '2.9.0':[{go:'more',sel:'[data-go="checks"]',t:'🔎 «فحص الفواتير»: أوامر العمل التي فيها شيء يبدو خاطئاً، مثل تغيير زيت بدون فلتر.'}],
+ '2.8.0':[{go:'more',sel:'[data-go="debts"]',t:'💳 «الديون»: كل العملاء الذين عليهم مبالغ، مع زر تذكير بالواتساب.'}],
+ '2.7.0':[{go:'settings',sel:'#scust',t:'📥 من هنا تستورد العملاء وسياراتهم وفواتيرهم السابقة من ملف.'}],
+ '2.6.3':[{go:'settings',sel:'#swipe',t:'🗑 حذف كل البيانات: يبقى الحساب والمستخدمون، والزر يعمل بعد 6 ثوانٍ.'}],
+ '2.6.0':[{go:'settings',sel:'#stor',t:'🔒 هنا ترى هل بيانات الجهاز مقفلة (مشفّرة).'}]};
+NEWS.forEach(n=>{if(!Array.isArray(n.tour))n.tour=NEWS_T[n.v]||[];});

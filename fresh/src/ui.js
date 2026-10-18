@@ -17,7 +17,7 @@ function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
 const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
-function go(r,p){S.selJ=null;S.sel=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
+function go(r,p){S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
 function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){closeSheet();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
   if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
@@ -97,6 +97,7 @@ function bindPad(f){$$('.pad button').forEach(b=>b.onclick=()=>f(b.dataset.k));}
 
 /* ---------- login ---------- */
 let pick=null,pinBuf='';
+const PINLOCK={n:0,until:0};
 function renderLogin(){
   const us=DB.users;if(us.length===1&&!pick)pick=us[0].id;
   $('#root').innerHTML=`<div class="login"><div class="in"><div class="brandline" data-notr>${window.SF_LOGO||"ShopFlo"}</div>${DB.ws.logo?`<img class="logo" src="${DB.ws.logo}" alt="">`:`<div class="ob-hero"><span class="wsmark big">${esc(initials(DB.ws.name))}</span><h2 style="font:400 1.5rem var(--f-brand)">${esc(DB.ws.name)}</h2></div>`}
@@ -105,6 +106,6 @@ function renderLogin(){
    ${pick?dots(pinBuf.length)+pad():'<p>Tap your name</p>'}<div class="err" id="err"></div></div></div>`;
   $$('.person').forEach(b=>b.onclick=()=>{pick=b.dataset.u;pinBuf='';renderLogin();});
   bindPad(async k=>{if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;
-    if(pinBuf.length===4){const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){S.user=u;audit('login','Logged in');save();S.r='home';render();setTimeout(showNewsPrompt,500);return;}{const S0=S.user;S.user={name:(u&&u.name)||'?'};audit('fail','Wrong PIN for '+((u&&u.name)||'?'));S.user=S0;save();}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
+    if(pinBuf.length===4){if(PINLOCK.until>Date.now()){pinBuf='';renderLogin();$('#err').textContent=T_('Too many wrong PINs. Wait '+Math.ceil((PINLOCK.until-Date.now())/1000)+' seconds.');return;}const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){PINLOCK.n=0;S.user=u;audit('login','Logged in');save();S.r='home';render();setTimeout(showNewsPrompt,500);return;}{const S0=S.user;S.user={name:(u&&u.name)||'?'};audit('fail','Wrong PIN for '+((u&&u.name)||'?'));S.user=S0;save();PINLOCK.n++;if(PINLOCK.n>=5){PINLOCK.n=0;PINLOCK.until=Date.now()+30000;}}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
     renderLogin();});
 }

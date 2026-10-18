@@ -1,6 +1,6 @@
 /* ---------- JOB ---------- */
 const NEXT={estimate:['new','Customer agreed → job card'],new:['work','Start work'],work:['ready','Car is ready'],ready:['done','Delivered']};
-function logJ(j,t){j.log.push([now(),t+' · '+S.user.name]);}
+function logJ(j,t){(j.log=j.log||[]).push([now(),t+' · '+((S.user&&S.user.name)||'')]);}
 SCREENS.job=m=>{
   const j=byId('jobs',S.p.id);if(!j){go('work');return;}
   const v=vehOf(j),c=custOf(j),T=jobTotals(j),[sl,sc]=STAGE[j.stage];const nx=NEXT[j.stage];
@@ -28,7 +28,7 @@ SCREENS.job=m=>{
   const nb=$('#jnext');if(nb)nb.onclick=()=>{
     if(j.stage==='estimate'){j.stage='new';j.fromEst=true;logJ(j,'Customer agreed');save();render();return;}
     if(j.stage==='new'){const mins=(j.items||[]).reduce((a,i)=>a+(+i.min||0)*(i.k==='part'?0:Math.max(1,Math.round(+i.q||1))),0);openSheet(`<h3>How long will it take?</h3>${mins?`<p class="hint">The services on this job take about <b>${mins>=60?Math.floor(mins/60)+' h '+(mins%60?mins%60+' min':''):mins+' min'}</b>.</p>`:''}<div class="chips big">${mins?`<button data-eta="${mins}">≈ ${mins>=60?(Math.round(mins/6)/10)+' h':mins+' min'} (services)</button>`:''}${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']].map(([x,l])=>`<button data-eta="${x}">${l}</button>`).join('')}</div>`,el=>el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const x=+b.dataset.eta;j.eta=x>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():now()+x*60e3;j.stage='work';logJ(j,'Working · ETA '+b.textContent);save();closeSheet();render();}));return;}
-    if(j.stage==='ready'&&!isInvoiced(j)&&can.invoice()){toast('Make the invoice first');return;}
+    if(j.stage==='ready'&&!isInvoiced(j)){toast(can.invoice()?'Make the invoice first':'Ask the manager to make the invoice first');return;}
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);rxBind(j);
   $$('[data-sa]').forEach(b=>b.onclick=()=>selAct(j,b.dataset.sa));
@@ -109,7 +109,7 @@ function addItemSheet(j,opt){opt=opt||{};
           if(t==='s'){const sv=byId('services',id);if(!sv)return;if(!opt.manual&&rxOf(sv)==='oil'&&sx('smart')&&!rxs){rxs=sv;return;}if(!opt.manual&&smartOk(sv)&&!smart){smart=sv;return;}j.items.push(svcItem(sv,v));(sv.parts||[]).forEach(x=>{const pt=byId('parts',x.ref);if(pt)j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:+x.q||1,u:pt.unit==='L'?'L':'',p:+pt.price,cost:+pt.cost||0});});n2++;}
           else if(t==='p'){const p=byId('parts',id);if(!p)return;j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});n2++;}
           else{const c=DB.canned.find(x=>x.id===id);if(c){c.items.forEach(i=>j.items.push(Object.assign({},i)));n2++;}}});
-        let RR=null;if(rxs){const it=svcItem(rxs,v);j.items.push(it);RR=rxAuto(j,it);n2++;if(!RR){j.items.pop();n2--;smart=smart||rxs;}else it.grp='rxsvc';}else if(!opt.manual){const t2=j.items.slice(-n2).find(i=>i.k==='part');if(t2)RR=rxAuto(j,t2);}
+        let RR=null;if(rxs){const it=svcItem(rxs,v);j.items.push(it);RR=rxAuto(j,it);n2++;if(!RR){j.items.pop();n2--;smart=smart||rxs;}else it.grp='rxsvc';}else if(!opt.manual&&n2>0){const t2=j.items.slice(-n2).find(i=>i.k==='part');if(t2)RR=rxAuto(j,t2);}
         logJ(j,'Added '+n2+' items');save();closeSheet();render();if(RR)rxDone(j,RR);else if(smart){smartSheet(j,smart);toast('Added '+n2+'. Now choose the oil for '+smart.name);}else toast('Added '+n2+' items');};};
     mbar();};
   openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="atabs"></div><p class="hint ahint">👆 Hold an item to pick several and add them together.</p><div id="alist"></div>`,el=>{
@@ -149,22 +149,22 @@ function makeInvoice(j){
   const T=jobTotals(j);if(!(j.items||[]).length){toast('Add services or parts first');return;}
   if((j.items||[]).some(i=>i.pend)){toast('Some items have no price yet');return;}
   confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{
-    j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
-    if(j.stage==='new'||j.stage==='work')j.stage='ready';logJ(j,'Invoice #'+j.inv.no);save();go('inv',{id:j.id});});
+    delete j.returned;j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
+    if(j.stage==='new'||j.stage==='work')j.stage='ready';if(j.stage==='done'){try{makeReminders(j);}catch(e){}}logJ(j,'Invoice #'+j.inv.no);save();go('inv',{id:j.id});});
 }
 SCREENS.inv=m=>{
   const j=byId('jobs',S.p.id);if(!j||!j.inv){go('work');return;}const T=jobTotals(j),c=custOf(j);
   m.innerHTML=head('Invoice #'+j.inv.no,j.returned?'<span class="tag t-bad">Returned</span>':T.due<=0.0005?'<span class="tag t-ok">Paid</span>':`<span class="tag t-warn">Due ${f3(T.due)}</span>`)+`
   <div class="inv-pv">${invoiceHtml(j)}</div>
-  ${!j.returned&&T.due>0.0005&&can.money()?`${sec('Take payment',`due ${f3(T.due)}`)}<div class="chips big">${DB.ws.pay.map(p=>`<button data-pay="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
+  ${!j.returned&&T.due>0.0005&&(can.invoice()||can.money())?`${sec('Take payment',`due ${f3(T.due)}`)}<div class="chips big">${DB.ws.pay.map(p=>`<button data-pay="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
   ${(j.pays||[]).length?sec('Payments')+`<div class="jb-list">${j.pays.map(p=>`<div class="jb-r"><div>${esc(p.m)}<small>${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by)}</small></div><b>${f3(p.amt)}</b></div>`).join('')}</div>`:''}
   <div class="two"><button class="btn" id="iwa">WhatsApp</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
   <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>
-  ${can.del()&&!j.returned?`<button class="btn ghost jb-del" id="iret">Return / cancel invoice</button>`:''}`;
-  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
+  ${(can.invoice()||can.del())&&!j.returned?`<button class="btn ghost jb-del" id="iret">Return / cancel invoice</button>`:''}`;
+  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;if(isCreditM(mth)){j.credit=now();logJ(j,'On credit (to pay later) · due '+f3(T.due));audit('pay','On credit · invoice #'+j.inv.no+' · '+f3(T.due));save();toast(T_('Kept as a debt on the customer'));render();return;}openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
   $('#iwa').onclick=()=>shareText(c.phone,docText(j,'invoice'));
   $('#ipr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>',210,297,'Invoice '+j.inv.no);
-  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();audit('return','Invoice #'+j.inv.no+' returned');j.inv.void=true;j.pays=[];j.stage='done';logJ(j,'Invoice returned');save();render();});
+  const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();audit('return','Invoice #'+j.inv.no+' returned');j.inv.void=true;const byM={};(j.pays||[]).forEach(p=>{if(!isCreditM(p.m))byM[p.m]=(byM[p.m]||0)+(+p.amt||0);});const back=Object.values(byM).reduce((a,x)=>a+Math.max(0,x),0);if(back>0.0005){Object.entries(byM).forEach(([m,a])=>{if(a>0.0005)j.pays.push({m,amt:-r3(a),t:now(),by:S.user.name,refund:1});});logJ(j,'Refund '+f3(back));}DB.reminders=DB.reminders.filter(r=>r.job!==j.id);j.stage='done';logJ(j,'Invoice returned');save();render();});
 };
 function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=0;
   const tr=k=>(j.items||[]).filter(i=>(k==='part'?i.k==='part':i.k!=='part')&&!i.pend).map(i=>{n++;return `<tr><td class="n">${n}</td><td>${esc(i.d)}${i.num?`<small>${esc(i.num)}</small>`:''}${i.ar?`<div class="ar" style="font-size:2.7mm;color:#444">${esc(i.ar)}</div>`:''}${i.war?`<div style="font-size:2.4mm;color:#555">Warranty: ${esc(i.war)}</div>`:''}${i.note?`<div style="font-size:2.4mm;color:#555">${esc(i.note)}</div>`:''}${i.custPart?`<div style="font-size:2.4mm;color:#555">Customer's own part</div>`:''}</td><td class="q">${+i.q}${i.u?' '+esc(i.u):''}</td><td class="u">${f3(i.p)}</td><td class="a">${f3(i.q*i.p)}</td></tr>`;}).join('');

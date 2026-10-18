@@ -94,12 +94,15 @@ SCREENS.newjob=m=>{
     if(ov.length){openSheet(`<h3>This car already has an open job card</h3><div class="list">${ov.map(j=>`<button class="row" data-oj="${j.id}"><div><b>#${j.no} · ${esc(STAGE[j.stage][0])}</b><span>${ago(j.t)}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><span class="v">Open ›</span></button>`).join('')}</div><button class="btn ghost" id="ojnew">Open a new job card anyway</button>`,el=>{
       el.querySelectorAll('[data-oj]').forEach(b=>b.onclick=()=>{closeSheet();S.p.n=null;go('job',{id:b.dataset.oj});});
       el.querySelector('#ojnew').onclick=()=>{closeSheet();N.dupOk=true;$('#ngo').click();};});return;}
-    let c=cust;if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||ex.name.trim().toLowerCase()===N.name.trim().toLowerCase()))c=ex;}if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     let v=N.vehId&&byId('vehicles',N.vehId);
-    if(!v&&vid&&!N.make){v=byId('vehicles',vid);if(v&&!cust&&v.cust)c=byId('customers',v.cust)||c;}
-    if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
+    if(!v&&vid){const kv=byId('vehicles',vid);if(kv&&(!N.make||!String(kv.make||'').trim()||lc(kv.make).trim()===lc(N.make).trim())){v=kv;if(!String(kv.make||'').trim()&&N.make){kv.make=N.make.trim();kv.model=N.model.trim();kv.year=N.year.trim();if(N.engine)kv.engine=N.engine;}}}   /* a plate already in the app is that car, not a second one */
+    if(!v&&!N.make&&!N.plate){toast('Type the plate or the make');return;}
+    let c=cust;if(!c&&v&&v.cust)c=byId('customers',v.cust)||null;   /* a known car keeps its owner */
+    if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||lc(ex.name||'').trim()===lc(N.name||'').trim()))c=ex;}
+    if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
+    if(!v){v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
-    const j={id:uid('j'),no:DB.ws.nextJob++,cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
+    const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
     if(S.pendQuote){j.items=S.pendQuote.items;if(S.pendQuote.kind==='oil')j.rx={oil:{mode:'usual',at:now()}};S.pendQuote=null;}
     DB.jobs.push(j);save();toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};
 };

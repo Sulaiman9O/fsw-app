@@ -12,15 +12,18 @@ const dispTxt=e=>{const m=lc(e).match(/(\d\.\d)\s*(?:l|t)?\b/);return m?m[1]:'';
 /* engines typed by a VIN decoder: "2GR-FE | Displacement: 3.5L | Configuration: V-Shaped | Cylinders: 6 | Fuel: Gasoline" -> "3.5L 6 cyl · 2GR-FE" */
 function cleanEng(e){e=String(e||'');if(!/displacement:|cylinders:|configuration:/i.test(e))return e;const P=e.split('|').map(x=>x.trim());const code=P.find(x=>!/:/.test(x)&&x)||'';
   const d=(e.match(/displacement:\s*([\d.]+)\s*l/i)||[])[1];const c=(e.match(/cylinders:\s*(\d+)/i)||[])[1];const head=[d?(+d).toFixed(1)+'L':'',c?c+' cyl':''].filter(Boolean).join(' ');return [head,code].filter(Boolean).join(' · ');}
-function effEng(v){if(!v)return '';let own=cleanEng(v.engine);if(!/\d/.test(own.replace(/configuration|cylinders|displacement|fuel|[:|]/gi,'')))own='';if(own&&(hasCode(own)||/electric/i.test(own)))return own;if(!v.make||!v.model||typeof carEngines!=='function')return own;
+const EFFC={k:'',m:new Map(),ev:new Map()};const effReset=()=>{const k=DB.jobs.length+':'+DB.vehicles.length+':'+DB.parts.length;if(EFFC.k!==k){EFFC.k=k;EFFC.m.clear();EFFC.ev.clear();}};
+function effEng(v){if(!v)return '';effReset();const ck=v.id+'|'+v.engine+'|'+v.make+'|'+v.model+'|'+v.year;if(EFFC.m.has(ck))return EFFC.m.get(ck);const r=effEng0(v);EFFC.m.set(ck,r);return r;}
+function effEng0(v){if(!v)return '';let own=cleanEng(v.engine);if(!/\d/.test(own.replace(/configuration|cylinders|displacement|fuel|[:|]/gi,'')))own='';if(own&&(hasCode(own)||/electric/i.test(own)))return own;if(!v.make||!v.model||typeof carEngines!=='function')return own;
   try{let E=carEngines(v.make,v.model,v.year).L.filter(e=>e.yr!=='added by you');const d=dispTxt(own);if(d)E=E.filter(e=>dispTxt(e.n)===d);return E.length===1?E[0].n:own;}catch(e){return own;}}
-const isEV=v=>/electric|\bev\b/i.test(effEng(v))&&!/hybrid|phev|dm-?i|range/i.test(effEng(v))&&!DB.jobs.some(j=>j.veh===v.id&&oilParts(j).oils.length);
+const isEV=v=>{if(!v)return false;effReset();const ck=v.id+'|'+v.engine+'|'+v.model+'|'+v.year;if(EFFC.ev.has(ck))return EFFC.ev.get(ck);const e=effEng(v);const r=/electric|\bev\b/i.test(e)&&!/hybrid|phev|dm-?i|range/i.test(e)&&!DB.jobs.some(j=>j.veh===v.id&&oilParts(j).oils.length);EFFC.ev.set(ck,r);return r;};
 const dispOf=v=>dispTxt(effEng(v));
 function engCodeX(v){const e=String(effEng(v)).toUpperCase();const t=e.split(/[\s·,/]+/).find(x=>/^[0-9A-Z]{2,}(-[A-Z]{2,4})?$/.test(x)&&/\d/.test(x)&&/[A-Z]/.test(x)&&!/^\d\.\dL$/.test(x)&&!/^\d+CYL$/.test(x));return t||'';}
 /* keys from most exact to most general */
 function rcpKeys(v){if(!v)return [];const mk=lc(v.make).trim(),md=baseModel(v.model),d=dispOf(v),ec=engCodeX(v);const out=[['veh',v.id,1]];
   if(md&&d)out.push(['mmd',mk+'|'+md+'|'+d,RCP_MIN]);if(ec)out.push(['eng',ec,RCP_MIN]);if(md&&!d)out.push(['mm',mk+'|'+md,RCP_MIN]);if(d)out.push(['md',mk+'|'+d,RCP_MIN]);return out;}
-const keyLabel=(k,v)=>k==='veh'?T_('this car'):k==='mmd'?(v.make+' '+baseModel(v.model).replace(/\b\w/g,c=>c.toUpperCase())+' '+dispOf(v)+'L'):k==='eng'?engCodeX(v):k==='mm'?(v.make+' '+v.model):(v.make+' '+dispOf(v)+'L');
+const keyLabel=(k,v)=>esc(keyLabel0(k,v));
+const keyLabel0=(k,v)=>k==='veh'?T_('this car'):k==='mmd'?(v.make+' '+baseModel(v.model).replace(/\b\w/g,c=>c.toUpperCase())+' '+dispOf(v)+'L'):k==='eng'?engCodeX(v):k==='mm'?(v.make+' '+v.model):(v.make+' '+dispOf(v)+'L');
 /* what an item is */
 let RPM=null;
 function rcpParts(){if(RPM&&RPM.n===DB.parts.length&&RPM.ref===DB.parts)return RPM;const num={},name={};DB.parts.forEach(p=>{if(p.num)num[nrmK(p.num)]=p;name[nrmK(p.name)]=p;});return RPM={n:DB.parts.length,ref:DB.parts,num,name};}
@@ -126,7 +129,7 @@ function rxBar(j){if(!j.rx||!j.rx.oil||isInvoiced(j)||!(j.items||[]).some(i=>i.g
    <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${m==='maker'&&sp&&sp.conf==='low'?` (${T_('not confirmed')})`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
    <div class="rxf">${can.settings()?`<button class="lnk" id="rxspec">${T_('Maker values for this car')} ›</button>`:''}<button class="lnk rxx" id="rxx">✕ ${T_('Remove oil change')}</button></div></div>`;}
 function rxCancel(j){j.items=(j.items||[]).filter(i=>i.grp!=='rxoil'&&i.grp!=='rxsvc');if(j.rx)delete j.rx.oil;logJ(j,'Automatic oil change removed');}
-function rxBind(j){const rx=$('#rxx');if(rx)rx.onclick=()=>{rxCancel(j);save();render();undoBar(T_('Oil change removed'),()=>{applyOilRecipe(j,'usual');save();render();});};$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
+function rxBind(j){const rx=$('#rxx');if(rx)rx.onclick=()=>{const md=(j.rx&&j.rx.oil&&j.rx.oil.mode)||'usual';rxCancel(j);save();render();undoBar(T_('Oil change removed'),()=>{applyOilRecipe(j,md);save();render();});};$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
   const sp=$('#rxspec');if(sp)sp.onclick=()=>specSheet(vehOf(j));}
 /* the owner can write the maker values for a model (they win over the built-in list) */
 function specSheet(v){if(!v)return;const key=lc(v.make).trim()+'|'+baseModel(v.model)+'|'+dispOf(v);const s=specOf(v)||{visc:[],cap:''};
@@ -144,7 +147,7 @@ function jobChecks(j){const out=[];const v=vehOf(j);if(!v||j.returned)return out
   if(has&&!o.oils.length&&!custOil)out.push(['bad',T_('Oil change without engine oil')]);
   if(!has&&o.filters.length&&o.oils.length)out.push(['warn',T_('Oil and filter without the oil-change service (labour)')]);
   if(o.oils.length||o.filters.length){const R=oilRecipe(v,'usual');const sp=specOf(v);
-    if(R){const lit=o.oils.reduce((a,x)=>a+(+x.i.q||0),0);if(lit&&R.qsrc&&!R.qsrc.guess&&Math.abs(lit-R.qty)>Math.max(1,R.qty*0.25))out.push(['warn',T_(lit+' litres; usually '+R.qty+' litres for this car')]);
+    if(R){const lit=Math.round(o.oils.reduce((a,x)=>a+(+x.i.q||0),0)*100)/100;if(lit&&R.qsrc&&!R.qsrc.guess&&Math.abs(lit-R.qty)>Math.max(1,R.qty*0.25))out.push(['warn',T_(lit+' litres; usually '+R.qty+' litres for this car')]);
       const vis=o.oils.map(x=>viscTxt((x.p&&x.p.name)||x.i.d)).find(Boolean);const ok=[R.vsrc&&!R.vsrc.maker?R.visc:'',...(sp?sp.visc:[])].filter(Boolean);
       if(vis&&ok.length&&!ok.includes(vis))out.push(['warn',T_('Oil '+vis+' is not the usual or the maker viscosity')+' ('+ok.join(' / ')+')']);
       if(R.fsrc&&R.fsrc.k&&o.filters.length){const I=rcpIndex();const e=I[R.fsrc.k+':'+rcpKeys(v).find(k=>k[0]===R.fsrc.k)[1]];const fx=o.filters[0];const fid=fx.p?'p:'+fx.p.id:'n:'+nrmK(fx.i.num||fx.i.d);

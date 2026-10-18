@@ -183,8 +183,8 @@ SCREENS.debts=m=>{if(!can.money()){go('home');return;}
     r.addEventListener('pointerdown',()=>{tm=setTimeout(()=>{long=true;if(!S.debtSel)S.debtSel=new Set();S.debtSel.add(id);try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}render();},500);});
     ['pointerup','pointerleave','pointercancel'].forEach(ev=>r.addEventListener(ev,()=>clearTimeout(tm)));});
   $$('[data-dw]').forEach(b=>b.onclick=()=>{const c=byId('customers',b.dataset.dw);shareText(c.phone,debtText(c));c.payRem=now();save();render();});
-  const sd=$('#dsend');if(sd)sd.onclick=()=>{const cs=[...S.debtSel].map(id=>byId('customers',id)).filter(c=>c&&c.phone);
+  const sd=$('#dsend');if(sd)sd.onclick=()=>{if(!S.debtSel)return;const cs=[...S.debtSel].map(id=>byId('customers',id)).filter(c=>c&&c.phone);
     openSheet(`<h3>💳 ${T_('Send reminders')}</h3><p class="hint">${T_('Tap each one. WhatsApp opens with the message ready; come back for the next.')}</p><div class="list">${cs.map(c=>`<button class="row" data-ds="${c.id}"><div><b>${esc(c.name)}</b><span>${f3(custDebt(c.id).due)} ${esc(DB.ws.currency)}</span></div><span class="v">${c.payRem&&now()-c.payRem<36e5?'✓':T_('Send')+' ›'}</span></button>`).join('')}</div>`,el=>{
       el.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{const c=byId('customers',b.dataset.ds);shareText(c.phone,debtText(c));c.payRem=now();save();b.querySelector('.v').textContent='✓';b.classList.add('done');});});
-    S.debtSel=null;};
+    S.debtSel=null;render();};
 };
