@@ -333,5 +333,5 @@ html.m-light .brandline{color:#0B1F3A}
 .qrow{display:flex;gap:10px;align-items:center;justify-content:space-between;width:100%;text-align:start;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
 .qrow+.qrow{margin-top:8px}.qrow .qn{display:grid;gap:3px;min-width:0}.qrow .qn span{color:var(--muted);font-size:.8rem}.qrow .qtags{display:flex;gap:4px;flex-wrap:wrap}.qrow .qtags i{font-style:normal}
 .qrow .qt{display:grid;justify-items:end;flex:none}.qrow .qt b{font-size:1.15rem}.qrow .qt span{color:var(--muted);font-size:.74rem}.qrow .qt small{color:var(--ok);font-size:.74rem}
-.qrow.out{opacity:.65}.qex{margin:6px 0 10px;text-align:left}.qvf{margin-top:8px}
+.qrow.out{opacity:.65}.qex{margin:6px 0 10px;text-align:left}.qvf{margin-top:8px}.qfo{margin:0 0 10px}.qfo small{opacity:.6;margin-inline-start:2px}
 .qbig .qrow{padding:18px}.qbig .qrow .qn b{font-size:1.15rem}.qbig .qrow .qt b{font-size:1.6rem}

@@ -106,9 +106,9 @@ function oilRecipe(v,mode){if(!v)return null;const I=rcpIndex();const keys=rcpKe
   const M=rcpParts();const fPart=f=>f&&(f.pid&&byId('parts',f.pid)||(f.num&&M.num[nrmK(f.num)])||M.name[nrmK(f.label)]||null);
   /* the usual filter: the car's own latest one, else the one used most on the same model/engine. A generic name that matches no part
      ("Toyota Oil Filter (P)") passes to the next, broader group. The usual filter is kept even when out of stock (its alternative is used if one is in stock). */
-  let filter=null,fsrc=null,missing='';
+  let filter=null,fsrc=null,missing='',fopts=[];
   for(const [k,id,min] of keys){const e=rcpEnt(I,k,id);if(!e||e.n<min)continue;const t=Object.values(e.f);if(!t.length)continue;
-    t.sort((a,b)=>k==='veh'?((b.t||0)-(a.t||0)):(k==='mmdy'||k==='mmy')?((b.n-a.n)||(b.w-a.w)):(b.w-a.w));let p=null,lab='';for(const f of t){const x=fPart(f);if(x&&(k==='veh'||filterBrandOk(x,v))){p=x;break;}if(!x){lab=f.label;break;}}if(p){filter=p;fsrc={k,id,n:e.n};break;}if(!missing&&lab)missing=lab;}
+    t.sort((a,b)=>k==='veh'?((b.t||0)-(a.t||0)):(k==='mmdy'||k==='mmy')?((b.n-a.n)||(b.w-a.w)):(b.w-a.w));let p=null,lab='';for(const f of t){const x=fPart(f);if(x&&(k==='veh'||filterBrandOk(x,v))){p=x;break;}if(!x){lab=f.label;break;}}if(p){filter=p;fsrc={k,id,n:e.n};fopts=t.map(f=>({p:fPart(f),n:f.n})).filter(x=>x.p&&(k==='veh'||filterBrandOk(x.p,v)));break;}if(!missing&&lab)missing=lab;}
   if(mode==='maker'){const mf=makerFilter(v);if(mf){filter=mf;fsrc={maker:1};}}
   if(filter&&(+filter.stock||0)<=0){const a=(filter.alts||[]).map(x=>byId('parts',x)).find(x=>x&&(+x.stock||0)>0);if(a){fsrc=Object.assign({},fsrc,{alt:filter.name});filter=a;}}
   if(!filter&&missing)fsrc={missing};
@@ -120,11 +120,15 @@ function oilRecipe(v,mode){if(!v)return null;const I=rcpIndex();const keys=rcpKe
   if(!qty){qty=sp&&sp.cap||guessLitres('oil',v);qsrc=sp&&sp.cap?{maker:1}:{guess:1};}
   const oil=visc?oilFor(visc,OI&&OI.r[0],mode==='maker'?BRAND[lc(v.make).trim()]:''):null;
   if(!filter&&!visc)return null;
-  return {mode,filter,fsrc,visc,vsrc,qty:Math.round(qty*10)/10,qsrc,oil,spec:sp};}
+  return {mode,filter,fsrc,fopts,visc,vsrc,qty:Math.round(qty*10)/10,qsrc,oil,spec:sp};}
 /* put the recipe into the job: the oil-change service, the filter and the oil. Items added by the recipe carry grp:'rxoil' so a switch replaces them */
 /* the maker's filter numbers matched against the parts list (part number or the number inside the name) */
 function makerFilterNums(v){const sp=specOf(v);return sp?[...(sp.filter||[]),...(sp.xref||[])].map(nrmK).filter(x=>x.length>=4):[];}
 function filterIsMaker(p,v){const ns=makerFilterNums(v);if(!ns.length||!p)return null;const a=nrmK(p.num),b=nrmK(p.name);return ns.some(n=>a===n||b.includes(n)||(a.length>=6&&n.includes(a)));}
+/* every filter that has been on this car or its model/year (most used first), then the ones whose "fits" list names it: spin-on filters often have several that fit */
+function filterOpts(v,rec){const seen=new Set(),out=[];const add=(p,n,why)=>{if(!p||seen.has(p.id)||p.cat!=='Oil filters')return;seen.add(p.id);out.push({p,n:n||0,why});};
+  ((rec&&rec.fopts)||[]).forEach(x=>add(x.p,x.n,'inv'));const mf=makerFilter(v);if(mf)add(mf,0,'maker');
+  DB.parts.filter(p=>p.cat==='Oil filters'&&typeof fitsCar==='function'&&fitsCar(p,v)&&filterBrandOk(p,v)).forEach(p=>add(p,0,'fits'));return out;}
 /* last resort: a filter whose "fits" list (built from the invoices) names this car */
 function fitsFilter(v){if(!v||typeof fitsCar!=='function')return null;const L=DB.parts.filter(p=>p.cat==='Oil filters'&&fitsCar(p,v)&&filterBrandOk(p,v));return L.find(p=>(+p.stock||0)>0)||L[0]||null;}
 function makerFilter(v){const ns=makerFilterNums(v);if(!ns.length)return null;const L=DB.parts.filter(p=>p.cat==='Oil filters'&&filterIsMaker(p,v));return L.find(p=>(+p.stock||0)>0)||L[0]||null;}
