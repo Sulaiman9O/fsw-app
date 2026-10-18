@@ -57,7 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: garage
-          name: Workshop (new-workshop test app)
+          name: ShopFlo (workshop app)
           make_latest: false
           prerelease: true
           files: fresh/workshop-test.apk

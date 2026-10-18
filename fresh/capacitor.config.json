@@ -1,6 +1,6 @@
 {
   "appId": "om.fsw.garage",
-  "appName": "Workshop (test)",
+  "appName": "ShopFlo",
   "webDir": "www",
   "android": {
     "backgroundColor": "#000000"
