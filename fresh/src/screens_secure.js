@@ -35,7 +35,7 @@ function catalogSheet(){if(!can.settings())return;openSheet(`<h3>📥 Import ser
   el.querySelector('#cf').onchange=async e=>{const f=e.target.files[0];cat=null;el.querySelector('#cfok').disabled=true;if(!f)return;try{const o=JSON.parse(await f.text());if(o&&o.ws_catalog&&Array.isArray(o.services)&&Array.isArray(o.parts))cat=o;}catch(x){}
     el.querySelector('#cfi').innerHTML=cat?`<div class="card note"><b>${cat.services.length} services · ${cat.parts.length} parts</b><span class="sub">Now on this device: ${DB.services.length} services · ${DB.parts.length} parts. They will be removed.</span></div>`:'<p class="err">That is not a services and parts list.</p>';el.querySelector('#cfok').disabled=!cat;};
   el.querySelector('#cfok').onclick=()=>{if(!cat)return;const old={services:DB.services,parts:DB.parts,scats:DB.scats,pcats:DB.pcats};
-    DB.services=cat.services;DB.parts=cat.parts;if(cat.scats)DB.scats=cat.scats;DB.pcats=[...new Set([...(cat.pcats||[]),...cat.parts.map(p=>p.cat)])];
+    DB.services=cat.services;DB.parts=cat.parts;try{fitsFix();}catch(e){}if(cat.scats)DB.scats=cat.scats;DB.pcats=[...new Set([...(cat.pcats||[]),...cat.parts.map(p=>p.cat)])];
     const ids=new Set(DB.parts.map(p=>p.id));(DB.pos||[]).forEach(o=>{if(o.status!=='received')o.items=(o.items||[]).filter(i=>ids.has(i.part));});
     DB.ws.svcReviewed=true;audit('import','Imported '+cat.services.length+' services and '+cat.parts.length+' parts (replaced '+old.services.length+' services, '+old.parts.length+' parts)');save();closeSheet();render();
     undoBar('Imported '+cat.services.length+' services and '+cat.parts.length+' parts',()=>{Object.assign(DB,old);save();render();});};});}
