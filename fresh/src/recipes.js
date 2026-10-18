@@ -7,9 +7,12 @@ const nrmK=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const TRIM_RX=/\b(le|se|xle|xse|gl|gls|glx|gli|xli|sr|sv|sl|s|sport|limited|platinum|hybrid|lx|ex|exl|touring|base|gx|gxr|vx|vxr|sahara|lite|ltd|premium|grande)\b/g;
 const baseModel=m=>lc(m).replace(TRIM_RX,' ').replace(/\s+/g,' ').trim();
 /* a car typed without an engine gets the model's engine when the model has only one for that year */
-function effEng(v){if(!v)return '';if(v.engine)return v.engine;if(!v.make||!v.model||typeof carEngines!=='function')return '';try{const E=carEngines(v.make,v.model,v.year).L.filter(e=>e.yr!=='added by you');return E.length===1?E[0].n:'';}catch(e){return '';}}
-const isEV=v=>/electric|\bev\b/i.test(effEng(v))&&!/hybrid|phev|dm-?i|range/i.test(effEng(v));
-const dispOf=v=>{const m=lc(effEng(v)).match(/(\d\.\d)\s*l/);return m?m[1]:'';};
+const hasCode=e=>String(e||'').toUpperCase().split(/[\s·,/()]+/).some(x=>/^[0-9A-Z]{2,}(-[A-Z]{2,4})?$/.test(x)&&/\d/.test(x)&&/[A-Z]/.test(x)&&!/^\d\.\dL$/.test(x)&&!/^\d+CYL$/.test(x)&&!/^DM-?I$/.test(x));
+const dispTxt=e=>{const m=lc(e).match(/(\d\.\d)\s*(?:l|t)?\b/);return m?m[1]:'';};
+function effEng(v){if(!v)return '';let own=v.engine||'';if(!/\d/.test(own.replace(/configuration|cylinders|displacement|fuel|[:|]/gi,'')))own='';if(own&&(hasCode(own)||/electric/i.test(own)))return own;if(!v.make||!v.model||typeof carEngines!=='function')return own;
+  try{let E=carEngines(v.make,v.model,v.year).L.filter(e=>e.yr!=='added by you');const d=dispTxt(own);if(d)E=E.filter(e=>dispTxt(e.n)===d);return E.length===1?E[0].n:own;}catch(e){return own;}}
+const isEV=v=>/electric|\bev\b/i.test(effEng(v))&&!/hybrid|phev|dm-?i|range/i.test(effEng(v))&&!DB.jobs.some(j=>j.veh===v.id&&oilParts(j).oils.length);
+const dispOf=v=>dispTxt(effEng(v));
 function engCodeX(v){const e=String(effEng(v)).toUpperCase();const t=e.split(/[\s·,/]+/).find(x=>/^[0-9A-Z]{2,}(-[A-Z]{2,4})?$/.test(x)&&/\d/.test(x)&&/[A-Z]/.test(x)&&!/^\d\.\dL$/.test(x)&&!/^\d+CYL$/.test(x));return t||'';}
 /* keys from most exact to most general */
 function rcpKeys(v){if(!v)return [];const mk=lc(v.make).trim(),md=baseModel(v.model),d=dispOf(v),ec=engCodeX(v);const out=[['veh',v.id,1]];
@@ -111,7 +114,7 @@ function rxAuto(j,added){if(!sx('smart')||isInvoiced(j))return null;const v=vehO
 const srcTxt=(s,v)=>!s?'':s.maker?(s.own?T_('your maker values'):T_('maker recommendation')):s.guess?T_('engine size'):T_('from '+s.n+' visits')+' · '+keyLabel(s.k,v);
 function rxBar(j){if(!j.rx||!j.rx.oil||isInvoiced(j)||!(j.items||[]).some(i=>i.grp==='rxoil'))return '';const v=vehOf(j);const m=j.rx.oil.mode;const R=oilRecipe(v,m)||{};const sp=specOf(v);
   return `<div class="rxbar"><div class="rh"><b>🛢 ${T_('Oil change')}</b><div class="chips" data-notr><button data-rxm="usual" aria-pressed="${m!=='maker'}">${T_('Usual')}</button><button data-rxm="maker" aria-pressed="${m==='maker'}" ${sp?'':'disabled'}>${T_('Maker')}</button></div></div>
-   <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
+   <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${m==='maker'&&sp&&sp.conf==='low'?` (${T_('not confirmed')})`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
    ${can.settings()?`<button class="lnk" id="rxspec">${T_('Maker values for this car')} ›</button>`:''}</div>`;}
 function rxBind(j){$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
   const sp=$('#rxspec');if(sp)sp.onclick=()=>specSheet(vehOf(j));}
@@ -125,7 +128,7 @@ function specSheet(v){if(!v)return;const key=lc(v.make).trim()+'|'+baseModel(v.m
 /* ---------- checks: things that look wrong on a job card ---------- */
 function jobChecks(j){const out=[];const v=vehOf(j);if(!v||j.returned)return out;const o=oilParts(j);const has=o.svc!=null;
   if(isEV(v)&&(has||o.oils.length))out.push(['bad',T_('Electric car: it has no engine oil')]);
-  if(o.filters.length&&o.filters[0].p&&filterIsMaker(o.filters[0].p,v)===false){const sp=specOf(v);if(sp&&sp.conf==='high')out.push(['warn',T_('The filter is not the maker number')+' ('+(sp.filter||[]).slice(0,2).join(' / ')+')']);}
+  if(o.filters.length&&o.filters[0].p&&filterIsMaker(o.filters[0].p,v)===false){const sp=specOf(v);const I=rcpIndex(),fp=o.filters[0].p;const usualSame=rcpKeys(v).some(([k,id])=>{if(k==='veh')return false;const e=I[k+':'+id];const f=e&&e.f['p:'+fp.id];return f&&f.n>=RCP_MIN;});if(sp&&sp.conf==='high'&&!usualSame)out.push(['warn',T_('The filter is not the maker number')+' ('+(sp.filter||[]).slice(0,2).join(' / ')+')']);}
   const custOil=(j.items||[]).some(i=>i.custPart)||/own oil|brought|زيت(ه| العميل)|يجيب زيته/i.test(j.notes||'');
   if(has&&!o.filters.length)out.push(['bad',T_('Oil change without an oil filter')]);
   if(has&&!o.oils.length&&!custOil)out.push(['bad',T_('Oil change without engine oil')]);
@@ -149,4 +152,4 @@ SCREENS.checks=m=>{if(!perm('checks')){go('home');return;}const days=S.p.days||3
 
 /* short maker data for an engine label, shown in the car picker */
 function engSpecTxt(label){if(typeof ENGSPEC==='undefined')return '';const e=String(label||'').toUpperCase();const code=e.split(/[\s·,/]+/).find(x=>ENGSPEC[nrmK(x)]);const es=code&&ENGSPEC[nrmK(code)];
-  if(/^ELECTRIC/.test(e))return '⚡ '+T_('electric · no engine oil');if(!es)return '';return '🛢 '+[es.oil_l?es.oil_l+' L':'',(es.visc||[]).join(' / '),(es.filter||[])[0]?T_('filter')+' '+es.filter[0]:''].filter(Boolean).join(' · ');}
+  if(/^ELECTRIC/.test(e))return '⚡ '+T_('electric · no engine oil');if(!es)return '';return '<bdi dir="ltr" data-notr>🛢 '+esc([es.oil_l?es.oil_l+' L':'',(es.visc||[]).join(' / '),(es.filter||[])[0]?'🔩 '+es.filter[0]:''].filter(Boolean).join(' · ')+(es.conf==='low'?' (?)':''))+'</bdi>';}
