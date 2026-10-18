@@ -4,7 +4,7 @@ const QK={oil:{t:'Engine oil change',ic:'🛢'},gear:{t:'Gearbox oil',ic:'⚙️
 function quoteCar(Q){if(Q.vid){const v=byId('vehicles',Q.vid);if(v)return v;}return Q.car?Object.assign({id:'_q'},Q.car):null;}
 function quoteRows(v,kind){const R=RX[kind];if(!R)return {rows:[],qty:0};const rec=kind==='oil'?oilRecipe(v,'usual'):null;const sp=kind==='oil'?specOf(v):null;
   const qty=kind==='oil'?(rec&&rec.qty)||(sp&&sp.cap)||guessLitres('oil',v):(learned(kind,v)||guessLitres(kind,v));
-  const filter=kind==='oil'?((rec&&rec.filter)||makerFilter(v)):null;const svc=DB.services.find(s=>rxOf(s)===kind);const lab=svc?svcPrice(svc,v):0;const fP=filter?(+filter.price||0):0;
+  const filter=kind==='oil'?((rec&&rec.filter)||makerFilter(v)||fitsFilter(v)):null;const svc=DB.services.find(s=>rxOf(s)===kind);const lab=svc?svcPrice(svc,v):0;const fP=filter?(+filter.price||0):0;
   const last={};if(v.id!=='_q')DB.jobs.filter(j=>j.veh===v.id).sort((a,b)=>a.t-b.t).forEach(j=>(j.items||[]).forEach(i=>{const p=partOfItem(i);if(p&&R.cat.includes(p.cat))last.id=p.id;}));
   const rows=DB.parts.filter(p=>R.cat.includes(p.cat)&&(+p.price||0)>0).map(p=>{const g=gradeOf(p),next=g&&GRADE[g]?GRADE[g][1]:0;const oil=r3(qty*(+p.price||0));const total=r3(oil+fP+lab);
     const cost=r3(qty*(+p.cost||0)+(filter?(+filter.cost||0):0));return {p,visc:viscTxt(p.name),g,next,oil,total,profit:r3(total-cost),per:next?total/next*1000:0,out:(+p.stock||0)<qty-0.0001,usual:!!(rec&&rec.oil&&rec.oil.id===p.id),last:last.id===p.id};});
