@@ -9,7 +9,10 @@ const baseModel=m=>lc(m).replace(TRIM_RX,' ').replace(/\s+/g,' ').trim();
 /* a car typed without an engine gets the model's engine when the model has only one for that year */
 const hasCode=e=>String(e||'').toUpperCase().split(/[\s·,/()]+/).some(x=>/^[0-9A-Z]{2,}(-[A-Z]{2,4})?$/.test(x)&&/\d/.test(x)&&/[A-Z]/.test(x)&&!/^\d\.\dL$/.test(x)&&!/^\d+CYL$/.test(x)&&!/^DM-?I$/.test(x));
 const dispTxt=e=>{const m=lc(e).match(/(\d\.\d)\s*(?:l|t)?\b/);return m?m[1]:'';};
-function effEng(v){if(!v)return '';let own=v.engine||'';if(!/\d/.test(own.replace(/configuration|cylinders|displacement|fuel|[:|]/gi,'')))own='';if(own&&(hasCode(own)||/electric/i.test(own)))return own;if(!v.make||!v.model||typeof carEngines!=='function')return own;
+/* engines typed by a VIN decoder: "2GR-FE | Displacement: 3.5L | Configuration: V-Shaped | Cylinders: 6 | Fuel: Gasoline" -> "3.5L 6 cyl · 2GR-FE" */
+function cleanEng(e){e=String(e||'');if(!/displacement:|cylinders:|configuration:/i.test(e))return e;const P=e.split('|').map(x=>x.trim());const code=P.find(x=>!/:/.test(x)&&x)||'';
+  const d=(e.match(/displacement:\s*([\d.]+)\s*l/i)||[])[1];const c=(e.match(/cylinders:\s*(\d+)/i)||[])[1];const head=[d?(+d).toFixed(1)+'L':'',c?c+' cyl':''].filter(Boolean).join(' ');return [head,code].filter(Boolean).join(' · ');}
+function effEng(v){if(!v)return '';let own=cleanEng(v.engine);if(!/\d/.test(own.replace(/configuration|cylinders|displacement|fuel|[:|]/gi,'')))own='';if(own&&(hasCode(own)||/electric/i.test(own)))return own;if(!v.make||!v.model||typeof carEngines!=='function')return own;
   try{let E=carEngines(v.make,v.model,v.year).L.filter(e=>e.yr!=='added by you');const d=dispTxt(own);if(d)E=E.filter(e=>dispTxt(e.n)===d);return E.length===1?E[0].n:own;}catch(e){return own;}}
 const isEV=v=>/electric|\bev\b/i.test(effEng(v))&&!/hybrid|phev|dm-?i|range/i.test(effEng(v))&&!DB.jobs.some(j=>j.veh===v.id&&oilParts(j).oils.length);
 const dispOf=v=>dispTxt(effEng(v));
@@ -115,8 +118,9 @@ const srcTxt=(s,v)=>!s?'':s.maker?(s.own?T_('your maker values'):T_('maker recom
 function rxBar(j){if(!j.rx||!j.rx.oil||isInvoiced(j)||!(j.items||[]).some(i=>i.grp==='rxoil'))return '';const v=vehOf(j);const m=j.rx.oil.mode;const R=oilRecipe(v,m)||{};const sp=specOf(v);
   return `<div class="rxbar"><div class="rh"><b>🛢 ${T_('Oil change')}</b><div class="chips" data-notr><button data-rxm="usual" aria-pressed="${m!=='maker'}">${T_('Usual')}</button><button data-rxm="maker" aria-pressed="${m==='maker'}" ${sp?'':'disabled'}>${T_('Maker')}</button></div></div>
    <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${m==='maker'&&sp&&sp.conf==='low'?` (${T_('not confirmed')})`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
-   ${can.settings()?`<button class="lnk" id="rxspec">${T_('Maker values for this car')} ›</button>`:''}</div>`;}
-function rxBind(j){$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
+   <div class="rxf">${can.settings()?`<button class="lnk" id="rxspec">${T_('Maker values for this car')} ›</button>`:''}<button class="lnk rxx" id="rxx">✕ ${T_('Remove oil change')}</button></div></div>`;}
+function rxCancel(j){j.items=(j.items||[]).filter(i=>i.grp!=='rxoil'&&i.grp!=='rxsvc');if(j.rx)delete j.rx.oil;logJ(j,'Automatic oil change removed');}
+function rxBind(j){const rx=$('#rxx');if(rx)rx.onclick=()=>{rxCancel(j);save();render();undoBar(T_('Oil change removed'),()=>{applyOilRecipe(j,'usual');save();render();});};$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
   const sp=$('#rxspec');if(sp)sp.onclick=()=>specSheet(vehOf(j));}
 /* the owner can write the maker values for a model (they win over the built-in list) */
 function specSheet(v){if(!v)return;const key=lc(v.make).trim()+'|'+baseModel(v.model)+'|'+dispOf(v);const s=specOf(v)||{visc:[],cap:''};

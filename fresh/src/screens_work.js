@@ -8,6 +8,7 @@ SCREENS.home=m=>{
   const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
   m.innerHTML=demoBanner()+`
   <button class="srch" data-go="search"><svg><use href="#i-list"/></svg><b>Plate, phone or name…</b></button>
+  <button class="qbtn" data-go="quote"><span>💬</span><b>Quick price</b><small>Oil and services · every brand with the full price</small></button>
   <button class="bigbtn" data-go="newjob"><div><b>New car in</b><span>Customer → car → services → invoice</span></div><span class="plus">＋</span></button>
   ${pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
   ${sec(`In the workshop now · ${open.length}`,open.length?'<a data-go="work">All ›</a>':'')}
@@ -99,5 +100,6 @@ SCREENS.newjob=m=>{
     if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
     const j={id:uid('j'),no:DB.ws.nextJob++,cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
+    if(S.pendQuote){j.items=S.pendQuote.items;if(S.pendQuote.kind==='oil')j.rx={oil:{mode:'usual',at:now()}};S.pendQuote=null;}
     DB.jobs.push(j);save();toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};
 };
