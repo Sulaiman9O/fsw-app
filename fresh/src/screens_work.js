@@ -2,7 +2,7 @@
 const SCREENS={};
 function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j),[sl,sc]=STAGE[j.stage];
   const right=j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
-  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div><div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()}<small>${right}</small></div></button>`;}
+  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div><div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small></div></button>`;}
 SCREENS.home=m=>{
   const open=openJobs(),[pd,pt]=stepsProgress(),due=dueInvoices().reduce((a,j)=>a+jobTotals(j).due,0),low=lowParts().length,rem=remindersDue().length;
   const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
@@ -57,7 +57,7 @@ SCREENS.newjob=m=>{
   const N=S.p.n||(S.p.n={phone:'',name:'',plate:'',make:'',model:'',year:'',km:'',vin:'',engine:'',est:false,custId:null,vehId:null});
   const cust=N.custId&&byId('customers',N.custId);
   const fHtml=()=>{const pk=phoneKey(N.phone);let found=pk.length>=4?DB.customers.filter(c=>phoneKey(c.phone).includes(pk)):[];found=found.filter(c=>!isWalk(c)||!found.some(o=>o!==c&&!isWalk(o)&&phoneKey(o.phone)===phoneKey(c.phone))).slice(0,4);return found.length?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${found.map(c=>`<button class="row" data-pc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone)} · known customer</span></div><span class="v">Use ›</span></button>`).join('')}</div>`:'';};
-  const vfHtml=()=>{const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];return vfound.length&&!cust?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:'';};const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
+  const vfHtml=()=>{const vfound=N.plate.length>=2?DB.vehicles.filter(v=>(v.plate||'').toLowerCase().includes(N.plate.toLowerCase())).slice(0,4):[];return vfound.length&&!cust?`<div class="sug"><div class="sh">🔎 Already in the app · tap to use</div>${vfound.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-pvf="${v.id}"><div><b>${esc(carName(v))} <span class="pl">${esc(v.plate)}</span></b><span>${esc(c.name||'')} · known car${(()=>{const oj=openJobs().find(j=>j.veh===v.id);return oj?' · 🔧 open job #'+oj.no:'';})()}</span></div><span class="v">Use ›</span></button>`;}).join('')}</div>`:'';};const cars=cust?DB.vehicles.filter(v=>v.cust===cust.id):[];
   m.innerHTML=head('New car in')+`
   <div class="steps3"><span class="on">1 Customer</span><span class="${cust?'on':''}">2 Car</span><span>3 Services</span></div>
   ${sec('Customer')}
@@ -66,7 +66,7 @@ SCREENS.newjob=m=>{
    <div id="nfound">${fHtml()}</div>
    <button class="btn ghost sm" id="nwalk">Walk-in (no name)</button>`}
   ${sec('Car')}
-  ${cars.length&&!N.vehNew?`<div class="list">${cars.map(v=>`<button class="row${N.vehId===v.id?' selr':''}" data-pv="${v.id}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${v.km?'last '+kmf(v.km)+' km':''}</span></div><span class="v">${N.vehId===v.id?'✓':'›'}</span></button>`).join('')}<button class="row" id="nvnew"><div><b>＋ Another car</b></div></button></div>`
+  ${cars.length&&!N.vehNew?`<div class="list">${cars.map(v=>`<button class="row${N.vehId===v.id?' selr':''}" data-pv="${v.id}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${(()=>{const oj=openJobs().find(j=>j.veh===v.id);return oj?'🔧 open job #'+oj.no+(v.km?' · ':''):'';})()}${v.km?'last '+kmf(v.km)+' km':''}</span></div><span class="v">${N.vehId===v.id?'✓':'›'}</span></button>`).join('')}<button class="row" id="nvnew"><div><b>＋ Another car</b></div></button></div>`
   :`<div class="in2"><input class="field" id="nplate" placeholder="Plate (12345 A)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${esc(N.plate)}" style="text-transform:uppercase"><input class="field" id="nkm" inputmode="numeric" placeholder="Km now" value="${esc(N.km)}"></div>
    <div id="nvfound">${vfHtml()}</div>
    <button class="carpick" id="ncp">${N.make?`<b>${esc([N.make,N.model,N.year].filter(Boolean).join(' '))}</b><span>${N.engine?esc(N.engine):'Tap to choose the engine'}</span>`:'<b>🚗 Choose make, model, year, engine</b><span>Type “toy” for Toyota…</span>'}<em>›</em></button>
@@ -88,8 +88,14 @@ SCREENS.newjob=m=>{
   const wk=$('#nwalk');if(wk)wk.onclick=()=>{keep();N.name='Walk-in';render();};
   $('#nest').onchange=e=>{keep();N.est=e.target.checked;render();};
   $('#ngo').onclick=()=>{keep();
+    const pk=x=>(x||'').replace(/\s+/g,'').toUpperCase(),vid=N.vehId||(N.plate.trim()&&(DB.vehicles.find(v=>pk(v.plate)===pk(N.plate))||{}).id);
+    const ov=vid&&!N.dupOk&&!N.est?openJobs().filter(j=>j.veh===vid).sort((a,b)=>b.t-a.t):[];
+    if(ov.length){openSheet(`<h3>This car already has an open job card</h3><div class="list">${ov.map(j=>`<button class="row" data-oj="${j.id}"><div><b>#${j.no} · ${esc(STAGE[j.stage][0])}</b><span>${ago(j.t)}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><span class="v">Open ›</span></button>`).join('')}</div><button class="btn ghost" id="ojnew">Open a new job card anyway</button>`,el=>{
+      el.querySelectorAll('[data-oj]').forEach(b=>b.onclick=()=>{closeSheet();S.p.n=null;go('job',{id:b.dataset.oj});});
+      el.querySelector('#ojnew').onclick=()=>{closeSheet();N.dupOk=true;$('#ngo').click();};});return;}
     let c=cust;if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||ex.name.trim().toLowerCase()===N.name.trim().toLowerCase()))c=ex;}if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     let v=N.vehId&&byId('vehicles',N.vehId);
+    if(!v&&vid&&!N.make){v=byId('vehicles',vid);if(v&&!cust&&v.cust)c=byId('customers',v.cust)||c;}
     if(!v){if(!N.make&&!N.plate){toast('Type the plate or the make');return;}v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
     const j={id:uid('j'),no:DB.ws.nextJob++,cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};

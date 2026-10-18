@@ -2,6 +2,7 @@ const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['jo
 const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'2.5.2',ic:'🔧',t:'تنبيه أمر العمل المفتوح',d:'عند استقبال سيارة لديها أمر عمل مفتوح، يعرضه التطبيق لتفتحه بدل فتح أمر جديد مكرّر.'},
  {v:'2.5.1',ic:'🚗',t:'شعار ShopFlo المحدّث',d:'شعار جديد للرافعة في التطبيق وأيقونته وشاشة البداية.'},
  {v:'2.5.0',ic:'🚗',t:'هوية ShopFlo الجديدة',d:'ألوان ShopFlo (الكحلي والأزرق) وخطّا Manrope وTajawal وشعار السيارة على الرافعة. يمكنك الرجوع للألوان السابقة من الإعدادات ← المظهر.',tour:[
   {go:'settings',sel:'#sthm',t:'🎨 هنا تختار الألوان: ShopFlo (الجديدة) أو الأحمر أو النيلي.'}]},
