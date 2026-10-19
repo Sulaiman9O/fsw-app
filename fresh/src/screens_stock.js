@@ -23,9 +23,9 @@ const suggestPrice=p=>{const m=markOf(p.cat);return m&&+p.cost?Math.round((+p.co
 function bestVendor(p){const vp=p.vprices||{};let b=null;Object.entries(vp).forEach(([v,x])=>{if(byId('vendors',v)&&(!b||x.cost<b.cost))b={v,cost:x.cost,t:x.t};});return b;}
 /* barcode */
 async function scanSheet(onCode){if(!('BarcodeDetector' in window)){toast('This phone has no built-in scanner. Type the number, or use a scanner gun.');return;}
-  let stream,stop=false;openSheet(`<h3>📷 Scan a barcode</h3><video id="scv" playsinline muted style="width:100%;border-radius:14px;background:#000;max-height:50vh;object-fit:cover"></video><p class="hint">Hold the barcode inside the picture.</p>`,()=>{});
+  let stream,stop=false;openSheet(`<h3>Scan a barcode</h3><div class="scbox"><video id="scv" playsinline muted autoplay poster="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></video><div class="scwait"><i></i><span>Opening the camera…</span></div><div class="scfr"><b></b><b></b><b></b><b></b><em></em></div></div><p class="hint">Hold the barcode inside the frame.</p>`,()=>{});
   const end=()=>{stop=true;if(stream)stream.getTracks().forEach(t=>t.stop());};const cb=$('#sheet [data-close]');if(cb)cb.addEventListener('click',end);
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vd=$('#scv');vd.srcObject=stream;await vd.play();
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vd=$('#scv');vd.srcObject=stream;vd.onplaying=()=>{const b=vd.closest('.scbox');if(b)b.classList.add('live');};await vd.play();
     const det=new BarcodeDetector();const loop=async()=>{if(stop||!$('#scv'))return end();try{const r=await det.detect(vd);if(r.length){const c=r[0].rawValue;end();closeSheet();onCode(c);return;}}catch(e){}requestAnimationFrame(loop);};loop();
   }catch(e){end();closeSheet();toast('Camera not allowed. Allow the camera for this app in phone settings.');}}
 function findByCode(c){c=(c||'').trim();return DB.parts.find(p=>p.num&&p.num.trim()===c)||DB.parts.find(p=>(p.codes||[]).includes(c));}
@@ -45,11 +45,11 @@ SCREENS.stock=m=>{
   const q=(S.p.q||'').trim().toLowerCase(),cat=S.p.cat||'',lowV=!!S.p.low;
   const low=lowParts();const val=DB.parts.reduce((a,p)=>a+(+p.stock||0)*(+p.cost||0),0);
   const cats=DB.pcats.filter(c=>DB.parts.some(p=>p.cat===c));
-  let h=head(lowV?'To order':'Stock',`<button class="lnk" id="padd">＋ Part</button>`)+
+  let h=head(lowV?'To order':'Stock',`${lowV?'':'<button class="lnk" id="ptools" aria-label="More">⋯</button>'}<button class="lnk" id="padd">＋ Part</button>`)+
   `<div class="srow ssrch"><input class="field" id="pq" placeholder="Search name, number${sx('loc')?', shelf':''}" value="${esc(S.p.q||'')}" autocomplete="off" autocorrect="off" spellcheck="false">${sx('scan')?'<button class="scanb" id="pscan">📷</button>':''}</div>`;
   if(!lowV){
     h+=`${low.length?`<button class="lowbar" id="plow"><span class="ld"></span><div><b>${low.length} parts to order</b><span>${low.filter(p=>(+p.stock||0)<=0).length} out of stock</span></div><em>›</em></button>`:''}
-    <div class="chips stools"><button data-go="count">📦 Daily count</button><button data-go="vendors">🚚 Suppliers & orders</button>${sx('slow')?'<button data-go="slow">🐢 Slow parts</button>':''}${sx('value')&&can.cost()?`<button data-go="stockval">💰 ${f3(val)}</button>`:''}${can.settings()?'<button data-go="stocktools">⚙️ Stock tools</button>':''}</div>`;}
+`;}
   else if(low.length)h+=`<button class="btn" id="mkpo">🚚 Make an order for these ${low.length}</button>`;
   h+=`<div class="sbar"><div class="chips pcatc">${['',...cats].map(c=>{const n=c?DB.parts.filter(p=>p.cat===c).length:(lowV?low.length:DB.parts.length);return `<button data-cat="${esc(c)}" aria-pressed="${cat===c}">${c?pcatIc(c)+' '+esc(c):'All'} <small>${n}</small></button>`;}).join('')}</div>
    <div class="chips sortc">${[['sold','Most sold'],['az','A–Z'],['low','Least stock']].map(([k,t])=>`<button data-sort="${k}" aria-pressed="${(S.p.sort||'sold')===k}">${t}</button>`).join('')}</div></div>`;
@@ -66,6 +66,12 @@ SCREENS.stock=m=>{
   $$('[data-cat]').forEach(b=>b.onclick=()=>{S.p.cat=b.dataset.cat;$$('[data-cat]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw();});
   $$('[data-sort]').forEach(b=>b.onclick=()=>{S.p.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw();});
   const pl=$('#plow');if(pl)pl.onclick=()=>go('stock',{low:1});
+  const pt=$('#ptools');if(pt)pt.onclick=()=>actionSheet(T_('Stock'),'',[
+    {ic:'📦',t:'Daily count',s:'Count',fn:()=>go('count')},
+    {ic:'🚚',t:'Suppliers & orders',s:'Orders',hide:!perm('vendors'),fn:()=>go('vendors')},
+    {ic:'🐢',t:'Slow parts',s:'Slow',hide:!sx('slow'),fn:()=>go('slow')},
+    {ic:'💰',t:'Stock value',s:f3(val),hide:!(sx('value')&&can.cost()),fn:()=>go('stockval')},
+    {ic:'⚙️',t:'Stock tools',s:'Tools',hide:!can.settings(),fn:()=>go('stocktools')}]);
   $('#padd').onclick=()=>partSheet(S.p.cat?{cat:S.p.cat,unit:'pc'}:null,null,!!S.p.cat);
   const mk=$('#mkpo');if(mk)mk.onclick=()=>newPoFromLow();
   const ps=$('#pscan');if(ps)ps.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(p)partSheet(p);else confirmSheet('No part with '+esc(c)+'. Add it as a new part?','＋ New part',()=>partSheet({cat:DB.pcats[0],unit:'pc',num:c},null,true));});

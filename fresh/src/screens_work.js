@@ -10,7 +10,7 @@ SCREENS.home=m=>{
   <button class="srch" data-go="search"><svg><use href="#i-list"/></svg><b>Plate, phone or name…</b></button>
   <button class="qbtn" data-go="quote"><span>💬</span><b>Quick price</b><small>Oil and services · every brand with the full price</small></button>
   <button class="bigbtn" data-go="newjob"><div><b>New car in</b><span>Customer → car → services → invoice</span></div><span class="plus">＋</span></button>
-  ${pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
+  ${false&&pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
   ${sec(`In the workshop now · ${open.length}`,open.length?'<a data-go="work">All ›</a>':'')}
   ${open.length?`<div class="list">${open.slice(0,4).map(carRow).join('')}</div>`:empty('🚗','No cars in the workshop. Tap <b>New car in</b> when one arrives.')}
   <div class="kpis3">${can.money()?`<button class="kpi org" data-go="debts"><b>${f3(due)}</b><span>Due · ${DB.ws.currency}</span></button>`:''}<button class="kpi ${low?'red':''}" data-go="stock"><b>${low}</b><span>To order</span></button><button class="kpi" data-go="cust"><b>${rem}</b><span>Reminders</span></button></div>

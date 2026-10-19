@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());
+ await p.addInitScript(()=>{window.BarcodeDetector=class{detect(){return Promise.resolve([]);}};navigator.mediaDevices.getUserMedia=()=>new Promise(()=>{});});
+ await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ await p.evaluate(()=>{loadDemo();DB.ws.lang='ar';S.user.lang='ar';langApply();go('home');});await p.waitForTimeout(500);
+ ok(!(await p.$('.setupbar')),'no setup bar on home');ok(!!(await p.evaluate(()=>{go('more');return document.querySelector('[data-go="setup"]');})),'setup in More');
+ await p.evaluate(()=>go('stock'));await p.waitForTimeout(400);ok(!(await p.$('.stools')),'tool chips gone');await p.click('#ptools');await p.waitForTimeout(400);await p.screenshot({path:'q1.png'});
+ await p.evaluate(()=>{closeSheet();go('stock');});await p.waitForTimeout(300);await p.click('#pscan');await p.waitForTimeout(500);await p.screenshot({path:'q2.png'});console.log(await p.evaluate(()=>{const e=document.querySelector('.scbox');const cs=getComputedStyle(e);return [cs.backgroundColor,cs.opacity,getComputedStyle(document.querySelector('.sheet')||e).opacity,[...document.styleSheets].map(s=>s.href).join(',')];}));
+ console.log('errors',errs);await b.close();})();
