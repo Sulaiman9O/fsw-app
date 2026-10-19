@@ -112,3 +112,4 @@ Object.assign(AR_DICT,{'Suppliers · Inspections · Reports · Settings':'الم
 Object.assign(AR_DICT,{'services':'خدمة','groups':'مجموعات'});
 Object.assign(AR_DICT,{'Suspension & tires':'التعليق والإطارات','Electrical & checks':'الكهرباء والفحص','Cooling & AC':'التبريد والمكيف','Detailing & other':'التنظيف وأخرى','Most used':'الأكثر استخداماً','Hidden services':'الخدمات المخفية','Sizes':'الأحجام','Price':'السعر','Different price by car size':'سعر مختلف حسب حجم السيارة','by size':'حسب الحجم'});
 Object.assign(AR_DICT,{'Picture saved':'تم حفظ الصورة','Change picture':'تغيير الصورة','Remove picture':'حذف الصورة','Ask the owner to add pictures':'اطلب من المالك إضافة الصور','Could not read this picture':'تعذّرت قراءة الصورة','Picture':'صورة'});
+Object.assign(AR_DICT,{'Or choose the make':'أو اختر الوكالة','All makes':'كل الوكالات'});

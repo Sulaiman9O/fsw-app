@@ -385,3 +385,11 @@ div.grp>.g:last-child:nth-child(odd){grid-column:span 2}
 .qtx small{font-size:.72rem;color:var(--muted)}.qtx .qpr{color:var(--ok)}
 .qtx .qtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.qtx .qtags:empty{display:none}
 .qtiles.cv{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}.qtiles.cv .qimg{height:120px}.qtiles.cv .qimg img{max-height:96px}.qtiles.cv .qtx em{font-size:1.6rem}
+/* car make tiles */
+.mtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:12px}
+.mtile{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:0 0 10px;overflow:hidden;color:inherit;font:inherit;min-height:0;text-align:center}
+.mtile .mimg{position:relative;width:100%;height:70px;display:grid;place-items:center;background:hsl(0 0% 100%);border-bottom:1px solid var(--line);margin-bottom:4px}
+.mtile .mimg img{max-width:78%;max-height:54px;object-fit:contain}.mtile .qini{font-size:1.25rem}
+.mtile b{font-weight:700;font-size:.85rem;line-height:1.15;padding:0 6px}.mtile small{font-size:.68rem;color:var(--muted)}
+.mtile .qcam{width:26px;height:26px;font-size:.78rem;bottom:4px}
+.mtile.more .mimg{background:transparent}

@@ -21,6 +21,9 @@ function brandPicSheet(b){if(!can.settings()){toast('Ask the owner to add pictur
   const pick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;shrinkLogo(x,u=>{DB.brandImg=DB.brandImg||[];const k=brandKey(b);const r=DB.brandImg.find(y=>y.id===k);if(r){r.img=u;r.t=now();}else DB.brandImg.push({id:k,name:b,img:u,t:now()});audit('settings','Picture for '+b);save();render();toast(T_('Picture saved'));});};f.click();};
   if(!has){pick();return;}
   actionSheet(esc(b),'',[{ic:'🖼',t:'Change picture',fn:pick},{ic:'🗑',t:'Remove picture',danger:1,fn:()=>{DB.brandImg=(DB.brandImg||[]).filter(y=>y.id!==brandKey(b));save();render();}}]);}
+/* car makes as tiles (their picture is shared with the oil brand of the same name, e.g. Toyota) */
+function makeTile(o,cam){const n=o.m[0],img=brandImg(n);const ini=n.split(/[\s-]+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<button class="mtile" data-mk="${esc(n)}"><div class="mimg">${img?`<img src="${img}" alt="">`:`<span class="qini">${esc(ini)}</span>`}${cam&&can.settings()?`<i class="qcam" data-qimg="${esc(n)}" title="Picture">📷</i>`:''}</div><b>${esc(n)}</b>${o.u?`<small>${o.u}</small>`:o.m[1]?`<small><bdi>${esc(o.m[1])}</bdi></small>`:''}</button>`;}
 function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
   return `<button class="qtile${r.out?' out':''}" data-qp="${r.p.id}"><div class="qimg">${img?`<img src="${img}" alt="">`:`<span class="qini">${esc(ini)}</span>`}${!Q.cv&&can.settings()?`<i class="qcam" data-qimg="${esc(b)}" title="Picture">📷</i>`:''}</div>
    <div class="qtx"><b>${esc(b)}</b><span dir="ltr" data-notr>${[r.visc,r.g&&GRADE[r.g]?GRADE[r.g][0]:''].filter(Boolean).join(' · ')}</span>
@@ -29,14 +32,16 @@ function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b
    ${!Q.cv&&can.cost()?`<small class="qpr">${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`;}
 SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'auto',cv:false,q:''});const v=quoteCar(Q);
   let h=head('Quick price',v?`<button class="lnk" id="qcv">${Q.cv?T_('Workshop view'):'👁 '+T_('Customer view')}</button>`:'');
-  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><button class="btn ghost" id="qpick">🚗 ${T_('Choose make, model, year')}</button>`;
+  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><div class="lbl">${T_('Or choose the make')}</div><div class="mtiles" id="qmk">${carMakes('').slice(0,11).map(o=>makeTile(o,true)).join('')}<button class="mtile more" id="qpick"><div class="mimg"><span class="qini">⋯</span></div><b>${T_('All makes')}</b></button></div>`;
     m.innerHTML=h;const inp=$('#qq');const draw=()=>{const q=lc(inp.value).trim();Q.q=inp.value;const box=$('#qres');if(q.length<2){box.innerHTML='';return;}
       const cs=DB.customers.filter(c=>lc(c.name).includes(q)||(c.phone||'').includes(q)).map(c=>c.id);
       const vs=DB.vehicles.filter(x=>lc(x.plate).replace(/\s/g,'').includes(q.replace(/\s/g,''))||lc(carName(x)).includes(q)||cs.includes(x.cust)).slice(0,8);
       box.innerHTML=vs.length?`<div class="list">${vs.map(x=>`<button class="row" data-qv="${x.id}"><div><b>${esc(carName(x))} ${x.plate?`<span class="pl">${esc(x.plate)}</span>`:''}</b><span>${esc((byId('customers',x.cust)||{}).name||'')}${effEng(x)?' · '+esc(effEng(x)):''}</span></div><span class="v">›</span></button>`).join('')}</div>`:'';
       box.querySelectorAll('[data-qv]').forEach(b=>b.onclick=()=>{Q.vid=b.dataset.qv;Q.car=null;Q.vf='auto';Q.fid=null;render();});};
     inp.oninput=draw;draw();setTimeout(()=>inp.focus(),60);
-    $('#qpick').onclick=()=>carPicker({},r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();});return;}
+    const setCar=r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();};$('#qpick').onclick=()=>carPicker({},setCar);
+    $$('#qmk [data-qimg]').forEach(x=>{['pointerdown','touchstart'].forEach(ev=>x.addEventListener(ev,e=>e.stopPropagation()));x.onclick=e=>{e.stopPropagation();e.preventDefault();brandPicSheet(x.dataset.qimg);};});
+    $$('#qmk [data-mk]').forEach(b=>b.onclick=()=>carPicker({make:b.dataset.mk},setCar));return;}
   const D=quoteRows(v,Q.kind,Q.fid);const cust=v.id!=='_q'&&byId('customers',v.cust);
   let rows=D.rows;const visc=[...new Set(rows.map(r=>r.visc).filter(Boolean))].sort();
   const vf=Q.vf==='auto'?(D.okV.length&&rows.some(r=>D.okV.includes(r.visc))?'ok':'all'):Q.vf;
