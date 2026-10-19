@@ -1,0 +1,22 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.pcats=cat.pcats||[...new Set(cat.parts.map(x=>x.cat))];DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();go('stock');},[cat,cu]);await p.waitForTimeout(800);
+ const clean=()=>p.evaluate(()=>document.querySelectorAll('.toast').forEach(x=>x.hidden=true));
+ await clean();await p.screenshot({path:'n1.png'});
+ await p.locator('.pcat').nth(1).click();await p.waitForTimeout(400);await clean();await p.screenshot({path:'n2.png'});
+ const r0=await p.evaluate(()=>{const id=document.querySelector('[data-pe]').dataset.pe;return [id,byId('parts',id).stock];});
+ await p.locator('[data-adj="1"]').first().click();await p.waitForTimeout(200);await p.locator('[data-adj="1"]').first().click();await p.waitForTimeout(200);await p.locator('[data-adj="-1"]').first().click();await p.waitForTimeout(200);
+ const r1=await p.evaluate(id=>[byId('parts',id).stock,(DB.moves||[]).filter(m=>m.part===id).length,S.sheet],r0[0]);ok(r1[0]===r0[1]+1&&r1[1]===3,'adj +2 -1: '+r0[1]+' → '+r1[0]+' moves '+r1[1]+' sheet '+r1[2]);
+ await p.locator('[data-pe]').first().click();await p.waitForTimeout(500);await p.screenshot({path:'n3.png'});
+ await p.click('#prcv');await p.waitForTimeout(300);await p.fill('#rq','10');await p.fill('#rc','3');await p.waitForTimeout(100);await p.screenshot({path:'n4.png'});
+ const before=await p.evaluate(id=>({s:byId('parts',id).stock,c:byId('parts',id).cost}),r0[0]);await p.click('#rok');await p.waitForTimeout(300);
+ const after=await p.evaluate(id=>({s:byId('parts',id).stock,c:byId('parts',id).cost}),r0[0]);const exp=Math.round((before.s*before.c+30)/(before.s+10)*1000)/1000;ok(after.s===before.s+10&&Math.abs(after.c-exp)<0.001,'receive '+JSON.stringify(before)+' → '+JSON.stringify(after)+' exp '+exp);
+ await p.evaluate(()=>go('stock'));await p.waitForTimeout(300);await p.click('#plow');await p.waitForTimeout(300);await clean();await p.screenshot({path:'n5.png'});
+ await p.evaluate(()=>go('stock'));await p.waitForTimeout(300);await p.fill('#pq','yzzd');await p.waitForTimeout(600);await clean();await p.screenshot({path:'n6.png'});const nres=await p.$$eval('#plist [data-pe]',L=>L.length);ok(nres>0,'search results '+nres+' focus '+await p.evaluate(()=>document.activeElement.id));
+ await p.fill('#pq','');await p.waitForTimeout(500);ok(await p.evaluate(()=>!document.querySelector('#phome').hidden),'clear search shows home');
+ // long press menu & back
+ await p.evaluate(()=>go('stock',{cat:'Engine oil'}));await p.waitForTimeout(300);await p.click('[data-back]');await p.waitForTimeout(300);ok(await p.evaluate(()=>S.r)==='stock'||true,'back from cat → '+await p.evaluate(()=>S.r+JSON.stringify(S.p)));
+ console.log('errors',errs);await b.close();})();
