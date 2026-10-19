@@ -49,7 +49,10 @@ function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.
     total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km):'',warranty:DB.ws.warranty||''};}
 function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;return msg(kind,x);}
 /* add / edit items */
-function svcUse(){const u={};DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.ref)u[i.ref]=(u[i.ref]||0)+1;}));return u;}
+/* how often each service was used: by its id, or for old imported lines by the name ("Sedan Engine Oil Change Service" = "Engine Oil Change") */
+let SVCU=null;const svcKey=x=>String(x||'').toLowerCase().replace(/\b(sedan|suv|4\s*[x×]\s*4|pick\s*-?up|small|big|large|car|service|services|for)\b/g,'').replace(/[^a-z0-9\u0600-\u06ff]/g,'');
+function svcUse(){const k=DB.jobs.length+'|'+DB.services.length;if(SVCU&&SVCU.k===k)return SVCU.u;const u={},by={};DB.services.forEach(s=>{[s.name,s.ar].forEach(n=>{const t=svcKey(n);if(t&&!by[t])by[t]=s.id;});});
+  DB.jobs.forEach(j=>(j.items||[]).forEach(i=>{if(i.k==='part')return;const id=(i.ref&&byId('services',i.ref))?i.ref:by[svcKey(i.d)]||by[svcKey(i.ar)];if(id)u[id]=(u[id]||0)+1;}));SVCU={k,u};return u;}
 function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',p:svcPrice(s,v),tag:s.tag,war:s.war||'',min:+s.min||0,comm:+s.comm||0,by:S.user.name,lockP:!!s.lockP,from:!!s.from,out:s.out&&s.out.who?Object.assign({},s.out):null};}
 /* search that forgives spaces, dashes and case: "5w30" finds "5W-30"; Arabic names count too */
 const normQ=x=>String(x||'').toLowerCase().replace(/[\s\-_.\/]+/g,'');

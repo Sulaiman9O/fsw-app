@@ -110,3 +110,4 @@ Object.assign(AR_DICT,{'To count':'للجرد'});
 Object.assign(AR_DICT,{'Scan a barcode':'مسح الباركود','Opening the camera…':'جاري فتح الكاميرا…','Hold the barcode inside the frame.':'خلّ الباركود داخل الإطار.','Stock value':'قيمة المخزون','Orders':'الطلبات','Slow':'راكدة','Tools':'أدوات','Count':'جرد'});
 Object.assign(AR_DICT,{'Suppliers · Inspections · Reports · Settings':'الموردون · الفحوصات · التقارير · الإعدادات','{n} groups':'{0} مجموعات'});
 Object.assign(AR_DICT,{'services':'خدمة','groups':'مجموعات'});
+Object.assign(AR_DICT,{'Suspension & tires':'التعليق والإطارات','Electrical & checks':'الكهرباء والفحص','Cooling & AC':'التبريد والمكيف','Detailing & other':'التنظيف وأخرى','Most used':'الأكثر استخداماً','Hidden services':'الخدمات المخفية','Sizes':'الأحجام','Price':'السعر','Different price by car size':'سعر مختلف حسب حجم السيارة','by size':'حسب الحجم'});
