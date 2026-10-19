@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();
+   S.quote={vid:(DB.vehicles.find(v=>/camry/i.test(v.model)&&v.year=='2015')||DB.vehicles[0]).id,car:null,kind:'oil',vf:'auto',cv:false,q:''};go('quote');},[cat,cu]);await p.waitForTimeout(700);
+ const hide=()=>p.evaluate(()=>document.querySelectorAll('#toast').forEach(x=>x.hidden=true));
+ const n=await p.$$eval('.qtile',L=>L.length);ok(n>0,'tiles '+n);
+ const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.locator('[data-qimg]').first().click()]);await fc.setFiles('logo.png');await p.waitForTimeout(800);
+ const bi=await p.evaluate(()=>({n:DB.brandImg.length,len:DB.brandImg[0]&&DB.brandImg[0].img.length,type:DB.brandImg[0]&&DB.brandImg[0].img.slice(0,16),inSnap:[...snapshot().rec.keys()].some(k=>k.startsWith('brandImg'))}));ok(bi.n===1&&bi.inSnap,'picture stored '+JSON.stringify(bi));
+ ok(await p.$$eval('.qimg img',L=>L.length)>0,'picture shown');
+ await hide();await p.screenshot({path:'x1.png'});
+ await p.click('#qcv');await p.waitForTimeout(400);await hide();await p.screenshot({path:'x2.png'});ok(!(await p.$('.qcam')),'no camera in customer view');
+ await p.click('#qcv');await p.waitForTimeout(300);await p.locator('.qtile').first().click();await p.waitForTimeout(400);ok(!!(await p.$('#qok')),'tile opens price sheet');
+ console.log('errors',errs);await b.close();})();

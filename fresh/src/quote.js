@@ -11,6 +11,22 @@ function quoteRows(v,kind,fid){const R=RX[kind];if(!R)return {rows:[],qty:0};con
   rows.sort((a,b)=>a.total-b.total);const per=rows.filter(r=>r.per).map(r=>r.per);const best=per.length>1?Math.min(...per):0;rows.forEach(r=>r.best=best&&Math.abs(r.per-best)<1e-9);
   const okV=kind==='oil'?[...new Set([rec&&rec.visc,...(sp?sp.visc:[])].filter(Boolean))]:[];
   return {rows,qty:Math.round(qty*10)/10,filter,fopts,svc,lab,fP,rec,sp,okV};}
+/* brands as tiles with their picture. Pictures are kept on the phone (SQLite, one small record per brand) and shared to the other devices by sync, so nothing loads from the internet when the app opens */
+const BRAND2=['mercedes benz','ac delco','acdelco','can royal','toyota genuine','mobil 1'];
+function brandOf(p){if(p.brand)return p.brand;const n=String(p.name||'').trim();const l=n.toLowerCase();const two=BRAND2.find(b=>l.startsWith(b));let b=two?n.slice(0,two.length):n.split(/\s+/)[0]||'';if(/^toyota genuine$/i.test(b))b='Toyota';if(/^acdelco$/i.test(b))b='AC Delco';return b;}
+const brandKey=b=>String(b||'').toLowerCase().replace(/[^a-z0-9؀-ۿ]/g,'');
+const brandImg=b=>{const k=brandKey(b);const r=(DB.brandImg||[]).find(x=>x.id===k);return r&&r.img||'';};
+function shrinkLogo(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,320/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let u=c.toDataURL('image/webp',.85);if(!u.startsWith('data:image/webp'))u=c.toDataURL('image/png');if(u.length>180000)u=c.toDataURL('image/jpeg',.8);cb(u);};im.onerror=()=>toast('Could not read this picture');im.src=r.result;};r.readAsDataURL(file);}
+function brandPicSheet(b){if(!can.settings()){toast('Ask the owner to add pictures');return;}const has=!!brandImg(b);
+  const pick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;shrinkLogo(x,u=>{DB.brandImg=DB.brandImg||[];const k=brandKey(b);const r=DB.brandImg.find(y=>y.id===k);if(r){r.img=u;r.t=now();}else DB.brandImg.push({id:k,name:b,img:u,t:now()});audit('settings','Picture for '+b);save();render();toast(T_('Picture saved'));});};f.click();};
+  if(!has){pick();return;}
+  actionSheet(esc(b),'',[{ic:'🖼',t:'Change picture',fn:pick},{ic:'🗑',t:'Remove picture',danger:1,fn:()=>{DB.brandImg=(DB.brandImg||[]).filter(y=>y.id!==brandKey(b));save();render();}}]);}
+function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<button class="qtile${r.out?' out':''}" data-qp="${r.p.id}"><div class="qimg">${img?`<img src="${img}" alt="">`:`<span class="qini">${esc(ini)}</span>`}${!Q.cv&&can.settings()?`<i class="qcam" data-qimg="${esc(b)}" title="Picture">📷</i>`:''}</div>
+   <div class="qtx"><b>${esc(b)}</b><span dir="ltr" data-notr>${[r.visc,r.g&&GRADE[r.g]?GRADE[r.g][0]:''].filter(Boolean).join(' · ')}</span>
+   <em>${f3(r.total)}</em>${r.next?`<small dir="ltr" data-notr>${kmf(r.next)} km · ${f3(r.per)}/1000</small>`:''}
+   <div class="qtags">${r.usual?`<i class="tg tok">${T_('usual')}</i>`:''}${r.last?`<i class="tg">${T_('last time')}</i>`:''}${r.best?`<i class="tg tok">${T_('best per km')}</i>`:''}${r.out?`<i class="tg tgr">${T_('not enough in stock')}</i>`:''}</div>
+   ${!Q.cv&&can.cost()?`<small class="qpr">${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`;}
 SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'auto',cv:false,q:''});const v=quoteCar(Q);
   let h=head('Quick price',v?`<button class="lnk" id="qcv">${Q.cv?T_('Workshop view'):'👁 '+T_('Customer view')}</button>`:'');
   if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><button class="btn ghost" id="qpick">🚗 ${T_('Choose make, model, year')}</button>`;
@@ -31,9 +47,7 @@ SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'au
    ${Q.kind==='oil'?`<div class="chips qvf" data-notr>${D.okV.length?`<button data-vf="ok" aria-pressed="${vf==='ok'}">✓ ${esc(D.okV.join(' / '))}</button>`:''}${visc.filter(x=>!D.okV.includes(x)).map(x=>`<button data-vf="${esc(x)}" aria-pressed="${vf===x}">${esc(x)}</button>`).join('')}<button data-vf="all" aria-pressed="${vf==='all'}">${T_('All')}</button></div>`:''}
    <p class="hint qex" dir="ltr" data-notr>${esc(ex)}</p>
    ${Q.kind==='oil'&&!Q.cv&&D.fopts.length>1?`<div class="lbl">${T_('Filter')}</div><div class="chips qfo" data-notr>${D.fopts.slice(0,6).map(o=>`<button data-fo="${o.p.id}" aria-pressed="${D.filter&&D.filter.id===o.p.id}">${esc(o.p.num||o.p.name)} · ${f3(o.p.price)}${o.n?` <small>×${o.n}</small>`:''}${(+o.p.stock||0)<=0?' ⚠':''}</button>`).join('')}</div>`:''}
-   ${rows.length?`<div class="${Q.cv?'qbig':'list'}">${rows.map(r=>`<button class="qrow${r.out?' out':''}" data-qp="${r.p.id}"><div class="qn"><b>${esc(r.p.name)}</b><span dir="ltr" data-notr>${[r.visc,r.g&&GRADE[r.g]?GRADE[r.g][0]:'',r.next?kmf(r.next)+' km':''].filter(Boolean).join(' · ')}</span>
-     <div class="qtags">${r.usual?`<i class="tg tok">${T_('usual')}</i>`:''}${r.last?`<i class="tg">${T_('last time')}</i>`:''}${r.best?`<i class="tg tok">${T_('best per km')}</i>`:''}${r.out?`<i class="tg tgr">${T_('not enough in stock')}</i>`:''}</div></div>
-     <div class="qt"><b>${f3(r.total)}</b>${r.per?`<span>${f3(r.per)} / 1000 km</span>`:''}${!Q.cv&&can.cost()?`<small>${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`).join('')}</div>`:empty('🛢','No oils in the parts list for this.')}
+   ${rows.length?`<div class="qtiles${Q.cv?' cv':''}">${rows.map(qTile).join('')}</div>`:empty('🛢','No oils in the parts list for this.')}
    ${rows.length&&cust&&cust.phone?`<button class="btn wa" id="qwa">📤 ${T_('Send these prices on WhatsApp')}</button>`:''}`;
   m.innerHTML=h;
   $('#qchg').onclick=()=>{Q.vid=null;Q.car=null;Q.q='';Q.fid=null;render();};const cv=$('#qcv');if(cv)cv.onclick=()=>{Q.cv=!Q.cv;render();};
@@ -41,6 +55,7 @@ SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'au
   $$('[data-vf]').forEach(b=>b.onclick=()=>{Q.vf=b.dataset.vf;render();});$$('[data-fo]').forEach(b=>b.onclick=()=>{Q.fid=b.dataset.fo;render();});
   const wa=$('#qwa');if(wa)wa.onclick=()=>{const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;const items=rows.slice(0,6).map(r=>'• '+r.p.name+(r.next?' ('+kmf(r.next)+' كم)':'')+': '+f3(r.total)+' '+cur).join('\n');
     shareText(cust.phone,msg('options',{name:cust.name||'',car:carName(v),plate:v.plate||'',service:Q.kind==='oil'?'تغيير زيت المحرك':'تغيير زيت ناقل الحركة',items}));};
+  $$('[data-qimg]').forEach(x=>{['pointerdown','touchstart'].forEach(ev=>x.addEventListener(ev,e=>e.stopPropagation()));x.onclick=e=>{e.stopPropagation();e.preventDefault();brandPicSheet(x.dataset.qimg);};});
   $$('[data-qp]').forEach(b=>b.onclick=()=>{const r=D.rows.find(x=>x.p.id===b.dataset.qp);openSheet(`<h3>${esc(r.p.name)}</h3><div class="card"><div class="jb-r"><div>${esc(r.p.name)}<small>${D.qty} L × ${f3(r.p.price)}</small></div><b>${f3(r.oil)}</b></div>${D.filter?`<div class="jb-r"><div>${esc(D.filter.name)}</div><b>${f3(D.fP)}</b></div>`:''}${D.svc?`<div class="jb-r"><div>${esc(D.svc.name)}</div><b>${f3(D.lab)}</b></div>`:''}<div class="jb-r tot"><div>${T_('Total')}</div><b>${f3(r.total)}</b></div></div>
      <button class="btn" id="qok">✅ ${T_('Customer agreed · open job card')}</button><button class="btn ghost" id="qest">🧾 ${T_('Make an estimate')}</button>`,el=>{
      const make=est=>{closeSheet();const items=[];if(D.svc){const it=svcItem(D.svc,v);it.grp='rxsvc';items.push(it);}if(D.filter)items.push({k:'part',ref:D.filter.id,d:D.filter.name,num:D.filter.num,q:1,u:'',p:+D.filter.price,cost:+D.filter.cost||0,grp:'rxoil',by:S.user.name});

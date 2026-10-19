@@ -371,3 +371,17 @@ html.m-light .brandline{color:#0B1F3A}
 @keyframes scln{from{top:12%}to{top:88%}}
 div.grp>.g:last-child:nth-child(odd){grid-column:span 2}
 @media (min-width:760px){div.grp:has(>.g:nth-child(5)){grid-template-columns:repeat(5,minmax(0,1fr))}div.grp>.g:last-child:nth-child(odd){grid-column:auto}}
+/* quick price brand tiles */
+.qtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.qtile{display:flex;flex-direction:column;align-items:stretch;text-align:start;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:0;overflow:hidden;color:inherit;font:inherit;min-height:0}
+.qtile.out{opacity:.7}
+.qimg{position:relative;height:96px;display:grid;place-items:center;background:hsl(0 0% 100%);border-bottom:1px solid var(--line)}
+.qimg img{max-width:82%;max-height:76px;object-fit:contain}
+.qini{font:800 1.6rem var(--f-brand);color:hsl(216 60% 40%);letter-spacing:.02em}
+.qcam{position:absolute;bottom:6px;inset-inline-end:6px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:hsl(0 0% 100% / .9);box-shadow:0 1px 4px hsl(0 0% 0% / .18);font-style:normal;font-size:.9rem}
+.qtx{display:grid;gap:2px;padding:10px 12px 12px}
+.qtx b{font-weight:800;font-size:1rem;line-height:1.2}.qtx span{font-size:.76rem;color:var(--muted)}
+.qtx em{font-style:normal;font:700 1.35rem var(--f-brand);margin-top:4px}
+.qtx small{font-size:.72rem;color:var(--muted)}.qtx .qpr{color:var(--ok)}
+.qtx .qtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.qtx .qtags:empty{display:none}
+.qtiles.cv{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}.qtiles.cv .qimg{height:120px}.qtiles.cv .qimg img{max-height:96px}.qtiles.cv .qtx em{font-size:1.6rem}
