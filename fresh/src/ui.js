@@ -17,10 +17,12 @@ function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
 const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
-function go(r,p){S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
+/* screens with no fixed parent (quick price, debts, checks…) go back to where they were opened from */
+let GO_BACK=false;
+function go(r,p){S.orig=S.orig||{};if(GO_BACK)delete S.orig[S.r];else if(r!==S.r&&S.r)S.orig[r]={r:S.r,p:S.p};S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
 function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){closeSheet();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
-  if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
+  if(parent){go(parent);return true;}const o=(S.orig||{})[S.r];if(o&&o.r&&o.r!==S.r&&routeOk(o.r)){GO_BACK=true;try{go(o.r,o.p);}finally{GO_BACK=false;}return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
 window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');}catch(e){}});
 
 function logoImg(cls){return DB.ws&&DB.ws.logo?`<img class="${cls}" src="${DB.ws.logo}" alt="">`:`<span class="${cls} wsmark">${esc(initials(DB.ws?DB.ws.name:'W'))}</span>`;}
