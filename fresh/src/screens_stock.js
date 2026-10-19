@@ -43,31 +43,30 @@ function stockSort(L){const so=S.p.sort||'sold';if(so==='az')return L.sort((a,b)
   const m=soldCounts();return L.sort((a,b)=>(m[b.id]||0)-(m[a.id]||0)||a.name.localeCompare(b.name));}
 SCREENS.stock=m=>{
   const q=(S.p.q||'').trim().toLowerCase(),cat=S.p.cat||'',lowV=!!S.p.low;
-  const low=lowParts();const val=DB.parts.reduce((a,p)=>a+(+p.stock||0)*(+p.cost||0),0);const home=!cat&&!lowV;
-  let h=head(lowV?'To order':cat?pcatIc(cat)+' '+esc(cat):'Stock',`<button class="lnk" id="padd">＋ Part</button>`)+
+  const low=lowParts();const val=DB.parts.reduce((a,p)=>a+(+p.stock||0)*(+p.cost||0),0);
+  const cats=DB.pcats.filter(c=>DB.parts.some(p=>p.cat===c));
+  let h=head(lowV?'To order':'Stock',`<button class="lnk" id="padd">＋ Part</button>`)+
   `<div class="srow ssrch"><input class="field" id="pq" placeholder="Search name, number${sx('loc')?', shelf':''}" value="${esc(S.p.q||'')}" autocomplete="off" autocorrect="off" spellcheck="false">${sx('scan')?'<button class="scanb" id="pscan">📷</button>':''}</div>`;
-  if(home){
-    h+=`<div id="phome"${q?' hidden':''}>
-    ${low.length?`<button class="lowbar" id="plow"><span class="ld"></span><div><b>${low.length} parts to order</b><span>${low.filter(p=>(+p.stock||0)<=0).length} out of stock</span></div><em>›</em></button>`:''}
-    <div class="pcats">${DB.pcats.filter(c=>DB.parts.some(p=>p.cat===c)).map(c=>{const L=DB.parts.filter(p=>p.cat===c);const o=L.filter(p=>stState(p)!=='ok').length;return `<button class="pcat" data-cat="${esc(c)}"><span class="pi">${pcatIc(c)}</span><b>${esc(c)}</b><span class="pn">${L.length}${o?` · <i class="pdot">${o}</i>`:''}</span></button>`;}).join('')}</div>
-    <div class="kpis3 sm"><div class="kpi"><b>${DB.parts.length}</b><span>Parts</span></div>${can.cost()?`<button class="kpi" ${sx('value')?'data-go="stockval"':''}><b>${f3(val)}</b><span>On the shelf (cost)</span></button>`:''}<button class="kpi" data-go="count"><b>${countToday().length}</b><span>To count</span></button></div>
-    <div class="chips">${'<button data-go="count">📦 Daily count</button><button data-go="vendors">🚚 Suppliers & orders</button>'}${sx('slow')?'<button data-go="slow">🐢 Slow parts</button>':''}${can.settings()?'<button data-go="stocktools">⚙️ Stock tools</button>':''}</div></div>`;}
-  else if(lowV&&low.length)h+=`<button class="btn" id="mkpo">🚚 Make an order for these ${low.length}</button>`;
-  if(!home||q){h+=`<div class="chips sortc">${[['sold','Most sold'],['az','A–Z'],['low','Least stock']].map(([k,t])=>`<button data-sort="${k}" aria-pressed="${(S.p.sort||'sold')===k}">${t}</button>`).join('')}</div>`;}
+  if(!lowV){
+    h+=`${low.length?`<button class="lowbar" id="plow"><span class="ld"></span><div><b>${low.length} parts to order</b><span>${low.filter(p=>(+p.stock||0)<=0).length} out of stock</span></div><em>›</em></button>`:''}
+    <div class="chips stools"><button data-go="count">📦 Daily count</button><button data-go="vendors">🚚 Suppliers & orders</button>${sx('slow')?'<button data-go="slow">🐢 Slow parts</button>':''}${sx('value')&&can.cost()?`<button data-go="stockval">💰 ${f3(val)}</button>`:''}${can.settings()?'<button data-go="stocktools">⚙️ Stock tools</button>':''}</div>`;}
+  else if(low.length)h+=`<button class="btn" id="mkpo">🚚 Make an order for these ${low.length}</button>`;
+  h+=`<div class="sbar"><div class="chips pcatc">${['',...cats].map(c=>{const n=c?DB.parts.filter(p=>p.cat===c).length:(lowV?low.length:DB.parts.length);return `<button data-cat="${esc(c)}" aria-pressed="${cat===c}">${c?pcatIc(c)+' '+esc(c):'All'} <small>${n}</small></button>`;}).join('')}</div>
+   <div class="chips sortc">${[['sold','Most sold'],['az','A–Z'],['low','Least stock']].map(([k,t])=>`<button data-sort="${k}" aria-pressed="${(S.p.sort||'sold')===k}">${t}</button>`).join('')}</div></div>`;
   h+=`<div class="list" id="plist"></div><p class="hint" id="pnone" hidden>Nothing found.</p>`;
   if(!DB.parts.length)h+=empty('🛢','No parts yet. Tap <b>＋ Part</b> to add your first one.');
   m.innerHTML=h;
-  const draw=()=>{const qq=(S.p.q||'').trim().toLowerCase();const box=$('#plist');const ph=$('#phome');if(ph)ph.hidden=!!qq;
-    if(home&&!qq){box.innerHTML='';$('#pnone').hidden=true;const sc=$('.sortc');if(sc)sc.hidden=true;return;}const sc=$('.sortc');if(sc)sc.hidden=false;
-    let L=DB.parts.filter(p=>(!cat||p.cat===cat)&&(!lowV||low.includes(p)));
+  let drawn=false;
+  const draw=()=>{const qq=(S.p.q||'').trim().toLowerCase();const box=$('#plist');
+    let L=DB.parts.filter(p=>(!S.p.cat||p.cat===S.p.cat)&&(!lowV||low.includes(p)));
     if(qq){const w=qq.split(/\s+/);L=L.filter(p=>{const t=(p.name+' '+(p.num||'')+' '+(p.loc||'')+' '+(p.codes||[]).join(' ')+' '+p.cat).toLowerCase();return w.every(x=>t.includes(x));});}
-    box.innerHTML=stockSort(L).slice(0,300).map(partRow).join('');$('#pnone').hidden=!!L.length;bindRows(box,drawn);drawn=true;};let drawn=false;
-  const inp=$('#pq');let tm=0;inp.oninput=()=>{S.p.q=inp.value;clearTimeout(tm);tm=setTimeout(()=>{if(home&&!!inp.value.trim()!==!!q){const pos=inp.selectionStart;render();const i2=$('#pq');if(i2){i2.focus();try{i2.setSelectionRange(pos,pos);}catch(e){}}return;}draw();},120);};
+    box.innerHTML=stockSort(L).slice(0,400).map(partRow).join('');$('#pnone').hidden=!!L.length;bindRows(box,drawn);drawn=true;};
+  const inp=$('#pq');let tm=0;inp.oninput=()=>{S.p.q=inp.value;clearTimeout(tm);tm=setTimeout(draw,120);};
   draw();
-  $$('[data-cat]').forEach(b=>b.onclick=()=>go('stock',{cat:b.dataset.cat}));
-  $$('[data-sort]').forEach(b=>b.onclick=()=>{S.p.sort=b.dataset.sort;render();});
+  $$('[data-cat]').forEach(b=>b.onclick=()=>{S.p.cat=b.dataset.cat;$$('[data-cat]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw();});
+  $$('[data-sort]').forEach(b=>b.onclick=()=>{S.p.sort=b.dataset.sort;$$('[data-sort]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw();});
   const pl=$('#plow');if(pl)pl.onclick=()=>go('stock',{low:1});
-  $('#padd').onclick=()=>partSheet(cat?{cat,unit:'pc'}:null,null,!!cat);
+  $('#padd').onclick=()=>partSheet(S.p.cat?{cat:S.p.cat,unit:'pc'}:null,null,!!S.p.cat);
   const mk=$('#mkpo');if(mk)mk.onclick=()=>newPoFromLow();
   const ps=$('#pscan');if(ps)ps.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(p)partSheet(p);else confirmSheet('No part with '+esc(c)+'. Add it as a new part?','＋ New part',()=>partSheet({cat:DB.pcats[0],unit:'pc',num:c},null,true));});
 };
