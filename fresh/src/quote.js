@@ -16,9 +16,32 @@ const BRAND2=['mercedes benz','ac delco','acdelco','can royal','toyota genuine',
 function brandOf(p){if(p.brand)return p.brand;const n=String(p.name||'').trim();const l=n.toLowerCase();const two=BRAND2.find(b=>l.startsWith(b));let b=two?n.slice(0,two.length):n.split(/\s+/)[0]||'';if(/^toyota genuine$/i.test(b))b='Toyota';if(/^acdelco$/i.test(b))b='AC Delco';return b;}
 const brandKey=b=>String(b||'').toLowerCase().replace(/[^a-z0-9؀-ۿ]/g,'');
 const brandImg=b=>{const k=brandKey(b);const r=(DB.brandImg||[]).find(x=>x.id===k);return r&&r.img||'';};
-function shrinkLogo(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,320/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let u=c.toDataURL('image/webp',.85);if(!u.startsWith('data:image/webp'))u=c.toDataURL('image/png');if(u.length>180000)u=c.toDataURL('image/jpeg',.8);cb(u);};im.onerror=()=>toast('Could not read this picture');im.src=r.result;};r.readAsDataURL(file);}
+/* logos: shrink, take away a plain or "fake transparent" (grey checkerboard) background that touches the edges, and trim the empty border so the logo fills its tile */
+function cleanLogoCanvas(c){const x=c.getContext('2d');const W=c.width,H=c.height;let d;try{d=x.getImageData(0,0,W,H);}catch(e){return c;}const p=d.data;
+  const edge=[];for(let i=0;i<W;i++){edge.push(i,(H-1)*W+i);}for(let j=0;j<H;j++){edge.push(j*W,j*W+W-1);}
+  const bg=o=>{if(p[o+3]<20)return true;const r=p[o],g=p[o+1],b=p[o+2];const mx=Math.max(r,g,b),mn=Math.min(r,g,b);return mn>=212&&mx-mn<=22;};
+  const nb=edge.filter(k=>bg(k*4)).length;let ew2=0,eg2=0;edge.forEach(k=>{const o=k*4;if(p[o+3]<20||!bg(o))return;if(Math.min(p[o],p[o+1],p[o+2])>=246)ew2++;else eg2++;});const chk=ew2>nb*0.15&&eg2>nb*0.15;
+  if(nb>edge.length*0.5){const seen=new Uint8Array(W*H);const st=[];
+    edge.forEach(k=>{if(!seen[k]&&bg(k*4)){seen[k]=1;st.push(k);}});
+    while(st.length){const k=st.pop();p[k*4+3]=0;const i=k%W,j=(k/W)|0;[[i-1,j],[i+1,j],[i,j-1],[i,j+1]].forEach(([a,b])=>{if(a<0||b<0||a>=W||b>=H)return;const n=b*W+a;if(seen[n])return;if(bg(n*4)){seen[n]=1;st.push(n);}});}
+    /* a checkerboard ("fake transparent") also fills closed areas, like inside the Toyota oval: clear big light areas made of both checker tones */
+    const ew=edge.filter(k=>p[k*4+3]>=20?false:true).length;const tone=o=>Math.min(p[o],p[o+1],p[o+2])>=246?1:2;
+    let w1=0,g1=0;edge.forEach(k=>{const o=k*4;if(!bg(o))return;});for(let k=0;k<W*H;k++){if(seen[k]){/* edge region tones were overwritten */}}
+    const vis=new Uint8Array(W*H);for(let s0=0;s0<W*H;s0++){if(seen[s0]||vis[s0]||!bg(s0*4)||p[s0*4+3]<20)continue;const reg=[s0];vis[s0]=1;let w=0,g=0;
+      for(let t=0;t<reg.length;t++){const k=reg[t];if(tone(k*4)===1)w++;else g++;const i=k%W,j=(k/W)|0;[[i-1,j],[i+1,j],[i,j-1],[i,j+1]].forEach(([a,b])=>{if(a<0||b<0||a>=W||b>=H)return;const n=b*W+a;if(vis[n]||seen[n]||p[n*4+3]<20||!bg(n*4))return;vis[n]=1;reg.push(n);});}
+      if(reg.length>W*H*0.004&&g>reg.length*0.2&&w>reg.length*0.15)reg.forEach(k=>{p[k*4+3]=0;});}
+    x.putImageData(d,0,0);}
+  let x0=W,y0=H,x1=-1,y1=-1;for(let j=0;j<H;j++)for(let i=0;i<W;i++){if(p[(j*W+i)*4+3]>24){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;}}
+  if(x1<0)return c;const pad=Math.round(Math.max(x1-x0,y1-y0)*0.04);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(W-1,x1+pad);y1=Math.min(H-1,y1+pad);
+  const o=document.createElement('canvas');o.width=x1-x0+1;o.height=y1-y0+1;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o;}
+function logoFromImage(im,cb){const k=Math.min(1,480/Math.max(im.width,im.height));let c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  c=cleanLogoCanvas(c);const k2=Math.min(1,320/Math.max(c.width,c.height));if(k2<1){const o=document.createElement('canvas');o.width=Math.round(c.width*k2);o.height=Math.round(c.height*k2);o.getContext('2d').drawImage(c,0,0,o.width,o.height);c=o;}
+  let u=c.toDataURL('image/webp',.88);if(!u.startsWith('data:image/webp'))u=c.toDataURL('image/png');cb(u);}
+function shrinkLogo(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>logoFromImage(im,cb);im.onerror=()=>toast('Could not read this picture');im.src=r.result;};r.readAsDataURL(file);}
+/* pictures added before 2.15.4 get cleaned once */
+function cleanOldLogos(){(DB.brandImg||[]).filter(r=>r.img&&!r.cl).forEach(r=>{const im=new Image();im.onload=()=>logoFromImage(im,u=>{r.img=u;r.cl=1;save();try{if(S.r==='quote')render();}catch(e){}});im.src=r.img;});}
 function brandPicSheet(b){if(!can.settings()){toast('Ask the owner to add pictures');return;}const has=!!brandImg(b);
-  const pick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;shrinkLogo(x,u=>{DB.brandImg=DB.brandImg||[];const k=brandKey(b);const r=DB.brandImg.find(y=>y.id===k);if(r){r.img=u;r.t=now();}else DB.brandImg.push({id:k,name:b,img:u,t:now()});audit('settings','Picture for '+b);save();render();toast(T_('Picture saved'));});};f.click();};
+  const pick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;shrinkLogo(x,u=>{DB.brandImg=DB.brandImg||[];const k=brandKey(b);const r=DB.brandImg.find(y=>y.id===k);if(r){r.img=u;r.t=now();r.cl=1;}else DB.brandImg.push({id:k,name:b,img:u,t:now(),cl:1});audit('settings','Picture for '+b);save();render();toast(T_('Picture saved'));});};f.click();};
   if(!has){pick();return;}
   actionSheet(esc(b),'',[{ic:'🖼',t:'Change picture',fn:pick},{ic:'🗑',t:'Remove picture',danger:1,fn:()=>{DB.brandImg=(DB.brandImg||[]).filter(y=>y.id!==brandKey(b));save();render();}}]);}
 /* car makes as tiles (their picture is shared with the oil brand of the same name, e.g. Toyota) */
@@ -32,7 +55,7 @@ function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b
    ${!Q.cv&&can.cost()?`<small class="qpr">${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`;}
 SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'auto',cv:false,q:''});const v=quoteCar(Q);
   let h=head('Quick price',v?`<button class="lnk" id="qcv">${Q.cv?T_('Workshop view'):'👁 '+T_('Customer view')}</button>`:'');
-  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><div class="lbl">${T_('Or choose the make')}</div><div class="mtiles" id="qmk">${carMakes('').slice(0,15).map(o=>makeTile(o,true)).join('')}<button class="mtile more" id="qpick"><div class="mimg"><span class="qini">⋯</span></div><b>${T_('All makes')}</b></button></div>`;
+  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><div class="lbl">${T_('Or choose the make')}</div><div class="mtiles" id="qmk">${carMakes('').slice(0,29).map(o=>makeTile(o,true)).join('')}<button class="mtile more" id="qpick"><div class="mimg"><span class="qini">⋯</span></div><b>${T_('All makes')}</b></button></div>`;
     m.innerHTML=h;const inp=$('#qq');const draw=()=>{const q=lc(inp.value).trim();Q.q=inp.value;const box=$('#qres');if(q.length<2){box.innerHTML='';return;}
       const cs=DB.customers.filter(c=>lc(c.name).includes(q)||(c.phone||'').includes(q)).map(c=>c.id);
       const vs=DB.vehicles.filter(x=>lc(x.plate).replace(/\s/g,'').includes(q.replace(/\s/g,''))||lc(carName(x)).includes(q)||cs.includes(x.cust)).slice(0,8);

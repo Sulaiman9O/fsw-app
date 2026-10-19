@@ -1298,7 +1298,9 @@
   "ar/light/quote": {
    "over": [],
    "bad": [],
-   "latin": []
+   "latin": [
+    "Grat well"
+   ]
   },
   "ar/light/audit": {
    "over": [],
@@ -2605,7 +2607,9 @@
   "ar/dark/quote": {
    "over": [],
    "bad": [],
-   "latin": []
+   "latin": [
+    "Grat well"
+   ]
   },
   "ar/dark/audit": {
    "over": [],

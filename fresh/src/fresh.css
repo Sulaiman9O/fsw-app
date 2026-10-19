@@ -386,10 +386,10 @@ div.grp>.g:last-child:nth-child(odd){grid-column:span 2}
 .qtx .qtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.qtx .qtags:empty{display:none}
 .qtiles.cv{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}.qtiles.cv .qimg{height:120px}.qtiles.cv .qimg img{max-height:96px}.qtiles.cv .qtx em{font-size:1.6rem}
 /* car make tiles */
-.mtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;margin-bottom:12px}
+.mtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:5px;margin-bottom:12px}
 .mtile{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:0 0 6px;overflow:hidden;color:inherit;font:inherit;min-height:0;text-align:center}
-.mtile .mimg{position:relative;width:100%;height:46px;display:grid;place-items:center;background:hsl(0 0% 100%);border-bottom:1px solid var(--line);margin-bottom:4px}
-.mtile .mimg img{max-width:74%;max-height:34px;object-fit:contain}.mtile .qini{font-size:.95rem}
-.mtile b{font-weight:700;font-size:.74rem;line-height:1.1;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.mtile small{font-size:.62rem;color:var(--muted)}
-.mtile .qcam{width:20px;height:20px;font-size:.62rem;bottom:2px;inset-inline-end:2px}
+.mtile .mimg{position:relative;width:100%;height:36px;display:grid;place-items:center;background:hsl(0 0% 100%);padding:3px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.mtile .mimg img{max-width:72%;max-height:26px;object-fit:contain}.mtile .qini{font-size:.8rem}
+.mtile b{font-weight:700;font-size:.66rem;line-height:1.1;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.mtile small{font-size:.58rem;color:var(--muted)}
+.mtile .qcam{width:17px;height:17px;font-size:.52rem;bottom:2px;inset-inline-end:2px}
 .mtile.more .mimg{background:transparent}

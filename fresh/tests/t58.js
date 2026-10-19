@@ -5,7 +5,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
  await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();S.quote=null;go('quote');},[cat,cu]);await p.waitForTimeout(700);
  const hide=()=>p.evaluate(()=>document.querySelectorAll('#toast').forEach(x=>x.hidden=true));
- ok(await p.$$eval('#qmk .mtile',L=>L.length)===16,'make tiles');
+ ok(await p.$$eval('#qmk .mtile',L=>L.length)===30,'make tiles');
  const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.locator('#qmk [data-qimg]').first().click()]);await fc.setFiles('logo.png');await p.waitForTimeout(800);
  ok(await p.$$eval('#qmk .mimg img',L=>L.length)===1,'logo shown on make');await hide();await p.screenshot({path:'y1.png'});
  await p.locator('#qmk [data-mk]').first().click();await p.waitForTimeout(500);ok(await p.evaluate(()=>!!document.querySelector('[data-mo]')),'picker opens at model');await p.screenshot({path:'y2.png'});
