@@ -1,0 +1,13 @@
+const {chromium}=require('playwright');const M=require('./fbmock.js');
+(async()=>{const b=await chromium.launch();const errs=[];
+ const mk=async()=>{const ctx=await b.newContext({viewport:{width:412,height:860}});await M.attach(ctx);await ctx.addInitScript(M.init);const p=await ctx.newPage();p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());return p;};
+ const key=async(p,s)=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ const A=await mk();await A.goto('http://localhost:8811/');await A.waitForTimeout(600);await A.fill('#obn','FSW');await A.locator('.btn').first().click();await A.locator('input.field').first().fill('Sulaiman');await A.locator('.btn').first().click();await key(A,'1234');await key(A,'1234');await A.waitForTimeout(900);await A.click('#nwdemo');await A.click('#nwl').catch(()=>{});
+ await A.evaluate(()=>{DB.ws.lang='ar';go('settings');});await A.waitForTimeout(300);await A.fill('#syem','shop@test.com');await A.fill('#sypw','secret1');await A.click('#syin');await A.waitForTimeout(2500);
+ const B=await mk();await B.goto('http://localhost:8811/');await B.waitForTimeout(600);await B.click('#objoin');await B.fill('#jem','shop@test.com');await B.fill('#jpw','secret1');await B.click('#jgo');await B.waitForTimeout(2500);await B.click('.person').catch(()=>{});await key(B,'1234');await B.waitForTimeout(400);
+ const cnt=p=>p.evaluate(()=>JSON.stringify({ws:DB.ws&&DB.ws.name,users:DB.users.length,cust:DB.customers.length,jobs:DB.jobs.length,parts:DB.parts.length,svc:DB.services.length,nextJob:DB.ws&&DB.ws.nextJob,sync:SYNC.status,user:!!SYNC.user}));
+ console.log('before A',await cnt(A),'B',await cnt(B));
+ await A.evaluate(()=>render());await A.waitForTimeout(300);await A.locator('#swipe').scrollIntoViewIfNeeded();await A.click('#swipe');await A.waitForTimeout(600);await A.screenshot({path:'X1.png'});
+ await A.click('#wdgo',{force:true}).catch(()=>{});await A.waitForTimeout(300);console.log('clicked early, still data?',await A.evaluate(()=>DB.customers.length));
+ await A.waitForTimeout(6000);await A.screenshot({path:'X2.png'});await A.click('#wdgo');await A.waitForTimeout(2500);await A.screenshot({path:'X3.png'});
+ console.log('after A',await cnt(A),'B',await cnt(B),errs);await b.close();})();

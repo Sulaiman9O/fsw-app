@@ -1,0 +1,15 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:412,height:900}});const errs=[];p.on('pageerror',e=>errs.push(e.message));
+ await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('Sulaiman');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});await p.click('#nwdemo').catch(()=>{});
+ const r=()=>p.evaluate(()=>S.r);const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.evaluate(()=>go('home'));await p.waitForTimeout(200);await p.click('.qbtn');await p.waitForTimeout(300);ok(await r()==='quote','opened quote');
+ await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','home→quote→back = '+await r());
+ await p.click('.qbtn');await p.waitForTimeout(300);await p.evaluate(()=>{S.quote.vid=DB.vehicles[0]&&DB.vehicles[0].id;S.quote.car=DB.vehicles[0]?null:{make:'Toyota',model:'Camry',year:'2015'};render();});await p.waitForTimeout(300);
+ await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','with car selected back = '+await r());
+ await p.evaluate(()=>go('more'));await p.waitForTimeout(200);await p.evaluate(()=>go('quote'));await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='more','more→quote→back = '+await r());
+ await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','more→back = '+await r());
+ await p.evaluate(()=>go('home'));await p.evaluate(()=>go('debts'));await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','home→debts→back = '+await r());
+ await p.evaluate(()=>go('home'));await p.evaluate(()=>go('quote'));await p.evaluate(()=>go('debts'));await p.click('[data-back]');await p.waitForTimeout(200);const a=await r();await p.click('[data-back]');await p.waitForTimeout(200);ok(a==='quote'&&await r()==='home','chain back '+a+' → '+await r());
+ console.log('errors',errs);await b.close();})();
