@@ -369,3 +369,5 @@ html.m-light .brandline{color:#0B1F3A}
 .scfr em{position:absolute;left:6%;right:6%;top:50%;height:2px;background:hsl(216 100% 59%);box-shadow:0 0 12px hsl(216 100% 59%);opacity:0}
 .scbox.live .scfr em{opacity:1;animation:scln 1.8s ease-in-out infinite alternate}
 @keyframes scln{from{top:12%}to{top:88%}}
+div.grp>.g:last-child:nth-child(odd){grid-column:span 2}
+@media (min-width:760px){div.grp:has(>.g:nth-child(5)){grid-template-columns:repeat(5,minmax(0,1fr))}div.grp>.g:last-child:nth-child(odd){grid-column:auto}}
