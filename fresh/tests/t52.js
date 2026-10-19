@@ -7,7 +7,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.customers=cu.customers;DB.vehicles=cu.vehicles;DB.jobs=cu.jobs;S.quote={vid:null,car:{make:'Toyota',model:'Hilux',year:'2013',engine:''},kind:'oil',vf:'auto',cv:false,q:''};go('quote');},[cat,cu]);
  await p.waitForTimeout(500);await p.screenshot({path:'QF1.png'});
  const ch=await p.$$eval('[data-fo]',L=>L.map(x=>x.innerText+(x.getAttribute('aria-pressed')==='true'?' *':'')));console.log(ch);
- const t1=await p.$eval('.qrow .qt b',x=>x.innerText);await p.locator('[data-fo]').nth(1).click();await p.waitForTimeout(300);const t2=await p.$eval('.qrow .qt b',x=>x.innerText);console.log('totals',t1,t2);
+ const t1=await p.$eval('.qtile .qtx em',x=>x.innerText);await p.locator('[data-fo]').nth(1).click();await p.waitForTimeout(300);const t2=await p.$eval('.qtile .qtx em',x=>x.innerText);console.log('totals',t1,t2);
  await p.evaluate(()=>{S.quote.car={make:'Toyota',model:'Camry',year:'2015',engine:''};S.quote.fid=null;render();});await p.waitForTimeout(300);console.log(await p.$$eval('[data-fo]',L=>L.map(x=>x.innerText+(x.getAttribute('aria-pressed')==='true'?' *':''))));
  await p.evaluate(()=>{setLang&&setLang('ar');}).catch(()=>{});await p.waitForTimeout(300);await p.screenshot({path:'QF2.png'});
  console.log('errors',errs);await b.close();})();
