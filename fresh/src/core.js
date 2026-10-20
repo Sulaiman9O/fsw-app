@@ -22,7 +22,7 @@ const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return
 async function hashPin(pin){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ws:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return 'p:'+pin;}}
 let tt;function toast(s){const t=$('#toast');t.textContent=s;const was=t.hidden;t.hidden=false;if(was&&window.motionOn&&motionOn())gsap.fromTo(t,{y:20,opacity:0},{y:0,opacity:1,duration:.25,ease:'power2.out',clearProps:'transform,opacity'});clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400);}
 const KEY='ws_db_v1';
-function blankDB(){return {v:1,brandImg:[],ws:null,users:[],services:[],pcats:DEFAULT_PART_CATS.slice(),ecats:DEFAULT_EXP_CATS.slice(),parts:[],vendors:[],pos:[],customers:[],vehicles:[],jobs:[],reminders:[],expenses:[],closes:[],counts:[],steps:{},canned:[],insp:JSON.parse(JSON.stringify(DEFAULT_INSP)),backups:0,openingCash:0};}
+function blankDB(){return {v:1,brandImg:[],pkgs:[],ws:null,users:[],services:[],pcats:DEFAULT_PART_CATS.slice(),ecats:DEFAULT_EXP_CATS.slice(),parts:[],vendors:[],pos:[],customers:[],vehicles:[],jobs:[],reminders:[],expenses:[],closes:[],counts:[],steps:{},canned:[],insp:JSON.parse(JSON.stringify(DEFAULT_INSP)),backups:0,openingCash:0};}
 let DB=(()=>{try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blankDB(),JSON.parse(s));}catch(e){}return blankDB();})();
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -48,7 +48,7 @@ const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0
 function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
 const perm=k=>permOf(S.user,k);
 const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
-const ROUTE_P={quote:'jobs',checks:'checks',debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
+const ROUTE_P={pkgs:'settings',pkg:'settings',quote:'jobs',checks:'checks',debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
 const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);

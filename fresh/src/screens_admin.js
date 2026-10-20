@@ -120,7 +120,7 @@ function wipeDataSheet(){const cl=typeof SYNC!=='undefined'&&SYNC.user;let n=6,t
   openSheet(`<h3>⚠️ Delete all data</h3><div class="wipebox"><p>${cl?'This deletes customers, cars, job cards, invoices, payments, services, parts and stock, suppliers, expenses and reports on this device, online and on every synced device.':'This deletes customers, cars, job cards, invoices, payments, services, parts and stock, suppliers, expenses and reports on this device.'}</p><p>${cl?'Kept: the workshop name and settings, the users and their PINs, and the online sign-in.':'Kept: the workshop name and settings, the users and their PINs.'}</p><p class="err">This cannot be undone. Make a backup first if you may need the data.</p></div><button class="btn danger" id="wdgo" disabled>Delete all data (${n})</button>`,el=>{
     const bt=el.querySelector('#wdgo');tm=setInterval(()=>{n--;if(!document.body.contains(bt)){clearInterval(tm);return;}if(n<=0){clearInterval(tm);bt.disabled=false;bt.textContent=T_('Delete all data');}else bt.textContent=T_('Delete all data ({n})').replace('{n}',n).replace('{0}',n);},1000);
     bt.onclick=async()=>{if(bt.disabled)return;bt.disabled=true;closeSheet();wipeData();await flushNow();if(cl){try{await syncPushNow();}catch(e){}}toast('All data deleted');go('home');};});}
-function wipeData(){const b=blankDB(),keep=['v','ws','users','pcats','ecats','insp','canned','seenNews','sizes','hideMenu','mlists','custEng','spec','backups','openingCash','brandImg'];
+function wipeData(){const b=blankDB(),keep=['v','ws','users','pcats','ecats','insp','canned','seenNews','sizes','hideMenu','mlists','custEng','spec','backups','openingCash','brandImg','pkgs'];
   Object.keys(DB).forEach(k=>{if(keep.includes(k))return;if(k in b)DB[k]=b[k];else delete DB[k];});
   DB.ws.nextJob=1;DB.ws.nextInv=DB.ws.invStart||1001;DB.ws.resetAt=Date.now();delete DB.ws.mainAt;
   audit('settings','All data deleted · '+((S.user&&S.user.name)||''));save();}
@@ -157,6 +157,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('news','🎉','What\'s new · how to use',newsUnseen().length?'<b style="color:var(--red2)">'+newsUnseen().length+' new</b> · tap to see':'Tours of every new thing')}${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
   ${it('checks','🔎','Invoice checks',(()=>{const n=DB.jobs.filter(j=>j.t>=now()-7*864e5&&j.stage!=='estimate'&&jobChecks(j).length).length;return n?n+' to look at · last 7 days':'Nothing wrong · last 7 days';})())}
   ${it('debts','💳','Debts',(()=>{const n=DB.customers.filter(c=>custDebt(c.id).list.length).length;return n?n+' customers owe money':'Nobody owes money';})())}
+  ${it('pkgs','📦','Packages','Fixed-price packages by car',can.settings())}
   ${it('svc','🛠','Services',DB.services.length+' services · '+DB.scats.length+' groups')}
   ${it('stock','🛢','Stock',DB.parts.length+' parts')}
   ${it('vendors','🚚','Suppliers & orders',DB.vendors.length+' suppliers')}
