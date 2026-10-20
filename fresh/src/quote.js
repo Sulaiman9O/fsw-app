@@ -48,8 +48,7 @@ function brandPicSheet(b){if(!can.settings()){toast('Ask the owner to add pictur
 function makeTile(o,cam){const n=o.m[0],img=brandImg(n);const ini=n.split(/[\s-]+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
   return `<button class="mtile" data-mk="${esc(n)}"><div class="mimg">${img?`<img src="${img}" alt="">`:`<span class="qini">${esc(ini)}</span>`}${cam&&can.settings()?`<i class="qcam" data-qimg="${esc(n)}" title="Picture">📷</i>`:''}</div><b>${esc(n)}</b>${o.u?`<small>${o.u}</small>`:o.m[1]?`<small><bdi>${esc(o.m[1])}</bdi></small>`:''}</button>`;}
 function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  return `<button class="qtile${r.out?' out':''}" data-qp="${r.p.id}"><div class="qimg">${img?`<img src="${img}" alt="">`:`<span class="qini">${esc(ini)}</span>`}${!Q.cv&&can.settings()?`<i class="qcam" data-qimg="${esc(b)}" title="Picture">📷</i>`:''}</div>
-   <div class="qtx"><b>${esc(b)}</b><span dir="ltr" data-notr>${[r.visc,r.g&&GRADE[r.g]?GRADE[r.g][0]:''].filter(Boolean).join(' · ')}</span>
+  return `<button class="qtile${r.out?' out':''}" data-qp="${r.p.id}"><div class="qtx"><b>${esc(b)}</b><span dir="ltr" data-notr>${[r.visc,r.g&&GRADE[r.g]?GRADE[r.g][0]:''].filter(Boolean).join(' · ')}</span>
    <em>${f3(r.total)}</em>${r.next?`<small dir="ltr" data-notr>${kmf(r.next)} km · ${f3(r.per)}/1000</small>`:''}
    <div class="qtags">${r.usual?`<i class="tg tok">${T_('usual')}</i>`:''}${r.last?`<i class="tg">${T_('last time')}</i>`:''}${r.best?`<i class="tg tok">${T_('best per km')}</i>`:''}${r.out?`<i class="tg tgr">${T_('not enough in stock')}</i>`:''}</div>
    ${!Q.cv&&can.cost()?`<small class="qpr">${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`;}
