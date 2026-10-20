@@ -52,6 +52,9 @@ function qTile(r){const b=brandOf(r.p),img=brandImg(b),Q=S.quote||{};const ini=b
    <em>${f3(r.total)}</em>${r.next?`<small dir="ltr" data-notr>${kmf(r.next)} km · ${f3(r.per)}/1000</small>`:''}
    <div class="qtags">${r.usual?`<i class="tg tok">${T_('usual')}</i>`:''}${r.last?`<i class="tg">${T_('last time')}</i>`:''}${r.best?`<i class="tg tok">${T_('best per km')}</i>`:''}${r.out?`<i class="tg tgr">${T_('not enough in stock')}</i>`:''}</div>
    ${!Q.cv&&can.cost()?`<small class="qpr">${T_('profit')} ${f3(r.profit)}</small>`:''}</div></button>`;}
+/* Back from a car's prices: picked by make → that make's models again; picked by plate/name → the search */
+function quoteBack(){const Q=S.quote;if(!Q)return;const mk=Q.car&&Q.car.make;Q.vid=null;Q.car=null;Q.vf='auto';Q.fid=null;render();
+  if(mk)carPicker({make:mk},r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();});}
 SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'auto',cv:false,q:''});const v=quoteCar(Q);
   let h=head('Quick price',v?`<button class="lnk" id="qcv">${Q.cv?T_('Workshop view'):'👁 '+T_('Customer view')}</button>`:'');
   if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><div class="lbl">${T_('Or choose the make')}</div><div class="mtiles" id="qmk">${carMakes('').slice(0,15).map(o=>makeTile(o,true)).join('')}<button class="mtile more" id="qpick"><div class="mimg"><span class="qini">⋯</span></div><b>${T_('All makes')}</b></button></div>`;

@@ -7,7 +7,7 @@ const {chromium}=require('playwright');
  await p.evaluate(()=>go('home'));await p.waitForTimeout(200);await p.click('.qbtn');await p.waitForTimeout(300);ok(await r()==='quote','opened quote');
  await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','home→quote→back = '+await r());
  await p.click('.qbtn');await p.waitForTimeout(300);await p.evaluate(()=>{S.quote.vid=DB.vehicles[0]&&DB.vehicles[0].id;S.quote.car=DB.vehicles[0]?null:{make:'Toyota',model:'Camry',year:'2015'};render();});await p.waitForTimeout(300);
- await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','with car selected back = '+await r());
+ await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='quote'&&await p.evaluate(()=>!S.quote.vid&&!S.quote.car),'with car selected, back clears the car');await p.evaluate(()=>closeSheet());await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','then back = '+await r());
  await p.evaluate(()=>go('more'));await p.waitForTimeout(200);await p.evaluate(()=>go('quote'));await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='more','more→quote→back = '+await r());
  await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','more→back = '+await r());
  await p.evaluate(()=>go('home'));await p.evaluate(()=>go('debts'));await p.click('[data-back]');await p.waitForTimeout(300);ok(await r()==='home','home→debts→back = '+await r());

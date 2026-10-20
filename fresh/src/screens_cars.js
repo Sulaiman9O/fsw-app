@@ -44,4 +44,6 @@ function carPicker(cur,done){const st={make:cur.make||'',model:cur.model||'',yea
     const fin=en=>{st.engine=en;closeSheet();done({make:st.make,model:st.model,year:st.year,engine:st.engine});};
     b.querySelectorAll('[data-en]').forEach(x=>x.onclick=()=>fin(x.dataset.en));
     const eo=b.querySelector('#cpeok');if(eo)eo.onclick=()=>{const v=$('#cpe').value.trim();if(!v)return;const M=findMake(st.make);const k=(M?M[0]:st.make)+'|'+st.model;DB.custEng=DB.custEng||{};DB.custEng[k]=DB.custEng[k]||[];if(!DB.custEng[k].includes(v))DB.custEng[k].push(v);save();fin(v);};};
-  openSheet(`<h3>🚗 Choose the car</h3><div id="cph"></div><div id="cpb"></div>`,()=>{});draw();}
+  openSheet(`<h3>🚗 Choose the car</h3><div id="cph"></div><div id="cpb"></div>`,()=>{});
+  /* phone Back inside the picker goes one step back (engine → year → model → make), then closes */
+  const ORD=['make','model','year','engine'],first=ORD.indexOf(st.step);S.sheetBack=()=>{const i=ORD.indexOf(st.step);if(i>Math.max(0,first)){st.step=ORD[i-1];st.q='';draw();return true;}return false;};draw();}

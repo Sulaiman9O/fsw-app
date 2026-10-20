@@ -20,10 +20,11 @@ const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',
 /* screens with no fixed parent (quick price, debts, checks…) go back to where they were opened from */
 let GO_BACK=false;
 function go(r,p){S.orig=S.orig||{};if(GO_BACK)delete S.orig[S.r];else if(r!==S.r&&S.r)S.orig[r]={r:S.r,p:S.p};S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;closeSheet();return true;}
+  if(S.r==='quote'&&S.quote&&(S.quote.vid||S.quote.car)&&typeof quoteBack==='function'){quoteBack();return true;}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}
   if(S.r==='stock'&&S.p.low){go('stock');return true;}if(S.r==='svc'&&S.p.hid){go('svc');return true;}
-  if(parent){go(parent);return true;}const o=(S.orig||{})[S.r];if(o&&o.r&&o.r!==S.r&&routeOk(o.r)){GO_BACK=true;try{go(o.r,o.p);}finally{GO_BACK=false;}return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
+  if(parent){go(parent);return true;}if(S.r==='quote')S.quote=null;const o=(S.orig||{})[S.r];if(o&&o.r&&o.r!==S.r&&routeOk(o.r)){GO_BACK=true;try{go(o.r,o.p);}finally{GO_BACK=false;}return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
 window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');}catch(e){}});
 
 function logoImg(cls){return DB.ws&&DB.ws.logo?`<img class="${cls}" src="${DB.ws.logo}" alt="">`:`<span class="${cls} wsmark">${esc(initials(DB.ws?DB.ws.name:'W'))}</span>`;}
@@ -61,8 +62,8 @@ const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span
 /* ---------- sheets ---------- */
 function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
   el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)closeSheet();};
-  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
-function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;document.documentElement.classList.remove('sheet-open');}
+  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;S.sheetBack=null;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
+function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 
 /* ---------- onboarding (first run) ---------- */
