@@ -6,15 +6,15 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;go('home');},[cat,cu]);await p.waitForTimeout(400);
  const st=()=>p.evaluate(()=>{const s=document.querySelector('#sheet');return {r:S.r,sheet:!!s,step:s&&s.querySelector('.cpath .on')?s.querySelector('.cpath .on').dataset.cs:'',car:S.quote&&S.quote.car?S.quote.car.make+' '+S.quote.car.model:''};});
  const BK=()=>p.evaluate(()=>back());
- await p.click('.qbtn');await p.waitForTimeout(300);await p.locator('#qmk [data-mk="Toyota"]').click();await p.waitForTimeout(300);let s=await st();ok(s.step==='model','tile → model step');
+ await p.click('.qbtn');await p.waitForTimeout(300);await p.click('#qpick');await p.waitForTimeout(300);await p.locator('[data-mk="Toyota"]').first().click();await p.waitForTimeout(300);let s=await st();ok(s.step==='model','tile → model step');
  await p.locator('[data-mo]').first().click();await p.waitForTimeout(200);await BK();await p.waitForTimeout(200);s=await st();ok(s.sheet&&s.step==='model','back in picker: year → model');
  await p.locator('[data-mo="Camry"]').first().click().catch(async()=>{await p.locator('[data-mo]').first().click();});await p.waitForTimeout(200);await p.locator('[data-y="2015"]').click();await p.waitForTimeout(200);await p.locator('[data-en]').first().click();await p.waitForTimeout(400);
  s=await st();ok(!s.sheet&&s.car.startsWith('Toyota'),'prices shown: '+s.car);
  await BK();await p.waitForTimeout(400);s=await st();ok(s.r==='quote'&&s.sheet&&s.step==='model'&&!s.car,'back from prices → Toyota models');
  await BK();await p.waitForTimeout(200);s=await st();ok(s.r==='quote'&&!s.sheet,'back closes picker');
  await BK();await p.waitForTimeout(300);s=await st();ok(s.r==='home','back → home');
- await p.click('.qbtn');await p.waitForTimeout(300);ok(await p.evaluate(()=>!!document.querySelector('#qmk')),'quick price starts fresh');
+ await p.click('.qbtn');await p.waitForTimeout(300);ok(await p.evaluate(()=>!!document.querySelector('#qpick')&&!S.quote.car),'quick price starts fresh');
  // header back button same
- await p.locator('#qmk [data-mk="Nissan"]').click();await p.waitForTimeout(300);await p.locator('[data-mo]').first().click();await p.waitForTimeout(200);await p.locator('[data-y]').nth(5).click();await p.waitForTimeout(200);await p.locator('[data-en]').first().click();await p.waitForTimeout(400);
+ await p.click('#qpick');await p.waitForTimeout(300);await p.locator('[data-mk="Nissan"]').first().click();await p.waitForTimeout(300);await p.locator('[data-mo]').first().click();await p.waitForTimeout(200);await p.locator('[data-y]').nth(5).click();await p.waitForTimeout(200);await p.locator('[data-en]').first().click();await p.waitForTimeout(400);
  await p.click('[data-back]');await p.waitForTimeout(400);s=await st();ok(s.sheet&&s.step==='model','header back → Nissan models');
  console.log('errors',errs);await b.close();})();

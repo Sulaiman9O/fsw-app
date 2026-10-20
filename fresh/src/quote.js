@@ -57,7 +57,7 @@ function quoteBack(){const Q=S.quote;if(!Q)return;const mk=Q.car&&Q.car.make;Q.v
   if(mk)carPicker({make:mk},r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();});}
 SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'auto',cv:false,q:''});const v=quoteCar(Q);
   let h=head('Quick price',v?`<button class="lnk" id="qcv">${Q.cv?T_('Workshop view'):'👁 '+T_('Customer view')}</button>`:'');
-  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><div class="lbl">${T_('Or choose the make')}</div><div class="mtiles" id="qmk">${carMakes('').slice(0,15).map(o=>makeTile(o,true)).join('')}<button class="mtile more" id="qpick"><div class="mimg"><span class="qini">⋯</span></div><b>${T_('All makes')}</b></button></div>`;
+  if(!v){h+=`<p class="hint">${T_('Type the plate or the customer, or choose the make and model.')}</p><input class="field" id="qq" placeholder="${T_('Plate, phone or name…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="qres"></div><button class="btn ghost" id="qpick">🚗 ${T_('Choose make, model, year')}</button>`;
     m.innerHTML=h;const inp=$('#qq');const draw=()=>{const q=lc(inp.value).trim();Q.q=inp.value;const box=$('#qres');if(q.length<2){box.innerHTML='';return;}
       const cs=DB.customers.filter(c=>lc(c.name).includes(q)||(c.phone||'').includes(q)).map(c=>c.id);
       const vs=DB.vehicles.filter(x=>lc(x.plate).replace(/\s/g,'').includes(q.replace(/\s/g,''))||lc(carName(x)).includes(q)||cs.includes(x.cust)).slice(0,8);
@@ -65,8 +65,7 @@ SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'au
       box.querySelectorAll('[data-qv]').forEach(b=>b.onclick=()=>{Q.vid=b.dataset.qv;Q.car=null;Q.vf='auto';Q.fid=null;render();});};
     inp.oninput=draw;draw();setTimeout(()=>inp.focus(),60);
     const setCar=r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();};$('#qpick').onclick=()=>carPicker({},setCar);
-    $$('#qmk [data-qimg]').forEach(x=>{['pointerdown','touchstart'].forEach(ev=>x.addEventListener(ev,e=>e.stopPropagation()));x.onclick=e=>{e.stopPropagation();e.preventDefault();brandPicSheet(x.dataset.qimg);};});
-    $$('#qmk [data-mk]').forEach(b=>b.onclick=()=>carPicker({make:b.dataset.mk},setCar));return;}
+    return;}
   const D=quoteRows(v,Q.kind,Q.fid);const cust=v.id!=='_q'&&byId('customers',v.cust);
   let rows=D.rows;const visc=[...new Set(rows.map(r=>r.visc).filter(Boolean))].sort();
   const vf=Q.vf==='auto'?(D.okV.length&&rows.some(r=>D.okV.includes(r.visc))?'ok':'all'):Q.vf;
