@@ -2,3 +2,9 @@ node_modules/
 /www/
 /android/
 *.apk
+# screenshots and reports from tests can contain customer data — never commit
+fresh/tests/*.png
+fresh/tests/*.jpg
+fresh/tests/*.json
+fresh/tests/*.html
+!fresh/tests/logo.png

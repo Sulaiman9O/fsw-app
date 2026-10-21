@@ -131,10 +131,14 @@ function pkgStats(){const st={};DB.jobs.forEach(j=>{if(j.returned||j.stage==='es
   const p=byId('pkgs',pk.pkg);if(p&&+p.minProfit>0&&M.profit<+p.minProfit-0.0005)s.low.push({j,profit:M.profit});});});return st;}
 SCREENS.pkgs=m=>{if(!can.settings()){go('home');return;}agencyOilFill();const st=pkgStats();
   m.innerHTML=head('Packages',`<button class="lnk" id="pkmore" aria-label="More">⋯</button><button class="lnk" id="pknew">＋ ${T_('Package')}</button>`)+
+  `<details class="pmore pkhelp" ${DB.pkgs.length?'':'open'}><summary>❓ ${T_('How packages work')}</summary><ol class="pkhow">
+   <li>${T_('Tap ＋ Package and type its name.')}</li><li>${T_('Under “What is inside” add the service and the parts. For oil and filter choose “by the car”: the app picks the right ones for each car.')}</li>
+   <li>${T_('Under “Tiers and prices” add a few tiers, e.g. Japanese 4 cylinders, Japanese 6 cylinders. One tier covers every car that fits it — no need to add cars one by one.')}</li>
+   <li>${T_('Save. At New car in, after choosing the car, its packages show with their price. Tap one, then Open job card.')}</li></ol></details>`+
   (DB.pkgs.length?`<div class="list">${DB.pkgs.map(p=>{const s=st[p.id]||{n:0,rev:0,cost:0,low:[]};return `<button class="row" data-pkg="${p.id}"><div><b>${p.on===false?'⏸ ':''}📦 ${esc(I18N.lang==='ar'&&p.ar?p.ar:p.name)}</b><span>${(p.tiers||[]).length} ${T_('tiers')} · ${(p.items||[]).length} ${T_('items')} · ${T_('sold')} ${s.n}${can.cost()&&s.n?' · '+T_('profit')+' '+f3(s.rev-s.cost):''}${s.low.length?' · <span class="tg tgr">'+s.low.length+' '+T_('low profit')+'</span>':''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`
    :empty('📦','No packages yet. Tap <b>＋ Package</b> to build your first one.'))+
   (DB.pkgs.length&&Object.keys(st).length?sec('Report')+`<div class="card"><table class="pkrep"><tr><th>${T_('Package')}</th><th>${T_('Sold')}</th><th>${T_('Revenue')}</th>${can.cost()?`<th>${T_('Cost')}</th><th>${T_('Profit')}</th>`:''}</tr>${DB.pkgs.filter(p=>st[p.id]).map(p=>{const s=st[p.id];return `<tr><td>${esc(p.name)}</td><td>${s.n}</td><td>${f3(s.rev)}</td>${can.cost()?`<td>${f3(s.cost)}</td><td>${f3(s.rev-s.cost)}</td>`:''}</tr>`;}).join('')}</table></div>`:'');
-  $('#pknew').onclick=()=>{const p={id:uid('pkg'),name:'New package',ar:'',desc:'',on:true,items:[],tiers:[],addons:[],offers:[],t:now()};DB.pkgs.push(p);save();go('pkg',{id:p.id});};
+  $('#pknew').onclick=()=>{const p={id:uid('pkg'),name:'',ar:'',desc:'',on:true,items:[],tiers:[],addons:[],offers:[],t:now()};DB.pkgs.push(p);save();go('pkg',{id:p.id});};
   $$('[data-pkg]').forEach(b=>b.onclick=()=>go('pkg',{id:b.dataset.pkg}));
   $('#pkmore').onclick=()=>actionSheet(T_('Packages'),'',[{ic:'🛢',t:'Agency oil by make',s:'Oil',fn:agencyOilSheet}]);};
 function agencyOilSheet(){agencyOilFill();const B=oilBrands();const used=[...new Set(DB.vehicles.map(v=>fixMake(v.make)).filter(Boolean))].sort();const A=DB.ws.agencyOil;
@@ -143,7 +147,7 @@ function agencyOilSheet(){agencyOilFill();const B=oilBrands();const used=[...new
    el.querySelectorAll('[data-ao]').forEach(s=>s.onchange=()=>{if(s.value)A[s.dataset.ao]=s.value;else delete A[s.dataset.ao];save();});});}
 SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');return;}p.items=p.items||[];p.tiers=p.tiers||[];p.addons=p.addons||[];p.offers=p.offers||[];
   const qmT=it=>it.qm==='car'?T_('by the car'):(+it.q||1)+'';
-  m.innerHTML=head(esc(p.name),`<button class="lnk" id="pkdup">${T_('Copy')}</button>`)+`
+  m.innerHTML=head(esc(p.name||p.ar||T_('New package')),`<button class="lnk" id="pkdup">${T_('Copy')}</button>`)+`
   <label class="field-l">${T_('Name')} (English)<input class="field" id="pn1" value="${esc(p.name)}"></label>
   <label class="field-l">الاسم بالعربي<input class="field ar" dir="rtl" id="pn2" value="${esc(p.ar||'')}"></label>
   <label class="field-l">${T_('Description for the customer (on the invoice)')}<textarea class="field" id="pn3" rows="2">${esc(p.desc||'')}</textarea></label>
@@ -163,7 +167,7 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
   <div class="list">${p.offers.map((o,i)=>`<button class="row" data-po="${i}"><div><b>🏷 ${o.type==='pct'?(+o.val)+'%':f3(o.val)}</b><span>${o.tier?esc((p.tiers.find(t=>t.id===o.tier)||{}).name||tierName(p.tiers.find(t=>t.id===o.tier)||{})):T_('All tiers')} · ${esc(o.from||'…')} → ${esc(o.to||'…')}</span></div><span class="v">›</span></button>`).join('')}</div><button class="btn ghost sm" id="pa-of">＋ ${T_('Offer')}</button>
   ${can.cost()?`<label class="field-l">${T_('Warn me when profit on a car is under')} (${DB.ws.currency})<input class="field" id="pmin" inputmode="decimal" value="${p.minProfit?f3(p.minProfit):''}"></label>`:''}
   <button class="btn" id="psave">${T_('Save')}</button><button class="btn ghost jb-del" id="pdel">${T_('Delete package')}</button>`;
-  const keep=()=>{p.name=$('#pn1').value.trim()||'Package';p.ar=$('#pn2').value.trim();p.desc=$('#pn3').value.trim();p.on=$('#pon').checked;p.insp=$('#pinsp').value;const mn=$('#pmin');if(mn)p.minProfit=num(mn.value);};
+  const keep=()=>{p.name=$('#pn1').value.trim()||$('#pn2').value.trim()||'Package';p.ar=$('#pn2').value.trim();p.desc=$('#pn3').value.trim();p.on=$('#pon').checked;p.insp=$('#pinsp').value;const mn=$('#pmin');if(mn)p.minProfit=num(mn.value);};
   const redo=()=>{keep();save();render();};
   $('#psave').onclick=()=>{keep();save();toast(T_('Saved'));go('pkgs');};
   $('#pdel').onclick=()=>confirmSheet(T_('Delete this package? Old invoices keep it.'),T_('Delete package'),()=>{DB.pkgs=DB.pkgs.filter(x=>x!==p);save();go('pkgs');});
