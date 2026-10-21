@@ -49,8 +49,8 @@ function pkgBuild(p,v,opt){opt=opt||{};const F=pkgFor(p,v);if(!F.tier)return F;c
   const mem=[];(p.items||[]).forEach(it=>{const r=pkgItemFor(it,v,R);if(!r){miss.push(pkgLabel(it));return;}const ov=(t.q||{})[it.id]||{};
     let q=it.qm==='car'?(it.auto&&it.auto.startsWith('oil')?(R&&R.qty)||(R&&R.spec&&R.spec.cap)||guessLitres('oil',v):1):(+ov.q||+it.q||1);
     const incl=ov.incl!=null&&ov.incl!==''?+ov.incl:(+it.incl||0),extra=ov.extra!=null&&ov.extra!==''?+ov.extra:(+it.extra||0);
-    const m=Object.assign({},r,{q:Math.round(q*10)/10,p:0,inPkg:inst,pid:it.id,incl,extra,lockP:true,by:head.by});delete m.part;
-    if(r.part&&(+r.part.stock||0)<m.q-0.0001){const a=(r.part.alts||[]).map(x=>byId('parts',x)).find(x=>x&&(+x.stock||0)>=m.q);if(a){m.ref=a.id;m.d=a.name;m.num=a.num||'';m.cost=+a.cost||0;m.swapped=r.part.name;}else short.push(r.part.name);}
+    const ex=it.xm==='own'&&r.part&&!(ov.extra!=null&&ov.extra!=='')?(+r.part.price||0):extra;const m=Object.assign({},r,{q:Math.round(q*10)/10,p:0,inPkg:inst,pid:it.id,incl,extra:ex,lockP:true,by:head.by});delete m.part;
+    if(r.part&&(+r.part.stock||0)<m.q-0.0001){const a=(r.part.alts||[]).map(x=>byId('parts',x)).find(x=>x&&(+x.stock||0)>=m.q);if(a){m.ref=a.id;m.d=a.name;m.num=a.num||'';m.cost=+a.cost||0;m.swapped=r.part.name;if(it.xm==='own')m.extra=+a.price||0;}else short.push(r.part.name);}
     mem.push(m);});
   if(miss.length&&!opt.force)return {missing:miss,tier:t};
   const add=(p.addons||[]).filter(a=>(opt.addons||[]).includes(a.id)).map(a=>({k:'labour',d:a.name,ar:a.ar||'',q:1,u:'',p:+a.price||0,addon:a.id,ofPkg:inst,by:head.by}));
@@ -131,6 +131,7 @@ function pkgStats(){const st={};DB.jobs.forEach(j=>{if(j.returned||j.stage==='es
   const p=byId('pkgs',pk.pkg);if(p&&+p.minProfit>0&&M.profit<+p.minProfit-0.0005)s.low.push({j,profit:M.profit});});});return st;}
 SCREENS.pkgs=m=>{if(!can.settings()){go('home');return;}agencyOilFill();const st=pkgStats();
   m.innerHTML=head('Packages',`<button class="lnk" id="pkmore" aria-label="More">⋯</button><button class="lnk" id="pknew">＋ ${T_('Package')}</button>`)+
+  `<button class="btn pkwizb" id="pkwiz">🎓 ${T_('Build a package with me, step by step')}</button>`+
   `<details class="pmore pkhelp" ${DB.pkgs.length?'':'open'}><summary>❓ ${T_('How packages work')}</summary><ol class="pkhow">
    <li>${T_('Tap ＋ Package and type its name.')}</li><li>${T_('Under “What is inside” add the service and the parts. For oil and filter choose “by the car”: the app picks the right ones for each car.')}</li>
    <li>${T_('Under “Tiers and prices” add a few tiers, e.g. Japanese 4 cylinders, Japanese 6 cylinders. One tier covers every car that fits it — no need to add cars one by one.')}</li>
@@ -140,6 +141,7 @@ SCREENS.pkgs=m=>{if(!can.settings()){go('home');return;}agencyOilFill();const st
   (DB.pkgs.length&&Object.keys(st).length?sec('Report')+`<div class="card"><table class="pkrep"><tr><th>${T_('Package')}</th><th>${T_('Sold')}</th><th>${T_('Revenue')}</th>${can.cost()?`<th>${T_('Cost')}</th><th>${T_('Profit')}</th>`:''}</tr>${DB.pkgs.filter(p=>st[p.id]).map(p=>{const s=st[p.id];return `<tr><td>${esc(p.name)}</td><td>${s.n}</td><td>${f3(s.rev)}</td>${can.cost()?`<td>${f3(s.cost)}</td><td>${f3(s.rev-s.cost)}</td>`:''}</tr>`;}).join('')}</table></div>`:'');
   $('#pknew').onclick=()=>{const p={id:uid('pkg'),name:'',ar:'',desc:'',on:true,items:[],tiers:[],addons:[],offers:[],t:now()};DB.pkgs.push(p);save();go('pkg',{id:p.id});};
   $$('[data-pkg]').forEach(b=>b.onclick=()=>go('pkg',{id:b.dataset.pkg}));
+  $('#pkwiz').onclick=()=>{S.pw=null;go('pkgwiz');};
   $('#pkmore').onclick=()=>actionSheet(T_('Packages'),'',[{ic:'🛢',t:'Agency oil by make',s:'Oil',fn:agencyOilSheet}]);};
 function agencyOilSheet(){agencyOilFill();const B=oilBrands();const used=[...new Set(DB.vehicles.map(v=>fixMake(v.make)).filter(Boolean))].sort();const A=DB.ws.agencyOil;
   openSheet(`<h3>🛢 ${T_('Agency oil by make')}</h3><p class="hint">${T_('Used by packages with “Engine oil · agency brand”. The oil with the car’s viscosity is taken from this brand.')}</p>
@@ -153,7 +155,7 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
   <label class="field-l">${T_('Description for the customer (on the invoice)')}<textarea class="field" id="pn3" rows="2">${esc(p.desc||'')}</textarea></label>
   <label class="chk"><input type="checkbox" id="pon" ${p.on!==false?'checked':''}> ${T_('On (workers can choose it)')}</label>
   ${sec('What is inside',`${p.items.length}`)}
-  <div class="list">${p.items.map((it,i)=>`<button class="row" data-pi="${i}"><div><b>${it.k==='svc'?'🛠':it.k==='part'?'🔩':'✨'} ${esc(pkgLabel(it))}</b><span>${T_('Qty')} ${qmT(it)}${+it.incl?' · '+T_('included')+' '+it.incl+' · '+T_('each extra')+' '+f3(it.extra):''}</span></div><span class="v">›</span></button>`).join('')||'<p class="hint">'+T_('Nothing yet.')+'</p>'}</div>
+  <div class="list">${p.items.map((it,i)=>`<button class="row" data-pi="${i}"><div><b>${it.k==='svc'?'🛠':it.k==='part'?'🔩':'✨'} ${esc(pkgLabel(it))}</b><span>${T_('Qty')} ${qmT(it)}${+it.incl?' · '+T_('included')+' '+it.incl+' · '+T_('each extra')+' '+(it.xm==='own'?T_('at its own price'):f3(it.extra)):''}</span></div><span class="v">›</span></button>`).join('')||'<p class="hint">'+T_('Nothing yet.')+'</p>'}</div>
   <div class="chips"><button id="pa-s">＋ ${T_('Service')}</button><button id="pa-p">＋ ${T_('Fixed part')}</button><button id="pa-o">＋ ${T_('Oil by the car')}</button><button id="pa-f">＋ ${T_('Filter by the car')}</button></div>
   ${sec('Tiers and prices',`${p.tiers.length}`)}
   <p class="hint">${T_('The most exact tier wins: engine code, then model, make, origin, cylinders, body.')}</p>
@@ -182,10 +184,12 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
     openSheet(`<h3>${esc(pkgLabel(it))}</h3>
      <div class="field-l">${T_('Quantity')}</div><div class="chips"><button data-qm="fixed" aria-pressed="${it.qm!=='car'}">${T_('Fixed number')}</button>${oil?`<button data-qm="car" aria-pressed="${it.qm==='car'}">${T_('By the car (litres from the engine)')}</button>`:''}</div>
      <div id="qmf" ${it.qm==='car'?'hidden':''}><input class="field" id="piq" inputmode="decimal" value="${+it.q||1}"></div>
-     <div class="in2"><label class="field-l">${T_('Included in the price')}<input class="field" id="pii" inputmode="decimal" value="${it.incl||''}" placeholder="${T_('e.g. 5')}"></label><label class="field-l">${T_('Price of each extra')}<input class="field" id="pix" inputmode="decimal" value="${it.extra?f3(it.extra):''}"></label></div>
+     <div class="in2"><label class="field-l">${T_('Included in the price')}<input class="field" id="pii" inputmode="decimal" value="${it.incl||''}" placeholder="${T_('e.g. 5')}"></label><label class="field-l" id="pixw" ${it.xm==='own'?'hidden':''}>${T_('Price of each extra')}<input class="field" id="pix" inputmode="decimal" value="${it.extra?f3(it.extra):''}"></label></div>
+     <div class="chips"><button data-xm="fixed" aria-pressed="${it.xm!=='own'}">${T_('Extra at a fixed price')}</button><button data-xm="own" aria-pressed="${it.xm==='own'}">${T_('Extra at the part’s own price')}</button></div>
      <p class="hint">${T_('Leave “included” empty if there is no extra charge.')}</p><button class="btn" id="piok">${T_('Save')}</button><button class="btn ghost jb-del" id="pirm">${T_('Remove')}</button>`,el=>{
      let qm=it.qm||'fixed';el.querySelectorAll('[data-qm]').forEach(x=>x.onclick=()=>{qm=x.dataset.qm;el.querySelectorAll('[data-qm]').forEach(y=>y.setAttribute('aria-pressed',y===x));el.querySelector('#qmf').hidden=qm==='car';});
-     el.querySelector('#piok').onclick=()=>{it.qm=qm;it.q=num($('#piq').value)||1;it.incl=num($('#pii').value);it.extra=num($('#pix').value);closeSheet();redo();};
+     let xm=it.xm||'fixed';el.querySelectorAll('[data-xm]').forEach(x=>x.onclick=()=>{xm=x.dataset.xm;el.querySelectorAll('[data-xm]').forEach(y=>y.setAttribute('aria-pressed',y===x));el.querySelector('#pixw').hidden=xm==='own';});
+     el.querySelector('#piok').onclick=()=>{it.qm=qm;it.q=num($('#piq').value)||1;it.incl=num($('#pii').value);it.xm=xm;it.extra=xm==='own'?0:num($('#pix').value);closeSheet();redo();};
      el.querySelector('#pirm').onclick=()=>{p.items.splice(+b.dataset.pi,1);p.tiers.forEach(t=>{if(t.q)delete t.q[it.id];});closeSheet();redo();};});});
   const tierSheet=t=>{const isNew=!t;t=t||{id:uid('pt'),name:'',cond:{},price:0,q:{}};const c=t.cond=t.cond||{};t.q=t.q||{};const mks=carMakes('').slice(0,60).map(o=>o.m[0]);
     openSheet(`<h3>${isNew?T_('New tier'):esc(t.name||tierName(t))}</h3>
@@ -196,7 +200,7 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
      <div class="in2"><label class="field-l">${T_('Engine code')}<input class="field" id="ten" value="${esc(c.eng||'')}" placeholder="V35A"></label><label class="field-l">${T_('Years')}<div class="row2"><input class="field" id="ty0" inputmode="numeric" value="${esc(c.y0||'')}" placeholder="2015"><input class="field" id="ty1" inputmode="numeric" value="${esc(c.y1||'')}" placeholder="2025"></div></label></div>
      <label class="field-l">${T_('Name (optional)')}<input class="field" id="tnm" value="${esc(t.name||'')}"></label>
      <label class="field-l">${T_('Package price for this tier')} (${DB.ws.currency})<input class="field" id="tpr" inputmode="decimal" value="${t.price?f3(t.price):''}"></label>
-     ${p.items.length?`<details class="pmore"><summary>${T_('Quantities for this tier')}</summary>${p.items.map(it=>{const o=t.q[it.id]||{};return `<div class="field-l">${esc(pkgLabel(it))}</div><div class="in2">${it.qm==='car'?`<span class="hint">${T_('Qty')}: ${T_('by the car')}</span>`:`<input class="field" data-tq="${it.id}" inputmode="decimal" placeholder="${T_('Qty')} ${+it.q||1}" value="${o.q||''}">`}<input class="field" data-ti="${it.id}" inputmode="decimal" placeholder="${T_('Included')} ${it.incl||'—'}" value="${o.incl??''}"></div>`;}).join('')}</details>`:''}
+     ${p.items.length?`<details class="pmore"><summary>${T_('Quantities for this tier')}</summary>${p.items.map(it=>{const o=t.q[it.id]||{};return `<div class="field-l">${esc(pkgLabel(it))}</div><div class="in2">${it.qm==='car'?`<span class="hint">${T_('Qty')}: ${T_('by the car')}</span>`:`<input class="field" data-tq="${it.id}" inputmode="decimal" placeholder="${T_('Qty')} ${+it.q||1}" value="${o.q||''}">`}<input class="field" data-ti="${it.id}" inputmode="decimal" placeholder="${T_('Included')} ${it.incl||'—'}" value="${o.incl??''}"></div>${+it.incl||o.incl?`<input class="field" data-tx="${it.id}" inputmode="decimal" placeholder="${T_('Price of each extra')} ${it.xm==='own'?T_('at its own price'):(it.extra?f3(it.extra):'—')}" value="${o.extra??''}">`:''}`;}).join('')}</details>`:''}
      <button class="btn" id="tok">${T_('Save')}</button>${isNew?'':`<button class="btn ghost jb-del" id="trm">${T_('Remove')}</button>`}`,el=>{
      const chip=(sel,attr,key)=>el.querySelectorAll(sel+' ['+attr+']').forEach(b=>b.onclick=()=>{c[key]=b.getAttribute(attr);if(c[key]==='')delete c[key];el.querySelectorAll(sel+' ['+attr+']').forEach(x=>x.setAttribute('aria-pressed',x===b));});
      chip('#tc','data-cy','cyl');chip('#to','data-or','origin');chip('#tb','data-bd','body');
@@ -204,6 +208,7 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
        t.name=v('#tnm');t.price=num(v('#tpr'));if(!(t.price>0)){toast(T_('Type the package price for this tier'));return;}
        el.querySelectorAll('[data-tq]').forEach(i=>{const o=t.q[i.dataset.tq]=t.q[i.dataset.tq]||{};if(i.value!=='')o.q=num(i.value);else delete o.q;});
        el.querySelectorAll('[data-ti]').forEach(i=>{const o=t.q[i.dataset.ti]=t.q[i.dataset.ti]||{};if(i.value!=='')o.incl=num(i.value);else delete o.incl;});
+       el.querySelectorAll('[data-tx]').forEach(i=>{const o=t.q[i.dataset.tx]=t.q[i.dataset.tx]||{};if(i.value!=='')o.extra=num(i.value);else delete o.extra;});
        if(isNew)p.tiers.push(t);closeSheet();redo();};
      const rm=el.querySelector('#trm');if(rm)rm.onclick=()=>{p.tiers=p.tiers.filter(x=>x!==t);p.offers=p.offers.filter(o=>o.tier!==t.id);closeSheet();redo();};});};
   $('#pa-t').onclick=()=>{keep();tierSheet();};$$('[data-pt]').forEach(b=>b.onclick=()=>{keep();tierSheet(p.tiers[+b.dataset.pt]);});
@@ -221,3 +226,71 @@ SCREENS.pkg=m=>{const p=byId('pkgs',S.p.id);if(!p||!can.settings()){go('pkgs');r
     el.querySelector('#ook').onclick=()=>{o.type=ty;o.val=num($('#ov').value);o.tier=$('#ot').value;o.from=$('#of').value;o.to=$('#oto').value;if(!(o.val>0)){toast(T_('Type the offer'));return;}if(isNew)p.offers.push(o);closeSheet();redo();};
     const rm=el.querySelector('#orm');if(rm)rm.onclick=()=>{p.offers=p.offers.filter(x=>x!==o);closeSheet();redo();};});};
   $('#pa-of').onclick=()=>{keep();if(!p.tiers.length){toast(T_('Add a tier first'));return;}offerSheet();};$$('[data-po]').forEach(b=>b.onclick=()=>{keep();offerSheet(p.offers[+b.dataset.po]);});};
+
+/* ---------- 🎓 Build a package with me: one question per page, with real examples from this workshop's cars ---------- */
+const PW_TIERS=[['jp4','jp',4],['jp6','jp',6],['jp8','jp',8],['kr4','kr',4],['kr6','kr',6],['us6','us',6],['us8','us',8],['eu','eu',0],['cn4','cn',4]];
+function pwCover(origin,cyl){const L=DB.vehicles.filter(v=>v.make&&tierFit({cond:Object.assign({origin},cyl?{cyl}:{})},v)&&!tierFit({cond:Object.assign({origin},cyl?{cyl}:{})},v).need);
+  const by={};L.forEach(v=>{const k=fixMake(v.make)+' '+baseModel(v.model).replace(/\b\w/g,c=>c.toUpperCase());by[k]=(by[k]||0)+1;});return {n:L.length,top:Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0])};}
+function pwSample(){const by={};DB.vehicles.forEach(v=>{if(!v.make||!v.model)return;const k=mkK(fixMake(v.make))+'|'+baseModel(v.model);(by[k]=by[k]||[]).push(v);});
+  return Object.values(by).sort((a,b)=>b.length-a.length).slice(0,6).map(L=>L.find(v=>carCyl(v))||L[0]);}
+function pwPackage(W){const p={id:uid('pkg'),name:W.name||W.ar||'Package',ar:W.ar||'',desc:W.desc||'',on:true,items:[],tiers:[],addons:[],offers:[],t:now()};
+  W.svcs.forEach(id=>p.items.push({id:uid('pi'),k:'svc',ref:id,qm:'fixed',q:1}));
+  if(W.oil)p.items.push({id:uid('pi'),k:'auto',auto:W.oil==='agency'?'oilAgency':'oilUsual',qm:'car',incl:+W.incl||0,xm:W.xm,extra:W.xm==='fixed'?+W.extra||0:0});
+  if(W.filter)p.items.push({id:uid('pi'),k:'auto',auto:'filter',qm:'fixed',q:1});
+  PW_TIERS.forEach(([k,o,c])=>{const t=W.tiers[k];if(t&&t.on&&+t.price>0)p.tiers.push({id:uid('pt'),name:'',cond:Object.assign({origin:o},c?{cyl:String(c)}:{}),price:+t.price,q:{}});});
+  if(W.wash&&W.wash.on&&+W.wash.price>0)p.addons.push({id:uid('pa'),name:W.wash.name||'Car wash',ar:W.wash.ar||'غسيل السيارة',price:+W.wash.price});return p;}
+SCREENS.pkgwiz=m=>{if(!can.settings()){go('home');return;}agencyOilFill();
+  const W=S.pw=S.pw||{step:0,ar:'',name:'',desc:'',svcs:[],oil:'agency',incl:'',xm:'own',extra:'',filter:true,tiers:{},wash:{on:false,price:'',name:'Car wash',ar:'غسيل السيارة'}};
+  const STEPS=['Start','Name','Services','Oil','Filter','Tiers','Add-ons','Check and save'];const st=W.step;
+  const ex=pwSample().find(v=>/camry|corolla|altima|accord/i.test(v.model))||pwSample()[0];const R=ex?oilRecipe(ex,'usual'):null;
+  const nav=(back,next,nextT)=>`<div class="pwnav">${back?`<button class="btn ghost" id="pwb">‹ ${T_('Back')}</button>`:'<span></span>'}${next?`<button class="btn" id="pwn">${nextT||T_('Next')} ›</button>`:''}</div>`;
+  const tip=t=>`<div class="pwtip">💡 ${t}</div>`;
+  let h=head('🎓 '+T_('New package'))+`<div class="pwbar">${STEPS.map((s,i)=>`<i class="${i<st?'d':i===st?'on':''}"></i>`).join('')}</div><div class="pwstep">${T_('Step')} ${st+1} / ${STEPS.length} · ${T_(STEPS[st])}</div>`;
+  if(st===0)h+=`<div class="card pwc"><h3>${T_('What is a package?')}</h3><p>${T_('A package is a group of services and parts with one fixed price, like “Full oil change”: oil + filter + labour + check.')}</p>
+    <p>${T_('You build it once. Then at New car in, the worker picks the car and the package, and the app adds everything with the right oil, filter, litres and price for that car.')}</p>
+    <p>${T_('You do not add cars one by one. You make a few tiers like “Japanese 4 cylinders” with a price, and every car that fits takes that price.')}</p></div>${nav(false,true,T_('Start'))}`;
+  else if(st===1)h+=`<label class="field-l">${T_('Name in Arabic')}<input class="field ar" dir="rtl" id="pwar" value="${esc(W.ar)}" placeholder="تغيير الزيت الشامل"></label>
+    <label class="field-l">${T_('Name in English (optional)')}<input class="field" id="pwen" value="${esc(W.name)}" placeholder="Full oil change"></label>
+    <label class="field-l">${T_('What the customer reads on the invoice (optional)')}<textarea class="field" id="pwds" rows="2" placeholder="زيت الوكالة + فلتر + فحص 20 نقطة">${esc(W.desc)}</textarea></label>
+    ${tip(T_('The name shows to the worker when choosing, and to the customer on the invoice.'))}${nav(true,true)}`;
+  else if(st===2){const u=svcUse();const L=DB.services.filter(s=>!s.hidden).sort((a,b)=>(u[b.id]||0)-(u[a.id]||0)).slice(0,14);
+    h+=`<p class="pwq">${T_('Which services are in the package?')}</p><div class="list">${L.map(s=>`<button class="row pwck${W.svcs.includes(s.id)?' selr':''}" data-pws="${s.id}"><div><b>${esc(I18N.lang==='ar'&&s.ar?s.ar:s.name)}</b><span>${T_('normal price')} ${f3(s.p[0])}</span></div><span class="v">${W.svcs.includes(s.id)?'✓':''}</span></button>`).join('')}</div>
+    ${tip(T_('In a package the services have no price of their own: the package price covers everything.'))}${nav(true,true)}`;}
+  else if(st===3){const ag=ex&&pkgItemFor({k:'auto',auto:'oilAgency'},ex,R),us=ex&&pkgItemFor({k:'auto',auto:'oilUsual'},ex,R);
+    h+=`<p class="pwq">${T_('Is there engine oil in the package?')}</p><div class="list">
+     <button class="row pwck${W.oil==='agency'?' selr':''}" data-pwo="agency"><div><b>🛢 ${T_('Agency oil')}</b><span>${T_('Toyota oil for Toyota, Nissan oil for Nissan… with the car’s viscosity')}</span></div><span class="v">${W.oil==='agency'?'✓':''}</span></button>
+     <button class="row pwck${W.oil==='usual'?' selr':''}" data-pwo="usual"><div><b>🛢 ${T_('The usual oil')}</b><span>${T_('The oil you usually put in each car (from your invoices)')}</span></div><span class="v">${W.oil==='usual'?'✓':''}</span></button>
+     <button class="row pwck${!W.oil?' selr':''}" data-pwo=""><div><b>${T_('No oil')}</b></div><span class="v">${!W.oil?'✓':''}</span></button></div>
+     ${W.oil&&ex?tip(`${T_('Example')}: ${esc(carName(ex))} → <b>${esc(((W.oil==='agency'?ag:us)||{}).d||'—')}</b> · ${R&&R.qty?R.qty+' L':''}. ${T_('The litres come from the car itself.')}`):''}
+     ${W.oil?`<label class="field-l">${T_('How many litres are included in the price?')}<input class="field" id="pwin" inputmode="decimal" value="${esc(W.incl)}" placeholder="5"></label>
+      <p class="pwq sm">${T_('If a car takes more than that, the extra litres cost:')}</p>
+      <div class="list"><button class="row pwck${W.xm==='own'?' selr':''}" data-pwx="own"><div><b>${T_('The oil’s own price per litre')}</b><span>${T_('Honda extra at Honda oil price, Toyota at Toyota oil price. Recommended.')}</span></div><span class="v">${W.xm==='own'?'✓':''}</span></button>
+      <button class="row pwck${W.xm==='fixed'?' selr':''}" data-pwx="fixed"><div><b>${T_('One price for every car')}</b></div><span class="v">${W.xm==='fixed'?'✓':''}</span></button></div>
+      ${W.xm==='fixed'?`<input class="field" id="pwxp" inputmode="decimal" value="${esc(W.extra)}" placeholder="2.500">`:''}
+      ${tip(T_('Leave the litres empty if the package price covers any amount.'))}`:''}${nav(true,true)}`;}
+  else if(st===4){const f=ex&&pkgItemFor({k:'auto',auto:'filter'},ex,R);
+    h+=`<p class="pwq">${T_('Oil filter in the package?')}</p><div class="list"><button class="row pwck${W.filter?' selr':''}" data-pwf="1"><div><b>✅ ${T_('Yes, the right filter for each car')}</b></div><span class="v">${W.filter?'✓':''}</span></button><button class="row pwck${!W.filter?' selr':''}" data-pwf="0"><div><b>${T_('No filter')}</b></div><span class="v">${!W.filter?'✓':''}</span></button></div>
+    ${W.filter&&ex?tip(`${T_('Example')}: ${esc(carName(ex))} → <b>${esc((f||{}).d||'—')}</b>. ${T_('The app picks it from your invoices, like the quick price.')}`):''}${nav(true,true)}`;}
+  else if(st===5){h+=`<p class="pwq">${T_('Which cars, and the price for each tier')}</p>${tip(T_('Tick the tiers you want and type the package price. One tier covers every car that fits it. Cars outside all ticked tiers will not see the package.'))}
+    <div class="pwtiers">${PW_TIERS.map(([k,o,c])=>{const t=W.tiers[k]=W.tiers[k]||{on:false,price:''};const cv=pwCover(o,c);return `<div class="pwt${t.on?' on':''}"><button class="pwtk" data-pwt="${k}"><i>${t.on?'✓':''}</i><div><b>${T_(ORIGIN[o])}${c?' · '+c+' '+T_('cyl'):''}</b><span>${cv.n} ${T_('of your cars')}${cv.top.length?' · '+esc(cv.top.join('، ')):''}</span></div></button>${t.on?`<input class="field" data-pwtp="${k}" inputmode="decimal" placeholder="${T_('Price')}" value="${esc(t.price)}">`:''}</div>`;}).join('')}</div>
+    <p class="hint">${T_('Need a special price for one model (like Land Cruiser 300)? After saving, add a tier with that model; the more exact tier wins.')}</p>${nav(true,true)}`;}
+  else if(st===6)h+=`<p class="pwq">${T_('Optional add-ons the worker can tick (like a car wash)')}</p><label class="chk"><input type="checkbox" id="pwwo" ${W.wash.on?'checked':''}> ${T_('Car wash as an add-on')}</label>
+    ${W.wash.on?`<label class="field-l">${T_('Price')}<input class="field" id="pwwp" inputmode="decimal" value="${esc(W.wash.price)}" placeholder="2.000"></label>`:''}${tip(T_('Add-ons are not in the package price. The worker ticks them at New car in, and they are added with their own price.'))}${nav(true,true)}`;
+  else{const P=pwPackage(W);const S0=pwSample();const rows=S0.map(v=>{const F=pkgFor(P,v);if(F.need)return [carName(v),T_('engine not known'),'',''];if(!F.tier)return [carName(v),T_('not covered'),'',''];const B=pkgBuild(P,v,{force:true});const price=(B.lines||[]).filter(l=>l.k==='pkg'||l.pkgx).reduce((a,l)=>a+l.q*l.p,0);const cost=(B.lines||[]).filter(l=>l.inPkg&&l.k==='part').reduce((a,l)=>a+l.q*(+l.cost||0),0);return [carName(v),tierName(F.tier),f3(price),can.cost()?f3(price-cost):''];});
+    h+=`<div class="card pwc"><h3>📦 ${esc(W.ar||W.name)}</h3><p>${P.items.map(it=>esc(pkgLabel(it))).join(' · ')||'—'}</p><p>${P.tiers.length} ${T_('tiers')}${P.addons.length?' · '+P.addons.length+' '+T_('add-ons'):''}</p></div>
+    <p class="pwq">${T_('What your most common cars would pay')}</p><div class="card"><table class="pkrep"><tr><th>${T_('Car')}</th><th>${T_('Tier')}</th><th>${T_('Price')}</th>${can.cost()?`<th>${T_('Profit')}</th>`:''}</tr>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${r[2]}</td>${can.cost()?`<td>${r[3]}</td>`:''}</tr>`).join('')}</table></div>
+    ${tip(T_('After saving you can change anything: prices, tiers, quantities, offers.'))}
+    ${!P.tiers.length?`<p class="err">${T_('Tick at least one tier with a price (step 6).')}</p>`:''}${nav(true,!!P.tiers.length,'💾 '+T_('Save the package'))}`;}
+  m.innerHTML=h;
+  const keep=()=>{const v=id=>{const e=$(id);return e?e.value.trim():null;};if(st===1){W.ar=v('#pwar');W.name=v('#pwen');W.desc=v('#pwds');}if(st===3){const i=v('#pwin');if(i!=null)W.incl=i;const x=v('#pwxp');if(x!=null)W.extra=x;}
+    if(st===5)$$('[data-pwtp]').forEach(i=>W.tiers[i.dataset.pwtp].price=i.value.trim());if(st===6){const p=v('#pwwp');if(p!=null)W.wash.price=p;}};
+  window.pwKeep=keep;
+  const b=$('#pwb');if(b)b.onclick=()=>{keep();W.step--;render();};
+  const n=$('#pwn');if(n)n.onclick=()=>{keep();if(st===1&&!W.ar&&!W.name){toast(T_('Type the name'));return;}
+    if(st===5&&!PW_TIERS.some(([k])=>W.tiers[k]&&W.tiers[k].on&&+W.tiers[k].price>0)){toast(T_('Tick at least one tier and type its price'));return;}
+    if(st===7){const P=pwPackage(W);DB.pkgs.push(P);save();S.pw=null;toast(T_('Package saved'));go('pkg',{id:P.id});return;}W.step++;render();scrollTo(0,0);};
+  $$('[data-pws]').forEach(x=>x.onclick=()=>{const k=x.dataset.pws;const i=W.svcs.indexOf(k);if(i>=0)W.svcs.splice(i,1);else W.svcs.push(k);render();});
+  $$('[data-pwo]').forEach(x=>x.onclick=()=>{keep();W.oil=x.dataset.pwo;render();});$$('[data-pwx]').forEach(x=>x.onclick=()=>{keep();W.xm=x.dataset.pwx;render();});
+  $$('[data-pwf]').forEach(x=>x.onclick=()=>{W.filter=x.dataset.pwf==='1';render();});
+  $$('[data-pwt]').forEach(x=>x.onclick=()=>{keep();const t=W.tiers[x.dataset.pwt];t.on=!t.on;render();if(t.on){const i=$(`[data-pwtp="${x.dataset.pwt}"]`);if(i)i.focus();}});
+  const wo=$('#pwwo');if(wo)wo.onchange=()=>{keep();W.wash.on=wo.checked;render();};};
