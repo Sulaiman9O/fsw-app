@@ -99,7 +99,7 @@ SCREENS.newjob=m=>{
     if(!v&&vid){const kv=byId('vehicles',vid);if(kv&&(!N.make||!String(kv.make||'').trim()||lc(kv.make).trim()===lc(N.make).trim())){v=kv;if(!String(kv.make||'').trim()&&N.make){kv.make=N.make.trim();kv.model=N.model.trim();kv.year=N.year.trim();if(N.engine)kv.engine=N.engine;}}}   /* a plate already in the app is that car, not a second one */
     if(!v&&!N.make&&!N.plate){toast('Type the plate or the make');return;}
     let c=cust;if(!c&&v&&v.cust)c=byId('customers',v.cust)||null;   /* a known car keeps its owner */
-    if(!c){if(!N.name&&!N.phone){toast('Type a phone or name, or tap Walk-in');return;}const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||lc(ex.name||'').trim()===lc(N.name||'').trim()))c=ex;}
+    if(!c){if(!N.name&&!N.phone)N.name='Walk-in';   /* no name yet: open it as walk-in, the name can be added on the job card */const ex=custByPhone(N.phone);if(ex&&(isWalk({name:N.name})||lc(ex.name||'').trim()===lc(N.name||'').trim()))c=ex;}
     if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     if(!v){v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);

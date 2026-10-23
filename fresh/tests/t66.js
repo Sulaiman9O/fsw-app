@@ -1,0 +1,28 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();
+   S.quote={vid:null,car:{make:'Toyota',model:'Camry',year:'2015',engine:''},kind:'oil',vf:'auto',cv:false,q:''};go('quote');},[cat,cu]);await p.waitForTimeout(700);
+ const hide=()=>p.evaluate(()=>document.querySelectorAll('#toast').forEach(x=>x.hidden=true));
+ const chips=await p.$$eval('.qvf button',L=>L.map(x=>x.textContent.trim()+(x.getAttribute('aria-pressed')==='true'?'*':'')));console.log(chips.join(' | '));
+ ok(!chips.some(c=>/0W-20/.test(c)&&/5W/.test(c)),'0W-20 not mixed with 5W');
+ const vis=await p.$$eval('.qtile span[dir]',L=>[...new Set(L.map(x=>x.textContent.split('·')[0].trim()))]);console.log('shown',vis);ok(!(vis.includes('0W-20')&&vis.some(v=>/^5W/.test(v))),'tiles one group');
+ ok(!!(await p.$('[data-fx]')),'other filter chip');
+ await p.locator('.qtile').first().click();await p.waitForTimeout(400);ok(!!(await p.$('#qfch')),'filter row in sheet');
+ await hide();await p.screenshot({path:'y1.png'});
+ await p.click('#qfch');await p.waitForTimeout(500);ok(!!(await p.$('#qfq')),'filter picker');await p.fill('#qfq','90915');await p.waitForTimeout(300);
+ const nf=await p.$$eval('#qfl [data-qf]',L=>L.length);ok(nf>0,'search filters '+nf);await hide();await p.screenshot({path:'y2.png'});
+ const pickId=await p.$eval('#qfl [data-qf]:last-child',x=>x.dataset.qf);await p.click('#qfl [data-qf]:last-child');await p.waitForTimeout(600);
+ ok(await p.evaluate(()=>S.quote.fid)===pickId,'fid set');const txt=await p.$eval('#qfch',x=>x.textContent);const pn=await p.evaluate(id=>byId('parts',id).name,pickId);ok(txt.includes(pn),'sheet reopened with new filter');
+ await p.click('#qfch');await p.waitForTimeout(500);await p.click('#qfn');await p.waitForTimeout(600);ok((await p.$eval('#qfch',x=>x.textContent)).includes('بدون'),'no filter');
+ /* open job with no name → walk-in, then add the name */
+ await p.click('#qok');await p.waitForTimeout(600);ok(await p.evaluate(()=>S.r)==='newjob','newjob');
+ await p.fill('#nplate','TST 999').catch(()=>{});await p.click('#ngo');await p.waitForTimeout(800);
+ ok(await p.evaluate(()=>S.r)==='job','job opened without a name');const jid=await p.evaluate(()=>S.p.id);
+ ok(await p.evaluate(id=>!(byId('jobs',id).items||[]).some(i=>/filter/i.test(i.d)),jid),'job has no filter');
+ ok(!!(await p.$('.jaddc')),'add customer button');await p.click('.jaddc');await p.waitForTimeout(400);await p.fill('#jcp','99112233');await p.fill('#jcn','Test Ali');await p.click('#jcok');await p.waitForTimeout(500);
+ const cn=await p.evaluate(id=>{const j=byId('jobs',id);return [custOf(j).name,byId('vehicles',j.veh).cust===j.cust];},jid);ok(cn[0]==='Test Ali'&&cn[1],'customer set '+cn);ok(!(await p.$('.jaddc')),'button gone');
+ await hide();await p.screenshot({path:'y3.png'});
+ console.log('errors',errs);await b.close();})();

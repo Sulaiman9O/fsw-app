@@ -200,3 +200,17 @@ function stickerHtml(kind,km,nk,next){const G=kind==='gear';return `<div class="
 
 const rxToast=R=>T_(R.mode==='maker'?'Maker recommendation added':'Usual oil change added')+': '+[R.filter&&R.filter.num||R.filter&&R.filter.name,R.oil&&(R.qty+' L '+R.visc)].filter(Boolean).join(' + ');
 function rxDone(j,R){undoBar(rxToast(R),()=>{rxCancel(j);save();render();});}
+/* a job opened without a name (walk-in): add the customer later, right from the job card */
+(function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;const c=custOf(j);if(!c||!isWalk(c))return;const card=m.querySelector('.card');if(!card)return;
+  const b=document.createElement('button');b.className='btn ghost sm jaddc';b.innerHTML='👤 '+T_('Add the customer name');card.after(b);b.onclick=()=>jobCustSheet(j);};})();
+function jobCustSheet(j){const v=vehOf(j),old=custOf(j);
+  openSheet(`<h3>👤 ${T_('Add the customer name')}</h3><input class="field" id="jcp" inputmode="tel" placeholder="${T_('Phone')}"><input class="field" id="jcn" placeholder="${T_('Name')}"><div id="jcs"></div><button class="btn" id="jcok">${T_('Save')}</button>`,el=>{
+    const P=el.querySelector('#jcp'),N=el.querySelector('#jcn'),box=el.querySelector('#jcs');let pick=null;
+    const use=c=>{if(v&&(!v.cust||v.cust===old.id))v.cust=c.id;j.cust=c.id;logJ(j,'Customer set: '+(c.name||c.phone));save();closeSheet();render();toast(T_('Saved'));};
+    P.oninput=()=>{const k=phoneKey(P.value);const f=k.length>=4?DB.customers.filter(c=>!isWalk(c)&&phoneKey(c.phone).includes(k)).slice(0,4):[];
+      box.innerHTML=f.length?`<div class="sug"><div class="sh">🔎 ${T_('Already in the app · tap to use')}</div>${f.map(c=>`<button class="row" data-jc="${c.id}"><div><b>${esc(c.name)}</b><span>${esc(c.phone||'')}</span></div><span class="v">›</span></button>`).join('')}</div>`:'';
+      box.querySelectorAll('[data-jc]').forEach(x=>x.onclick=()=>use(byId('customers',x.dataset.jc)));};
+    el.querySelector('#jcok').onclick=()=>{const ph=P.value.replace(/[^\d+]/g,''),nm=N.value.trim();if(!nm&&!ph){toast(T_('Type a phone or name'));return;}
+      const ex=custByPhone(ph);if(ex&&!isWalk(ex)&&(!nm||lc(ex.name).trim()===lc(nm)))return use(ex);
+      const c={id:uid('c'),name:nm||'Walk-in',phone:ph,t:now()};DB.customers.push(c);use(c);};
+    setTimeout(()=>P.focus(),80);});}
