@@ -125,11 +125,12 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
   ${DB.sizes.length>1?`<label class="chk"><input type="checkbox" id="sbz" ${bySz?'checked':''}> Different price by car size</label>`:''}
   <div id="szw" ${bySz?'':'hidden'}><div class="field-l" style="display:flex;justify-content:space-between;align-items:center">Price by car size <button class="lnk" data-go2="list:size" style="min-height:0;padding:0">Edit sizes ›</button></div>
   <div class="szg" style="grid-template-columns:repeat(${Math.min(DB.sizes.length,4)},minmax(0,1fr))">${DB.sizes.map((z,k)=>`<label class="field-l">${esc(z)}<input class="field" data-sp="${k}" inputmode="decimal" value="${f3(pr(k))}"></label>`).join('')}</div></div>
+  <div class="field-l">⏰ ${T_('Reminder to the customer')}</div><div class="chips">${[['','None'],['oil','Engine oil'],['gear','Gearbox oil'],['rem','After a time or km']].map(([k,l])=>`<button data-t="${k}" aria-pressed="${(s.tag||(s.rem?'rem':''))===k}">${T_(l)}</button>`).join('')}</div>
+  <div class="in2" id="sremw" ${(s.tag||(s.rem?'rem':''))==='rem'?'':'hidden'}><label class="field-l">${T_('After (months)')}<input class="field" id="srmo" inputmode="numeric" value="${s.rem&&s.rem.mo||''}" placeholder="6"></label><label class="field-l">${T_('or after (km)')}<input class="field" id="srkm" inputmode="numeric" value="${s.rem&&s.rem.km||''}" placeholder="10000"></label></div>
   <details class="pmore"><summary>More details</summary>
   <label class="chk"><input type="checkbox" id="sfr" ${s.from?'checked':''}> Price “starts from” (set the real price on the job)</label>
   <div class="in2"><label class="field-l">Time it takes (min)<input class="field" id="smin" inputmode="numeric" value="${s.min||''}" placeholder="e.g. 30"></label><label class="field-l">Warranty<input class="field" id="swar" value="${esc(s.war||'')}" placeholder="e.g. 3 months"></label></div>
   ${sx('smart')?`<label class="field-l">✨ Smart compare when adding to a job<select class="field" id="srx"><option value="auto" ${s.rx===undefined?'selected':''}>Auto${rxGuess(s)?' ('+RX[rxGuess(s)].t+')':' (none)'}</option><option value="" ${s.rx===''?'selected':''}>Off for this service</option>${Object.entries(RX).map(([k,r])=>`<option value="${k}" ${s.rx===k?'selected':''}>${r.ic} ${r.t}</option>`).join('')}</select></label>`:''}
-  <div class="field-l">Reminder</div><div class="chips">${[['','None'],['oil','Engine oil'],['gear','Gearbox oil']].map(([k,l])=>`<button data-t="${k}" aria-pressed="${(s.tag||'')===k}">${l}</button>`).join('')}</div>
   <div class="field-l">Parts that come with it</div><div class="list" id="spl"></div>
   <select class="field" id="spa"><option value="">＋ Add a part…</option>${DB.parts.map(p=>`<option value="${p.id}">${esc(p.name)} · ${f3(p.price)}</option>`).join('')}</select>
   <div class="obox"><label class="chk" style="min-height:0"><input type="checkbox" id="soo" ${outOn?'checked':''}> <b>🏪 Done at another workshop</b></label><div id="sob"></div></div>
@@ -141,7 +142,7 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
   sp1.oninput=()=>{if(!sbz||!sbz.checked)spAll().forEach(i=>i.value=sp1.value);};
   if(sbz)sbz.onchange=()=>{szw.hidden=!sbz.checked;el.querySelector('#sp1w').hidden=sbz.checked;if(!sbz.checked)spAll().forEach(i=>i.value=sp1.value);else spAll().forEach(i=>{if(!num(i.value))i.value=sp1.value;});};
   const sp0=spAll()[0];if(sp0)sp0.addEventListener('input',()=>{sp1.value=sp0.value;});
-  let tag=s.tag||'';el.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tag=b.dataset.t;el.querySelectorAll('[data-t]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+  let tag=s.tag||(s.rem?'rem':'');el.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tag=b.dataset.t;el.querySelectorAll('[data-t]').forEach(x=>x.setAttribute('aria-pressed',x===b));const w=el.querySelector('#sremw');if(w)w.hidden=tag!=='rem';});
   const sc=el.querySelector('#sc'),scn=el.querySelector('#scn');sc.onchange=()=>{scn.hidden=sc.value!=='__new';if(!scn.hidden)scn.focus();};
   el.querySelectorAll('[data-go2]').forEach(b=>b.onclick=()=>{closeSheet();go('list',{id:'size'});});
   const drawP=()=>{el.querySelector('#spl').innerHTML=s.parts.map((x,k)=>{const p=byId('parts',x.ref)||{name:'(deleted part)'};return `<div class="oi"><div><b>${esc(p.name)}</b><span>${p.unit==='L'?'litres':'qty'}</span></div><div class="st"><button data-pq="${k}|-1">−</button><em>${x.q}</em><button data-pq="${k}|1">+</button></div></div>`;}).join('')||'<p class="hint">None. Example: oil change → oil + filter.</p>';
@@ -160,7 +161,7 @@ function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||
     if(!sbz||!sbz.checked)spAll().forEach(i=>i.value=sp1.value);
     if(s0){const np=[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value));if(np.some((x,i)=>Math.abs(x-(+s0.p[i]||0))>0.0005))audit('price','Service '+s0.name+': '+s0.p.map(f3).join('/')+' → '+np.map(f3).join('/'));}
     const t=s0||{id:uid('s'),custom:true};if(!s0)DB.services.push(t);
-    Object.assign(t,{name:n,ar:$('#sar').value.trim(),cat:g,p:[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value)),from:$('#sfr').checked,min:parseInt($('#smin').value)||0,war:$('#swar').value.trim(),tag,parts:s.parts,out:outOn?s.out:null,lockP:$('#slk').checked,hidden:$('#shd').checked});
+    Object.assign(t,{name:n,ar:$('#sar').value.trim(),cat:g,p:[...el.querySelectorAll('[data-sp]')].map(i=>num(i.value)),from:$('#sfr').checked,min:parseInt($('#smin').value)||0,war:$('#swar').value.trim(),tag:tag==='rem'?'':tag,rem:tag==='rem'&&(num($('#srmo').value)||num($('#srkm').value))?{mo:num($('#srmo').value)||0,km:num($('#srkm').value)||0}:null,parts:s.parts,out:outOn?s.out:null,lockP:$('#slk').checked,hidden:$('#shd').checked});
     const cm=$('#scm');if(cm)t.comm=num(cm.value);const rxe=$('#srx');if(rxe){if(rxe.value==='auto')delete t.rx;else t.rx=rxe.value;}
     if(outOn&&!partners.includes(s.out.who)){let L=DB.mlists.find(L=>/partner|workshop/i.test(L.name));if(!L){L={id:uid('ml'),name:'Partner workshops',ic:'🏪',note:'Workshops that do work for us.',items:[],inMenu:true};DB.mlists.push(L);}L.items.push({id:uid('li'),name:s.out.who,note:''});}
     save();closeSheet();render();};
