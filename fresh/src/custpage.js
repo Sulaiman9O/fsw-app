@@ -42,7 +42,6 @@ SCREENS.custd=m=>{const c=byId('customers',S.p.id);if(!c){go('cust');return;}con
    ${can.money()&&due>0&&tab!=='stmt'?`<button class="debtnote" id="cdue" style="width:100%;text-align:start;border:0;cursor:pointer">⚠️ ${T_('Owes')} <bdi>${f3(due)}</bdi> · ${T_('see the statement')} ›</button>`:''}
    <div class="chips ctabs">${tabs.map(([k,t,n])=>`<button data-ct="${k}" aria-pressed="${tab===k}">${T_(t)}${n!==''?` <span>${n}</span>`:''}</button>`).join('')}</div>
    <div class="ctab">${body}</div>
-   ${can.del()||can.settings()?`<button class="btn ghost sm" id="cmg2">🔗 ${T_('Merge with another customer')}</button>`:''}
    ${can.del()&&!js.length?`<button class="btn ghost jb-del" id="cdel">${T_('Delete customer')}</button>`:''}`;
   $$('[data-ct]').forEach(b=>b.onclick=()=>{S.p.tab=b.dataset.ct;render();});
   $('#cedit').onclick=()=>custSheet(c);const w=$('#cwa');if(w)w.onclick=()=>shareText(c.phone,msg('hello',{name:c.name||''}));debtBind(c);
@@ -52,7 +51,7 @@ SCREENS.custd=m=>{const c=byId('customers',S.p.id);if(!c){go('cust');return;}con
   const va=$('#vadd2');if(va)va.onclick=()=>vehSheet(c);
   const sw=$('#stwa');if(sw)sw.onclick=()=>shareText(c.phone,statementText(c));const sp=$('#stpr');if(sp)sp.onclick=()=>statementPrint(c);
   const nk=$('#cnok');if(nk)nk.onclick=()=>{const x=$('#cnx').value.trim();if(!x)return;c.log=c.log||[];c.log.push({t:now(),by:S.user.name,x});save();render();};
-  const g1=$('#cmg1');if(g1)g1.onclick=()=>mergeSheet(c,same[0]);const g2=$('#cmg2');if(g2)g2.onclick=()=>mergeSheet(c);
+  const g1=$('#cmg1');if(g1)g1.onclick=()=>mergeSheet(c,same[0]);
   const d=$('#cdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(c.name)+'?','Delete',()=>{audit('delete','Customer '+c.name);DB.customers=DB.customers.filter(x=>x!==c);DB.vehicles=DB.vehicles.filter(v=>v.cust!==c.id);save();go('cust');});};
 function tagSheet(c){const all=[...new Set([...CUST_TAGS,...DB.customers.flatMap(x=>x.tags||[])])];const on=new Set(c.tags||[]);
   openSheet(`<h3>🏷 ${T_('Labels')}</h3><div class="chips">${all.map(t=>`<button data-tg="${esc(t)}" aria-pressed="${on.has(t)}">${esc(T_(t))}</button>`).join('')}</div><div class="srow"><input class="field" id="tgn" placeholder="${T_('New label')}"><button class="btn ghost" id="tgadd" style="width:auto">＋</button></div><button class="btn" id="tgok">${T_('Save')}</button>`,el=>{
@@ -62,3 +61,15 @@ function tagSheet(c){const all=[...new Set([...CUST_TAGS,...DB.customers.flatMap
 /* labels and the car note elsewhere: on the customers list and on the counter card */
 (function(){const CC=SCREENS.counter;SCREENS.counter=m=>{CC(m);const C=S.ctr;const v=C&&C.vid&&byId('vehicles',C.vid);if(!v)return;const card=m.querySelector('.ctrcar');if(!card)return;const c=byId('customers',v.cust)||{};
   const extra=[v.note?`📝 ${esc(v.note)}`:'',(c.tags||[]).length?(c.tags||[]).map(t=>`<span class="tg">${esc(T_(t))}</span>`).join(' '):''].filter(Boolean).join('<br>');if(extra){const d=document.createElement('div');d.className='cnote';d.innerHTML=extra;card.appendChild(d);}};})();
+/* merge lives in the customer's Edit sheet (not one more button on the page) */
+(function(){const CS=custSheet;window.custSheet=custSheet=function(c){CS(c);if(!c||!c.id||!(can.del()||can.settings()))return;const el=$('#sheet');const ok=el&&el.querySelector('#cok');if(!ok)return;
+  const b=document.createElement('button');b.className='btn ghost';b.innerHTML='🔗 '+T_('Same person registered twice? Merge');b.onclick=()=>{closeSheet();mergeSheet(c);};ok.after(b);};})();
+/* the job card: hold the customer's name → change who this job is for (someone else brought the car), or move the car to them */
+function jobCustMenu(j){const c=custOf(j),v=vehOf(j);
+  actionSheet(esc(c.name||T_('Walk-in')),esc(carName(v)||''),[
+   {ic:'👤',t:'Change the customer of this job',s:'Change customer',d:'Someone else brought the car or pays for it. The car stays with its owner.',hide:isInvoiced(j)&&!can.invoice(),fn:()=>pickCust('👤 '+T_('Who is this job for?'),j.cust,to=>{const o=c.name||'';j.cust=to.id;logJ(j,'Customer changed: '+o+' → '+(to.name||''));audit('customer','Job #'+j.no+' customer '+o+' → '+(to.name||''));save();render();toast(T_('Done ✓'));},true)},
+   {ic:'🔁',t:'Move the car to another customer',s:'Move car',d:'The car was sold or is under the wrong name. Old visits stay with the old owner.',hide:!v.id,fn:()=>moveCar(v)},
+   {ic:'📂',t:'Open the customer',s:'Open',fn:()=>go('custd',{id:c.id})},
+   {ic:'📞',t:'Call',hide:!c.phone,fn:()=>{location.href='tel:'+c.phone;}},
+   {ic:'💬',t:'WhatsApp',hide:!c.phone,fn:()=>shareText(c.phone,msg('hello',{name:c.name||''}))}]);}
+(function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;const a=m.querySelector('.card [data-go^="custd:"]');if(!a)return;a.classList.add('lp');longPress(a,()=>jobCustMenu(j));};})();

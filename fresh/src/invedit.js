@@ -17,5 +17,4 @@ function editInvAsk(j){if(!can.invoice()){toast(T_('Ask the manager to edit the 
 (function(){const IV=SCREENS.inv;SCREENS.inv=m=>{IV(m);const j=byId('jobs',S.p&&S.p.id);if(!j||!isInvoiced(j)||j.returned||!can.invoice())return;
     const ret=m.querySelector('#iret');const b=document.createElement('button');b.className='btn';b.innerHTML='✏️ '+T_('Edit the invoice');b.onclick=()=>editInvAsk(j);(ret||m.lastChild).before(b);};
   const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;
-    if(isInvoiced(j)&&!j.returned&&can.invoice()){const list=m.querySelector('.jb-list');if(list){const b=document.createElement('button');b.className='btn ghost';b.innerHTML='✏️ '+T_('Edit the invoice')+' · '+T_('add or change items');b.onclick=()=>editInvAsk(j);list.after(b);}}
     if(j.invEdit){const h=m.querySelector('.card');if(h){const d=document.createElement('div');d.className='guess';d.textContent='✏️ '+T_('Editing invoice')+' #'+j.invEdit.no+' · '+T_('make it again with “Invoice & pay”');h.after(d);}}};})();
