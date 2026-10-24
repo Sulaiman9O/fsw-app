@@ -22,7 +22,7 @@ const waNum=t=>{let d=(t||'').replace(/\D/g,'');if(d.length===8)d='968'+d;return
 async function hashPin(pin){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ws:'+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return 'p:'+pin;}}
 let tt;function toast(s){const t=$('#toast');t.textContent=s;const was=t.hidden;t.hidden=false;if(was&&window.motionOn&&motionOn())gsap.fromTo(t,{y:20,opacity:0},{y:0,opacity:1,duration:.25,ease:'power2.out',clearProps:'transform,opacity'});clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400);}
 const KEY='ws_db_v1';
-function blankDB(){return {v:1,brandImg:[],pkgs:[],photos:[],ws:null,users:[],services:[],pcats:DEFAULT_PART_CATS.slice(),ecats:DEFAULT_EXP_CATS.slice(),parts:[],vendors:[],pos:[],customers:[],vehicles:[],jobs:[],reminders:[],expenses:[],closes:[],counts:[],steps:{},canned:[],insp:JSON.parse(JSON.stringify(DEFAULT_INSP)),backups:0,openingCash:0};}
+function blankDB(){return {v:1,brandImg:[],pkgs:[],photos:[],bugs:[],ws:null,users:[],services:[],pcats:DEFAULT_PART_CATS.slice(),ecats:DEFAULT_EXP_CATS.slice(),parts:[],vendors:[],pos:[],customers:[],vehicles:[],jobs:[],reminders:[],expenses:[],closes:[],counts:[],steps:{},canned:[],insp:JSON.parse(JSON.stringify(DEFAULT_INSP)),backups:0,openingCash:0};}
 let DB=(()=>{try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blankDB(),JSON.parse(s));}catch(e){}return blankDB();})();
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -48,7 +48,7 @@ const roleDef=(role,k)=>{if(role==='owner')return true;const p=PERMS.find(x=>x[0
 function permOf(u,k){if(!u)return false;if(u.role==='owner')return true;if(u.perm&&k in u.perm)return !!u.perm[k];return roleDef(u.role,k);}
 const perm=k=>permOf(S.user,k);
 const can={cost:()=>perm('cost'),discount:()=>perm('discount'),money:()=>perm('money'),del:()=>perm('del'),settings:()=>perm('settings'),invoice:()=>perm('invoice')};
-const ROUTE_P={inspj:'jobs',inspr:'jobs',pkgs:'settings',pkgwiz:'settings',pkg:'settings',quote:'jobs',checks:'checks',debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
+const ROUTE_P={counter:'jobs',inspj:'jobs',inspr:'jobs',pkgs:'settings',pkgwiz:'settings',pkg:'settings',quote:'jobs',checks:'checks',debts:'money',work:'jobs',job:'jobs',newjob:'jobs',inv:'jobs',cust:'cust',custd:'cust',money:'money',outw:'money',exp:'exp',close:'close',reports:'reports',stock:'stock',part:'stock',vendors:'vendors',po:'vendors',count:'count',settings:'settings',users:'settings',lists:'settings',menu:'settings',msgs:'settings',audit:'settings',slow:'stock',stockval:'cost',stocktools:'settings'};
 const routeOk=r=>!ROUTE_P[r]||perm(ROUTE_P[r]);
 /* lookups */
 const byId=(list,id)=>DB[list].find(x=>x.id===id);
@@ -59,12 +59,17 @@ const carName=v=>v?[v.make,v.model,v.year].filter(Boolean).join(' '):'';
 function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j.items||[]).forEach(it=>{if(it.pend)return;const q=+it.q||0,a=q*(+it.p||0);if(it.k==='part'){parts+=a;cost+=q*(+it.cost||0);}else labour+=a;
     const o=it.out;if(o&&o.who){let x=0;if(o.mode==='pass'){passOut+=a;x=a;}else if(o.mode==='share'){x=Math.max(0,a-q*(+o.amt||0));cost+=x;}else{x=q*(+o.amt||0);cost+=x;}owe+=x;ow[o.who]=(ow[o.who]||0)+x;}});
   const sub=parts+labour;let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=Math.min(disc,sub);const total=Math.max(0,sub-disc);const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
-  return {parts,labour,sub,disc,total,paid,due:Math.max(0,total-paid),cost,passOut,owe,ow,sales,profit:sales-cost};}
+  const R3=x=>Math.round(x*1000)/1000;let due=R3(Math.max(0,R3(total)-R3(paid)));if(due<0.001)due=0;   /* money is kept to the baisa: no 0.0005 debts, the same total on every screen */
+  return {parts,labour,sub,disc,total,paid,due,cost,passOut,owe,ow,sales,profit:sales-cost};}
 const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
 /* what a customer still owes: unpaid invoices, oldest first */
-function custDebt(cid){const t=now();const list=DB.jobs.filter(j=>j.cust===cid&&isInvoiced(j)&&!j.returned).map(j=>({j,due:jobTotals(j).due,days:Math.max(0,Math.floor((t-(j.inv.t||j.t))/864e5))})).filter(x=>x.due>=0.005).sort((a,b)=>(a.j.inv.t||a.j.t)-(b.j.inv.t||b.j.t));
+function custDebt(cid){const t=now();const list=DB.jobs.filter(j=>j.cust===cid&&isInvoiced(j)&&!j.returned).map(j=>({j,due:jobTotals(j).due,days:Math.max(0,Math.floor((t-(j.inv.t||j.t))/864e5))})).filter(x=>x.due>0).sort((a,b)=>(a.j.inv.t||a.j.t)-(b.j.inv.t||b.j.t));
   return {due:list.reduce((a,x)=>a+x.due,0),list};}
-const dueInvoices=()=>DB.jobs.filter(j=>isInvoiced(j)&&jobTotals(j).due>0.0005);
+/* cost and profit stay hidden at the counter; the owner taps 👁 to see them for 2 minutes */
+const showCost=()=>can.cost()&&!!S.eye&&Date.now()-S.eye<120000;
+function eyeBtn(){return can.cost()?`<button class="eyeb${showCost()?' on':''}" data-eye title="Profit">${showCost()?'🙈':'👁'}</button>`:'';}
+const dueInvoices=()=>DB.jobs.filter(j=>isInvoiced(j)&&!j.returned&&jobTotals(j).due>0);
+const totalDue=()=>Math.round(dueInvoices().reduce((a,j)=>a+jobTotals(j).due,0)*1000)/1000;
 const lowParts=()=>DB.parts.filter(p=>(+p.reorder||0)>0&&(+p.stock||0)<=(+p.reorder||0));

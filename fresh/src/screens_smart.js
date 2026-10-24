@@ -57,7 +57,7 @@ function smartSheet(j,s){let O=smartOptions(j,s),sel=O.opts.findIndex(o=>o.last)
       <div class="t"><b>${o.g?GRADE[o.g][0]+' · ':''}${esc(o.p.name)}</b><em>${f3(o.total)}</em></div>
       <div class="l"><span>${O.R.liq?o.q+' L':o.q+' ×'} ${f3(o.p.price)}${o.out?' · <b style="color:var(--bad)">not enough in stock ('+(+o.p.stock||0)+')</b>':''}</span><span>${f3(o.partT)}</span></div>
       ${o.fT?`<div class="l"><span>Filter</span><span>${f3(o.fT)}</span></div>`:''}<div class="l"><span>Labour · ${esc(s.name)}</span><span>${f3(O.lab)}</span></div>
-      <div class="ft">${o.next?`<span class="km">Next: ${j.km?kmf(j.km+o.next)+' · ':''}${kmf(o.next)} km</span>`:''}${O.useFit&&o.fits?'<span class="km ok">fits ✓</span>':''}${can.cost()?`<span class="pf">Profit ${f3(o.profit)}</span>`:''}</div></button>`).join('')
+      <div class="ft">${o.next?`<span class="km">Next: ${j.km?kmf(j.km+o.next)+' · ':''}${kmf(o.next)} km</span>`:''}${O.useFit&&o.fits?'<span class="km ok">fits ✓</span>':''}${showCost()?`<span class="pf">Profit ${f3(o.profit)}</span>`:''}</div></button>`).join('')
       +(!all&&shown().length>5?`<button class="btn ghost sm" id="small">Show all (${shown().length})</button>`:'')
       :`<p class="hint">${O.opts.length?'Nothing with this filter.':`No parts in stock for ${O.R.cat.join(', ')} yet. Add them in Stock, or add the service only.`}</p>`}
     <div class="two"><button class="btn ghost sm" id="smwa">📤 Send options</button><button class="btn ghost sm" id="smonly">Service only</button></div>

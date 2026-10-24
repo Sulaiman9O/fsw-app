@@ -428,3 +428,35 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .qfrow{width:100%;text-align:start;background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 .qfrow .qchg{display:block;color:var(--red2);font-size:12px;margin-top:2px}
 .jaddc{margin:-4px 0 10px}
+.chips button>span{margin-inline-start:6px;opacity:.75;font-variant-numeric:tabular-nums}
+.guess{background:hsl(42 95% 55% / .16);border:1px solid hsl(42 90% 50% / .55);color:inherit;border-radius:10px;padding:8px 10px;margin:6px 0;font-size:13px;font-weight:600}
+.tg.tgw{background:hsl(42 95% 55% / .25);color:inherit}
+.bugb{background:none;border:0;font-size:20px;padding:6px;margin-inline-start:auto;cursor:pointer;line-height:1}
+.top .bugb+.me{margin-inline-start:6px}
+.eyeb{background:none;border:0;font-size:18px;padding:4px 6px;cursor:pointer;margin-inline-start:6px}
+.eyeb.on{opacity:1}
+/* counter */
+.ctrq{font-size:1.25rem;padding:16px;margin-bottom:10px}
+.ctrcar .h{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.ctrcar .h b{font-size:1.15rem}
+.ctrcar .field-l{margin-top:10px}
+.ctra{display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:14px 16px;margin:10px 0;border-radius:16px;background:var(--panel);border:1px solid var(--line);color:inherit;font:inherit;cursor:pointer}
+.ctra .ic{font-size:1.5rem}
+.ctra>div{flex:1;min-width:0}
+.ctra b{display:block;font-size:1.05rem}
+.ctra small{display:block;color:var(--muted);font-size:.8rem;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctra small.gw{color:inherit;white-space:normal;background:hsl(42 95% 55% / .2);border-radius:8px;padding:2px 6px;display:inline-block}
+.ctra em{font-style:normal;font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.ctra.main{background:hsl(214 85% 52%);border-color:hsl(214 85% 52%);color:hsl(0 0% 100%)}
+.ctra.main small{color:hsl(0 0% 100% / .85)}
+.ctrgo{font-style:normal;font-weight:700;margin-inline-start:10px}
+/* invoice & pay bar */
+.paybar{position:sticky;bottom:calc(var(--navh,64px) + env(safe-area-inset-bottom,0px) + 8px);z-index:5;display:flex;align-items:center;gap:12px;padding:10px 12px;margin:10px 0;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 6px 24px hsl(220 30% 10% / .18)}
+.paybar>div{flex:1}
+.paybar small{display:block;color:var(--muted);font-size:.75rem}
+.paybar b{font-size:1.35rem;font-variant-numeric:tabular-nums}
+.paybar b span{font-size:.8rem;font-weight:600}
+.paybar .btn{width:auto;flex:0 0 auto;padding:0 18px;margin:0}
+.paym{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.paym .btn{margin:0;min-height:60px;font-size:1.1rem}
+#jinv.quiet{opacity:.75}

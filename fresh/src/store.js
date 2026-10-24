@@ -2,7 +2,7 @@
    Data stays in the same DB object in memory. save() only marks it changed; a short moment later the
    changed records are written. In SQLite each customer, car, job, part… is its own row, so a save
    writes only what changed, and there is no 5 MB limit. */
-const REC_KEYS=['customers','vehicles','jobs','parts','vendors','pos','reminders','expenses','closes','counts','users','services','canned','insp','moves','audit','outPaid','mlists','scats','brandImg','pkgs','photos'];
+const REC_KEYS=['customers','vehicles','jobs','parts','vendors','pos','reminders','expenses','closes','counts','users','services','canned','insp','moves','audit','outPaid','mlists','scats','brandImg','pkgs','photos','bugs'];
 const STORE={kind:'local',last:null,timer:0,q:Promise.resolve(),err:'',bytes:0};
 const SQLP=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.CapacitorSQLite;
 const SQLDB='workshop';

@@ -199,7 +199,7 @@ function debtNote(cid){if(!can.money())return '';const d=custDebt(cid);if(!d.lis
   return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}</div>`;}
 SCREENS.debts=m=>{if(!can.money()){go('home');return;}
   const rows=DB.customers.map(c=>({c,d:custDebt(c.id)})).filter(x=>x.d.list.length).sort((a,b)=>b.d.list[0].days-a.d.list[0].days);
-  const tot=rows.reduce((a,x)=>a+x.d.due,0);const sel=S.debtSel||(S.debtSel=null);
+  const tot=totalDue();const sel=S.debtSel||(S.debtSel=null);
   m.innerHTML=head('Debts',rows.length?`<button class="lnk" id="dsel">${sel?'Cancel':'Select'}</button>`:'')+`
   <div class="kpis2"><div class="kpi org"><b>${f3(tot)}</b><span>Due · ${esc(DB.ws.currency)}</span></div><div class="kpi"><b>${rows.length}</b><span>Customers</span></div></div>
   ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}

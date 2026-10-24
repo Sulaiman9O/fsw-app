@@ -16,7 +16,7 @@ function stepDone(w,i,auto){if(DB.steps[stepKey(w,i)])return true;return !!(auto
 function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,a],i)=>{t++;if(stepDone(w,i,a))d++;}));return [d,t];}
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
-const navOf=r=>({home:'home',search:'home',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
+const navOf=r=>({home:'home',search:'home',counter:'home',quote:'home',bugs:'more',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
 /* screens with no fixed parent (quick price, debts, checks…) go back to where they were opened from */
 let GO_BACK=false;
 /* Back goes to the screen you came from: every move is kept in a short history. The four bottom tabs start a new history;
@@ -45,18 +45,20 @@ function render(){
   const T={quote:'Quick price',checks:'Invoice checks',debts:'Debts',home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages',audit:'Activity log',news:'What\'s new',slow:'Slow parts',stockval:'Stock value',stocktools:'Stock tools'};
   const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
-   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${S.user.color}">${initials(S.user.name)}</span></div></header>
+   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${S.user.color}">${initials(S.user.name)}</span></div></header>
    <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${S.user.color}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
    <main id="main"></main>
    <nav class="bottom"><div class="in">${nb}</div></nav></div>`;
   $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
   $$('[data-logout]').forEach(b=>b.onclick=()=>{S.user=null;render();});
+  $$('[data-bug]').forEach(b=>b.onclick=()=>bugSheet());
   const m=$('#main');
   if(!routeOk(S.r)){toast('Not allowed for '+S.user.name);S.r='home';}
   (SCREENS[S.r]||SCREENS.home)(m);
   m.querySelectorAll('[data-go]').forEach(b=>{if(!routeOk(b.dataset.go.split(':')[0]))b.remove();});
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
+  m.querySelectorAll('[data-eye]').forEach(b=>b.onclick=e=>{e.stopPropagation();e.preventDefault();S.eye=showCost()?0:Date.now();render();});
   try{motionAfterRender(m);}catch(e){}
   try{attachPress(m);}catch(e){}
 }

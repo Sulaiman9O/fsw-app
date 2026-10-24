@@ -5,7 +5,7 @@ function sumRange(from){const inv=DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=from
   const pays=DB.jobs.flatMap(j=>(j.pays||[]).filter(p=>p.t>=from&&!isCreditM(p.m)));const exp=DB.expenses.filter(e=>e.t>=from).reduce((a,e)=>a+e.amt,0);
   return {n:inv.length,sales:T.reduce((a,t)=>a+t.sales,0),passOut:T.reduce((a,t)=>a+t.passOut,0),profit:T.reduce((a,t)=>a+t.profit,0),cost:T.reduce((a,t)=>a+t.cost,0),labour:T.reduce((a,t)=>a+t.labour,0),parts:T.reduce((a,t)=>a+t.parts,0),paid:pays.reduce((a,p)=>a+p.amt,0),byM:pays.reduce((o,p)=>(o[p.m]=(o[p.m]||0)+p.amt,o),{}),exp,inv};}
 SCREENS.money=m=>{if(!can.money()){go('home');return;}
-  const due=dueInvoices().sort((a,b)=>a.inv.t-b.inv.t),dt=due.reduce((a,j)=>a+jobTotals(j).due,0),cd=(+DB.ws.credDays||30)*864e5;
+  const due=dueInvoices().sort((a,b)=>a.inv.t-b.inv.t),dt=totalDue(),cd=(+DB.ws.credDays||30)*864e5;
   const td=sumRange(rangeOf('today')),wk=sumRange(rangeOf('week'));
   m.innerHTML=head('Money')+`
   <div class="kpis2"><div class="kpi org"><b>${f3(dt)}</b><span>Due from customers</span></div><div class="kpi ok"><b>${f3(wk.sales)}</b><span>Sales · last 7 days</span></div></div>
@@ -154,7 +154,8 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
 SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>show&&routeOk(r)&&!DB.hideMenu[r]?`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t2}</b><span>${s}</span></div><span class="v">›</span></button>`:'';
   const ml=DB.mlists.filter(L=>L.inMenu!==false);
   m.innerHTML=head('More')+`<div class="list">
-  ${it('news','🎉','What\'s new · how to use',newsUnseen().length?'<b style="color:var(--red2)">'+newsUnseen().length+' new</b> · tap to see':'Tours of every new thing')}${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`)}
+  ${(DB.bugs||[]).length?it('bugs','🐞','Saved problems',DB.bugs.length+' · copy them and send them to be fixed'):''}
+  ${it('news','🎉','What\'s new · how to use',newsUnseen().length?'<b style="color:var(--red2)">'+newsUnseen().length+' new</b> · tap to see':'Tours of every new thing')}${it('setup','✅','Setup · 100 steps',`${d} of ${t} done`,can.settings())}
   ${it('checks','🔎','Invoice checks',(()=>{const n=DB.jobs.filter(j=>j.t>=now()-7*864e5&&j.stage!=='estimate'&&jobChecks(j).length).length;return n?n+' to look at · last 7 days':'Nothing wrong · last 7 days';})())}
   ${it('debts','💳','Debts',(()=>{const n=DB.customers.filter(c=>custDebt(c.id).list.length).length;return n?n+' customers owe money':'Nobody owes money';})())}
   ${it('pkgs','📦','Packages','Fixed-price packages by car',can.settings())}

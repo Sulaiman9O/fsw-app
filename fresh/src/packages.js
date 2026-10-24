@@ -74,7 +74,7 @@ function pkgMoney(j,inst){let rev=0,cost=0;(j.items||[]).forEach(i=>{if(i.inst==
 /* ---------- job screen: package lines, no price edits inside a package ---------- */
 (function(){const J=SCREENS.job;SCREENS.job=m=>{const j=byId('jobs',S.p.id);if(j&&!isInvoiced(j))try{pkgSyncAll(j);}catch(e){}J(m);
   if(!j)return;(j.items||[]).forEach((it,i)=>{const b=m.querySelector(`[data-it="${i}"]`);if(!b)return;
-    if(it.k==='pkg'){b.classList.add('pkh');const s=b.querySelector('small');if(s)s.innerHTML=`📦 ${T_('Package')}${it.p0&&Math.abs(it.p0-it.p)>0.0005?' · <s>'+f3(it.p0)+'</s>':''}${can.cost()?' · '+T_('profit')+' '+f3(pkgMoney(j,it.inst).profit):''}`;}
+    if(it.k==='pkg'){b.classList.add('pkh');const s=b.querySelector('small');if(s)s.innerHTML=`📦 ${T_('Package')}${it.p0&&Math.abs(it.p0-it.p)>0.0005?' · <s>'+f3(it.p0)+'</s>':''}${showCost()?' · '+T_('profit')+' '+f3(pkgMoney(j,it.inst).profit):''}`;}
     else if(it.inPkg){b.classList.add('pkm');const r=b.querySelector(':scope > b');if(r)r.innerHTML=`<small class="pkin">${T_('In package')}</small>`;const s=b.querySelector('small');if(s)s.innerHTML=(it.k==='part'?T_('Part'):T_('Labour'))+(it.num?' · <bdi dir="ltr" data-notr>'+esc(it.num)+'</bdi>':'')+' · '+(+it.q)+(it.u?' '+esc(it.u):'')+(+it.incl?' · '+T_('included')+' '+it.incl:'');}});};})();
 (function(){const E=editItemSheet;window.editItemSheet=editItemSheet=function(j,i,isNew){const it=j.items[i];if(!it)return;
   if(it.k==='pkg'){const p=byId('pkgs',it.pkg)||{};const M=pkgMoney(j,it.inst);

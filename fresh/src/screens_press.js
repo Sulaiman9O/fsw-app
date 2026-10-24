@@ -28,16 +28,16 @@ let UNDO=null;
 function undoBar(msg,fn){UNDO=fn;let u=$('#undob');if(!u){u=document.createElement('div');u.id='undob';u.className='undob';document.body.appendChild(u);}
   u.innerHTML=`<span>${msg}</span><button>Undo</button>`;u.hidden=false;u.querySelector('button').onclick=()=>{u.hidden=true;if(UNDO){UNDO();UNDO=null;}};clearTimeout(u._t);u._t=setTimeout(()=>{u.hidden=true;UNDO=null;},6000);}
 /* job item menu */
-function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const pt=it.ref&&byId('parts',it.ref);const locked=isInvoiced(j);
+function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const pt=it.k==='part'?partOfItem(it):null;const locked=isInvoiced(j);
   const sub=`${it.k==='part'?'Part':'Labour'} · ${+it.q}${it.u?' '+esc(it.u):''} × ${it.pend?'?':f3(it.p)} = <b>${it.pend?'?':f3(it.q*it.p)}</b>`;
   if(locked){actionSheet(esc(it.d),sub,[{ic:'🧾',s:'Invoice',t:'Open the invoice',fn:()=>go('inv',{id:j.id})},{ic:'📋',s:'Copy',t:'Copy line',fn:()=>{try{navigator.clipboard.writeText(it.d+' · '+f3(it.q*it.p));toast('Copied');}catch(e){}}}],'<p class="hint">Invoice made. Return the invoice to change items.</p>');return;}
   const step=it.u==='L'?0.5:1;
   const top=`<div class="qrow"><span>Quantity</span><div class="st"><button data-q="-1">−</button><input class="qin" id="lpq" inputmode="decimal" value="${+it.q}"><button data-q="1">+</button></div></div>`;
   const same=pt?DB.parts.filter(p=>p.cat===pt.cat&&p.id!==pt.id):[];const alts=pt?(pt.alts||[]).map(a=>byId('parts',a)).filter(Boolean):[];
   actionSheet(esc(it.d),sub,[
+   {ic:'🔁',t:'Change to another',s:'Change',d:alts.length?alts.length+' alternative'+(alts.length>1?'s':'')+' · same category':'Same category',hide:!pt||(!same.length),fn:()=>swapSheet(j,i,alts,same)},
    {ic:'✏️',t:'Edit',s:'Edit',d:'Name, price, quantity',fn:()=>editItemSheet(j,i)},
    {ic:'📄',t:'Duplicate',s:'Copy',fn:()=>{j.items.splice(i+1,0,JSON.parse(JSON.stringify(it)));logJ(j,'Duplicated '+it.d);save();render();}},
-   {ic:'🔁',t:'Swap part',s:'Swap',d:alts.length?alts.length+' alternative'+(alts.length>1?'s':'')+' · same category':'Same category',hide:!pt||(!same.length),fn:()=>swapSheet(j,i,alts,same)},
    {ic:'⏳',s:'Price?',t:it.pend?'Price is known now':'Ask owner for the price',d:it.pend?'Open to type the price':'Shows “Price?” until the owner sets it',fn:()=>{if(it.pend){editItemSheet(j,i);return;}it.pend=true;logJ(j,'Price pending · '+it.d);save();render();}},
    {ic:'🎁',t:'No charge',s:'Free',d:'Price 0, part still leaves stock',hide:!can.discount(),fn:()=>{const o=it.p;it.p=0;it.pend=false;it.free=1;audit('discount','No charge: '+it.d+' (was '+f3(o)+') · job #'+j.no);logJ(j,'No charge · '+it.d);save();render();}},
    {ic:'🧑‍🔧',s:'Customer part',t:it.custPart?'Undo: customer brought it':'Customer brought this part',d:'Price 0 and it does not leave our stock',hide:it.k!=='part',fn:()=>{it.custPart=!it.custPart;if(it.custPart){it._p=it.p;it.p=0;}else{it.p=it._p||it.p;delete it._p;}logJ(j,(it.custPart?'Customer part · ':'Our part again · ')+it.d);save();render();}},
@@ -47,8 +47,17 @@ function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const 
   ],top);
   const el=$('#qs')||$('#sheet');if(!el)return;el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{it.q=Math.max(step,Math.round(((+it.q)+step*(+b.dataset.q))*100)/100);el.querySelector('#lpq').value=it.q;save();render();const a=document.querySelector('[data-it="'+i+'"]');if(a)a.classList.add('qs-on');});
   const q=el.querySelector('#lpq');q.onfocus=()=>q.select();q.onchange=()=>{const n=num(q.value);if(n>0){it.q=n;save();render();}};}
-function swapSheet(j,i,alts,same){const it=j.items[i];const L=[...alts,...same.filter(p=>!alts.includes(p))];
-  openSheet(`<h3>🔁 Swap ${esc(it.d)}</h3><div class="list">${L.map(p=>`<button class="row" data-sw="${p.id}"><div><b>${esc(p.name)}${alts.includes(p)?' <span class="tg tok">alternative</span>':''}</b><span>${+p.stock||0}${p.unit==='L'?' L':''} in stock${p.loc?' · 📍 '+esc(p.loc):''}</span></div><span class="v">${f3(p.price)}</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.sw);const o=it.d;Object.assign(it,{ref:p.id,d:p.name,num:p.num,p:+p.price,cost:+p.cost||0,u:p.unit==='L'?'L':''});logJ(j,'Swapped '+o+' → '+p.name);save();closeSheet();render();toast('Swapped');}));}
+function swapSheet(j,i,alts,same){const it=j.items[i];const cur=partOfItem(it);const v=vehOf(j);
+  /* the likely ones first: its alternatives, then (filters) the ones that fit this car or (oils) the same viscosity, then what is in stock */
+  const fit=new Set();try{if(cur&&cur.cat==='Oil filters')filterOpts(v,oilRecipe(v,'usual')).forEach(o=>fit.add(o.p.id));}catch(e){}const vs=cur?viscTxt(cur.name):'';
+  const rank=p=>(alts.includes(p)?0:fit.has(p.id)||(vs&&viscTxt(p.name)===vs)?1:2)*2+((+p.stock||0)>0?0:1);
+  const L=[...new Set([...alts,...same])].sort((a,b)=>rank(a)-rank(b)||(+a.price||0)-(+b.price||0));
+  const row=p=>`<button class="row" data-sw="${p.id}"><div><b>${esc(p.name)}${alts.includes(p)?' <span class="tg tok">'+T_('alternative')+'</span>':fit.has(p.id)?' <span class="tg tok">'+T_('fits')+'</span>':''}</b><span>${+p.stock||0}${p.unit==='L'||p.cat==='Engine oil'?' L':''} ${T_('in stock')}${p.loc?' · 📍 '+esc(p.loc):''}</span></div><span class="v">${f3(p.price)}</span></button>`;
+  openSheet(`<h3>🔁 ${T_('Change')} · ${esc(it.d)}</h3><input class="field" id="swq" placeholder="${T_('Number or name…')}" autocomplete="off" autocorrect="off" spellcheck="false"><div class="list" id="swl"></div>`,el=>{
+    const q=el.querySelector('#swq'),box=el.querySelector('#swl');
+    const draw=()=>{const t=normQ(q.value);const M=L.filter(p=>!t||normQ((p.num||'')+' '+p.name).includes(t)).slice(0,t?40:20);box.innerHTML=M.map(row).join('')||`<p class="hint">${T_('Nothing found')}</p>`;
+      box.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.sw);const o=it.d;Object.assign(it,{ref:p.id,d:p.name,num:p.num,p:+p.price,cost:+p.cost||0,u:(p.unit==='L'||p.cat==='Engine oil')?'L':''});logJ(j,'Swapped '+o+' → '+p.name);save();closeSheet();render();});};
+    q.oninput=draw;draw();});}
 /* selection bar actions */
 function selBar(j){const s=S.selJ;const n=s.set.size;
   return `<div class="selbar"><b>${n} selected</b><button data-sa="all">All</button><button data-sa="pend">⏳ Price?</button>${can.discount()?'<button data-sa="free">🎁 Free</button>':''}<button data-sa="del" class="dg">🗑 Remove</button><button data-sa="x">✕</button></div>`;}

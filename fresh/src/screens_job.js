@@ -11,10 +11,10 @@ SCREENS.job=m=>{
   ${j.stage!=='estimate'?`<div class="jb-steps">${stages.map((s,i)=>`<div class="${i<=si?'on':''}" style="--sc:${STAGE[s][1]}"><i></i><span>${STAGE[s][0]}</span></div>`).join('')}</div>`:''}
   ${nx?`<button class="btn okb" id="jnext">${nx[1]}</button>`:''}
   ${sec('Services & parts',`${(j.items||[]).length} items`)}
-  ${S.selJ&&S.selJ.id===j.id?selBar(j):''}<div class="jb-list">${(j.items||[]).map((it,i)=>`<button class="jb-r it${it.pend?' pend':''}${S.selJ&&S.selJ.id===j.id?' selm'+(S.selJ.set.has(i)?' on':''):''}" data-it="${i}">${S.selJ&&S.selJ.id===j.id?'<i class="ck">'+(S.selJ.set.has(i)?'✓':'')+'</i>':''}<div>${esc(it.d)}${it.custPart?' <span class="tg tgr">customer part</span>':''}${it.free?' <span class="tg tok">free</span>':''}<small>${it.k==='part'?T_('Part'):T_('Labour')}${it.num?' · <bdi dir="ltr" data-notr>'+esc(it.num)+'</bdi>':''}${it.q!==1||it.u?' · '+(+it.q)+(it.u?' '+esc(it.u):'')+' × '+f3(it.p):''}${it.outside?' · bought outside':''}${it.note?' · 📝 '+esc(it.note):''}</small></div><b>${it.pend?'Price?':f3(it.q*it.p)}</b></button>`).join('')}
+  ${S.selJ&&S.selJ.id===j.id?selBar(j):''}<div class="jb-list">${(j.items||[]).map((it,i)=>`<button class="jb-r it${it.pend?' pend':''}${S.selJ&&S.selJ.id===j.id?' selm'+(S.selJ.set.has(i)?' on':''):''}" data-it="${i}">${S.selJ&&S.selJ.id===j.id?'<i class="ck">'+(S.selJ.set.has(i)?'✓':'')+'</i>':''}<div>${esc(it.d)}${it.custPart?' <span class="tg tgr">customer part</span>':''}${it.free?' <span class="tg tok">free</span>':''}${it.oldp?' <span class="tg tgw">'+T_('old price, check')+'</span>':''}<small>${it.k==='part'?T_('Part'):T_('Labour')}${it.num?' · <bdi dir="ltr" data-notr>'+esc(it.num)+'</bdi>':''}${it.q!==1||it.u?' · '+(+it.q)+(it.u?' '+esc(it.u):'')+' × '+f3(it.p):''}${it.outside?' · bought outside':''}${it.note?' · 📝 '+esc(it.note):''}</small></div><b>${it.pend?'Price?':f3(it.q*it.p)}</b></button>`).join('')}
    ${!isInvoiced(j)?`<button class="jb-r add" id="jadd"><span class="plus2">＋</span><div><b>Add service or part</b><small>Oil change, filters, brakes, labour…</small></div><em>›</em></button>`:''}
    ${T.disc?`<div class="jb-r"><div>Discount${j.discPct?` (${j.discPct}%)`:''}</div><b>−${f3(T.disc)}</b></div>`:''}
-   <div class="jb-r tot"><div>Total<small>Parts ${f3(T.parts)} · Labour ${f3(T.labour)}${can.cost()&&T.parts?` · profit ${f3(T.profit)}`:''}</small></div><b>${f3(T.total)} ${DB.ws.currency}</b></div></div>
+   <div class="jb-r tot"><div>Total<small>Parts ${f3(T.parts)} · Labour ${f3(T.labour)}${showCost()&&T.parts?` · profit ${f3(T.profit)}`:''}</small></div><b>${f3(T.total)} ${DB.ws.currency}</b>${eyeBtn()}</div></div>
   ${!isInvoiced(j)&&can.discount()?`<button class="btn ghost sm" id="jdisc">Discount</button>`:''}
   ${rxBar(j)}${chkBox(j)}
   ${sec('Inspection',j.insp?`${Object.values(j.insp.r||{}).filter(x=>x==='bad').length} red · ${Object.values(j.insp.r||{}).filter(x=>x==='warn').length} yellow`:'')}
@@ -32,7 +32,7 @@ SCREENS.job=m=>{
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);rxBind(j);
   $$('[data-sa]').forEach(b=>b.onclick=()=>selAct(j,b.dataset.sa));
-  $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){toast('Invoice made. Return it to change items.');return;}editItemSheet(j,+b.dataset.it);});
+  $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){toast('Invoice made. Return it to change items.');return;}PRESS=null;itemMenu(j,+b.dataset.it);});
   const ds=$('#jdisc');if(ds)ds.onclick=()=>openSheet(`<h3>Discount</h3><div class="in2"><input class="field" id="dam" inputmode="decimal" placeholder="Amount (${DB.ws.currency})" value="${j.discPct?'':j.disc||''}"><input class="field" id="dpc" inputmode="decimal" placeholder="or %" value="${j.discPct||''}"></div><button class="btn" id="dok">Save</button>`,el=>el.querySelector('#dok').onclick=()=>{const p=num($('#dpc').value),a=num($('#dam').value);j.discPct=p||0;j.disc=p?0:a;audit('discount','Discount on #'+j.no+': '+(p?p+'%':f3(a)));logJ(j,'Discount '+(p?p+'%':f3(a)));save();closeSheet();render();});
   $('#jnotes').onchange=e=>{j.notes=e.target.value;save();};
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
@@ -58,10 +58,18 @@ function svcItem(s,v){return {k:'labour',ref:s.id,d:s.name,ar:s.ar||'',q:1,u:'',
 const normQ=x=>String(x||'').toLowerCase().replace(/[\s\-_.\/]+/g,'');
 const qHit=(q,...xs)=>{const n=normQ(q);if(!n)return true;return xs.some(x=>normQ(x).includes(n)||normQ(T_(x||'')).includes(n));};
 function lastVisit(j){const v=vehOf(j);if(!v)return null;return DB.jobs.filter(x=>x.id!==j.id&&x.veh===v.id&&(x.items||[]).length).sort((a,b)=>b.t-a.t)[0]||null;}
+/* an old line (often imported from the old system, with no link) → today's service or part, so the price is today's and stock is taken out */
+/* old names from the previous system → today's service */
+const SVC_OLD={'obdscannercheck':'OBD Scan','transmissionfluidcheck/replace':'ATF Drain & Refill','transmissionfluidrefill':'ATF Drain & Refill','transmissionfluiddrain&refill':'ATF Drain & Refill','transmissionfluid&filterreplace':'ATF & Filter Change','regularinspection':'Service Inspection','changesparkplugs6/8cylinderengine':'Spark Plugs – 6/8 Cyl','changesparkplugs4cylinderengine':'Spark Plugs – 4 Cyl','brakefluidflushmachine':'Brake Fluid Flush','throttlecleaningintakecleaner':'Throttle Cleaning','usedcarpresalesinspectionobdscanner':'Sales Inspection with OBD','usedcarpresalesinspection':'Sales Inspection','frontrotordiscturning':'Front Rotor Turning','rearrotordiscsturning':'Rear Rotor Turning','changecoolant':'Coolant Change','changefrontbrakepads':'Front Brake Pads','changerearbrakepads':'Rear Brake Pads','reardifferentialfluidcheck/replace':'Rear Differential Fluid Check','differentialfluidcheck/replace':'Differential Fluid Check','transfercasefluidcheck/replace':'Transfer Case Fluid Check','changeenginebelts':'Change Engine Belts','rodalignment':'Wheel Rod Alignment','stabilizerlinkrods':'Link Rod Replace','airfilter':'Air Filter Clean'};
+const oldKey=x=>String(x||'').toLowerCase().replace(/\b(sedans?|suvs?|for|with|engine\s+oil)\b/g,m=>/engine/.test(m)?m:'').replace(/\bfor\b|\bwith\b/g,'').replace(/[^a-z0-9\/&]/g,'').replace(/\.$/,'');
+function svcOfItem(i){if(i.ref){const s=byId('services',i.ref);if(s)return s;}
+  const names=[i.d,i.ar,...String(i.d||'').split(' · ')].filter(Boolean);
+  for(const n of names){const a=SVC_OLD[oldKey(n)];if(a){const s=DB.services.find(x=>x.name===a);if(s)return s;}}
+  const ks=names.map(svcKey).filter(Boolean);if(!ks.length)return null;return DB.services.find(s=>!s.hidden&&ks.includes(svcKey(s.name)))||DB.services.find(s=>ks.includes(svcKey(s.name))||ks.includes(svcKey(s.ar)))||null;}
 function repeatVisit(j,from){const v=vehOf(j);let n=0;(from.items||[]).forEach(i=>{
-    if(i.k==='labour'&&i.ref){const sv=byId('services',i.ref);if(sv){j.items.push(svcItem(sv,v));n++;return;}}
-    if(i.k==='part'&&i.ref&&!i.custPart){const p=byId('parts',i.ref);if(p){j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:+i.q||1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});n++;return;}}
-    const c=Object.assign({},i);delete c.pend;c.by=S.user.name;j.items.push(c);n++;});
+    if(i.k!=='part'){const sv=svcOfItem(i);if(sv){j.items.push(svcItem(sv,v));n++;return;}}
+    if(i.k==='part'&&!i.custPart){const p=partOfItem(i);if(p){const L=p.unit==='L'||/\bL\b/.test(i.u||'')||p.cat==='Engine oil';j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:+i.q||1,u:L?'L':'',p:+p.price,cost:+p.cost||0,by:S.user.name});n++;return;}}
+    const c=Object.assign({},i);delete c.pend;c.by=S.user.name;c.oldp=1;j.items.push(c);n++;});   /* not in today's lists: kept with its old price, marked so it is checked */
   logJ(j,'Repeated visit #'+from.no);return n;}
 function addItemSheet(j,opt){opt=opt||{};
   let q=opt.q||'',tab=opt.tab||'';const v=vehOf(j);const use=svcUse();const lv=lastVisit(j);let msel=null;/* long press = pick several, then add them together */
@@ -131,14 +139,14 @@ function editItemSheet(j,i,isNew){
    <input class="field" id="ed" placeholder="Name" value="${esc(it.d)}">
    <div class="chips"><button data-k="part" aria-pressed="${it.k==='part'}">Part</button><button data-k="labour" aria-pressed="${it.k!=='part'}">Labour / service</button></div>
    <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each${it.from?' (starts from '+f3(it.p)+')':''}<input class="field" id="ep" inputmode="decimal" value="${it.pend?'':f3(it.p)}" ${it.lockP&&!can.discount()?'disabled':''}></label></div>
-   ${can.cost()&&it.k==='part'?`<label class="field-l">Cost each (owner only)<input class="field" id="ec" inputmode="decimal" value="${it.cost?f3(it.cost):''}"></label>`:''}
+   ${showCost()&&it.k==='part'?`<label class="field-l">Cost each (owner only)<input class="field" id="ec" inputmode="decimal" value="${it.cost?f3(it.cost):''}"></label>`:''}
    ${!it.ref?`<label class="chk"><input type="checkbox" id="eo" ${it.outside?'checked':''}> Bought outside (not from our stock)</label>`:''}
    <label class="chk"><input type="checkbox" id="epd" ${it.pend?'checked':''}> Ask the owner for the price</label>
    <button class="btn" id="eok">Save</button><button class="btn ghost jb-del" id="edel">Remove</button>`,el=>{
     let k=it.k;el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=b.dataset.k;el.querySelectorAll('[data-k]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
     el.querySelector('#eok').onclick=()=>{const d=$('#ed').value.trim();if(!d){toast('Type a name');return;}it.d=d;it.k=k;it.q=num($('#eq').value)||1;it.pend=$('#epd').checked;it.p=it.pend?0:num($('#ep').value);const ec=$('#ec');if(ec)it.cost=num(ec.value);const eo=$('#eo');if(eo)it.outside=eo.checked;
       if(!can.discount()&&it.ref){const base=it.k==='part'?(byId('parts',it.ref)||{}).price:null;if(base!=null&&it.p<+base-0.0005){it.p=+base;toast('Workers cannot lower prices');}}
-      logJ(j,(it.neu?'Added ':'Changed ')+d+(it.pend?' (price pending)':' '+f3(it.q*it.p)));delete it.neu;save();closeSheet();render();};
+      delete it.oldp;logJ(j,(it.neu?'Added ':'Changed ')+d+(it.pend?' (price pending)':' '+f3(it.q*it.p)));delete it.neu;save();closeSheet();render();};
     el.querySelector('#edel').onclick=()=>{j.items.splice(i,1);logJ(j,'Removed '+(it.d||'item'));save();closeSheet();render();};
     el.querySelector('[data-close]').onclick=()=>{if(it.neu)j.items.splice(i,1);closeSheet();render();};});
 }
@@ -151,10 +159,13 @@ function inspSheet(j){const I=j.insp;
 function makeInvoice(j){
   const T=jobTotals(j);if(!(j.items||[]).length){toast('Add services or parts first');return;}
   if((j.items||[]).some(i=>i.pend)){toast('Some items have no price yet');return;}
-  confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{
-    delete j.returned;j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
-    if(j.stage==='new'||j.stage==='work')j.stage='ready';if(j.stage==='done'){try{makeReminders(j);}catch(e){}}logJ(j,'Invoice #'+j.inv.no);save();go('inv',{id:j.id});});
+  confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{issueInvoice(j);save();go('inv',{id:j.id});});
 }
+function issueInvoice(j){const T=jobTotals(j);
+    delete j.returned;j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&!it.custPart){if(!it.ref){const p0=partOfItem(it);if(p0)it.ref=p0.id;}const p=it.ref&&byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
+    if(j.stage==='new'||j.stage==='work')j.stage='ready';if(j.stage==='done'){try{makeReminders(j);}catch(e){}}logJ(j,'Invoice #'+j.inv.no);}
+/* paid in full, or left as a debt: the car has left, so the job is done and its reminders are made (no extra "Delivered" tap) */
+function closeJob(j){if(j.stage==='done')return;j.stage='done';logJ(j,STAGE.done[0]);try{makeReminders(j);}catch(e){}}
 SCREENS.inv=m=>{
   const j=byId('jobs',S.p.id);if(!j||!j.inv){go('work');return;}const T=jobTotals(j),c=custOf(j);
   m.innerHTML=head('Invoice #'+j.inv.no,j.returned?'<span class="tag t-bad">Returned</span>':T.due<=0.0005?'<span class="tag t-ok">Paid</span>':`<span class="tag t-warn">Due ${f3(T.due)}</span>`)+`
@@ -164,7 +175,7 @@ SCREENS.inv=m=>{
   <div class="two"><button class="btn" id="iwa">WhatsApp</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
   <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>
   ${(can.invoice()||can.del())&&!j.returned?`<button class="btn ghost jb-del" id="iret">Return / cancel invoice</button>`:''}`;
-  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;if(isCreditM(mth)){j.credit=now();logJ(j,'On credit (to pay later) · due '+f3(T.due));audit('pay','On credit · invoice #'+j.inv.no+' · '+f3(T.due));save();toast(T_('Kept as a debt on the customer'));render();return;}openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);save();closeSheet();render();});});
+  $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;if(isCreditM(mth)){j.credit=now();logJ(j,'On credit (to pay later) · due '+f3(T.due));audit('pay','On credit · invoice #'+j.inv.no+' · '+f3(T.due));closeJob(j);save();toast(T_('Kept as a debt on the customer'));render();return;}openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);if(jobTotals(j).due<=0)closeJob(j);save();closeSheet();render();});});
   $('#iwa').onclick=()=>shareText(c.phone,docText(j,'invoice'));
   $('#ipr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>',210,297,'Invoice '+j.inv.no);
   const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();audit('return','Invoice #'+j.inv.no+' returned');j.inv.void=true;const byM={};(j.pays||[]).forEach(p=>{if(!isCreditM(p.m))byM[p.m]=(byM[p.m]||0)+(+p.amt||0);});const back=Object.values(byM).reduce((a,x)=>a+Math.max(0,x),0);if(back>0.0005){Object.entries(byM).forEach(([m,a])=>{if(a>0.0005)j.pays.push({m,amt:-r3(a),t:now(),by:S.user.name,refund:1});});logJ(j,'Refund '+f3(back));}DB.reminders=DB.reminders.filter(r=>r.job!==j.id);j.stage='done';logJ(j,'Invoice returned');save();render();});
