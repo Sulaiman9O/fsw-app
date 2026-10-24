@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const logo=fs.readFileSync('/home/claude/fsw-app/fresh/assets/icon-only.png').toString('base64');
+ await p.evaluate(l=>{DB.ws.logo='data:image/png;base64,'+l;DB.ws.phone='99887766';DB.ws.lang='ar';S.user.lang='ar';langApply();save();go('stkset');},logo);await p.waitForTimeout(800);
+ const lk=await p.$$('[data-lk]');ok(lk.length===4,'4 looks');
+ await p.evaluate(()=>{const f=window.toast;window.toast=()=>{};});for(const x of ['B','A','C']){await p.click(`[data-tp="${x}"]`);await p.waitForTimeout(400);await (await p.$$('.stkt'))[1].screenshot({path:'w'+x+'.png'});
+   const over=await p.evaluate(()=>[...document.querySelectorAll('.stk')].filter(s=>s.scrollWidth>s.clientWidth+2||s.scrollHeight>s.clientHeight+2).length);ok(over===0,x+' nothing spills ('+over+')');}
+ await p.click('[data-lk="2"]');await p.waitForTimeout(300);ok(await p.evaluate(()=>DB.ws.stk.sty.C===2),'look saved per size');
+ await p.setInputFiles('#stlg','/home/claude/fsw-app/fresh/assets/icon-foreground.png');await p.waitForTimeout(1200);ok(await p.evaluate(()=>!!DB.ws.stk.logo.C&&!DB.ws.stk.logo.B),'logo per size');
+ await p.evaluate(()=>{const e=document.querySelector('#stlz');e.value=150;e.dispatchEvent(new Event('input'));e.dispatchEvent(new Event('change'));});ok(await p.evaluate(()=>DB.ws.stk.lz.C===150),'logo size');
+ await p.click('[data-sw="tel"]');await p.waitForTimeout(300);ok(await p.evaluate(()=>DB.ws.stk.show.tel===0&&!/99887766/.test(document.querySelector('#spvS').innerText)),'hide phone');
+ await p.click('[data-rl="r29"]');await p.waitForTimeout(400);await (await p.$$('.stkt'))[1].screenshot({path:'wD.png'});
+ const over=await p.evaluate(()=>[...document.querySelectorAll('.stk')].filter(s=>s.scrollWidth>s.clientWidth+2||s.scrollHeight>s.clientHeight+2).length);ok(over===0,'D nothing spills ('+over+')');
+ console.log('errors',errs);await b.close();})();
