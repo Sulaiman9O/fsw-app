@@ -128,7 +128,7 @@ function wipeData(){const b=blankDB(),keep=['v','ws','users','pcats','ecats','in
 SCREENS.users=m=>{if(!can.settings()){go('more');return;}
   const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
   m.innerHTML=head('Users',`<button class="lnk" id="uadd">＋ Add</button>`)+`
-  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything.<br><b>Manager</b> and <b>Worker</b> start with a set of permissions. Tap a person to turn each one on or off.</span></div>
+  <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything.<br><b>Manager</b> and <b>Employee</b> start with a set of permissions. Tap a person to turn each one on or off.</span></div>
   <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}${nCust(u)?' · custom permissions':''}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
   const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role;let pm=Object.assign({},u.perm||{});
     openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}">

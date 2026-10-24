@@ -26,7 +26,7 @@ function blankDB(){return {v:1,brandImg:[],pkgs:[],photos:[],bugs:[],ws:null,use
 let DB=(()=>{try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blankDB(),JSON.parse(s));}catch(e){}return blankDB();})();
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
-const ROLE={owner:'Owner',manager:'Manager',worker:'Worker'};
+const ROLE={owner:'Owner',manager:'Manager',worker:'Employee'};
 const PERMS=[
  ['jobs','Work','Open jobs and estimates, add services and parts',1,1],
  ['cust','Customers','Customers, cars and reminders',1,1],

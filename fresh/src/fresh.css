@@ -477,3 +477,12 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .slr .st .qin{width:54px;text-align:center;height:36px;border-radius:10px;border:1px solid var(--line);background:none;color:inherit;font:inherit}
 .slr>div:first-child{flex:1;min-width:0}
 .ssrch .sq{width:auto;flex:0 0 auto;margin:0;padding:0 14px}
+/* customers list */
+.crow2>div{min-width:0}
+.crow2 .cars{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.crow2 .cars i{font-style:normal;font-size:.72rem;padding:2px 7px;border-radius:8px;background:var(--panel);border:1px solid var(--line);white-space:nowrap}
+.crow2 .cars .pl{font-size:.68rem;margin-inline-start:3px}
+.cv2{display:grid;justify-items:end;gap:2px;flex:0 0 auto;margin-inline-start:8px}
+.cv2 .due{font-style:normal;font-weight:800;color:var(--warn)}
+.cv2 small{font-size:.7rem;color:var(--muted);white-space:nowrap}
+.chips.sm button{min-height:32px;font-size:.8rem}
