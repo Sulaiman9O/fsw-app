@@ -41,6 +41,15 @@ jobs:
       - name: Icons
         continue-on-error: true
         run: npx capacitor-assets generate --android --iconBackgroundColor '#2F80FF' --splashBackgroundColor '#0B1F3A' --iconBackgroundColorDark '#2F80FF' --splashBackgroundColorDark '#0B1F3A'
+      - name: Plain launch screen (the app shows its own opening)
+        continue-on-error: true
+        run: |
+          mkdir -p android/app/src/main/res/drawable
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#00000000"/></shape>\n' > android/app/src/main/res/drawable/splash_blank.xml
+          F=android/app/src/main/res/values/styles.xml
+          sed -i 's#<item name="android:background">@drawable/splash</item>#<item name="android:background">@drawable/splash</item>\n        <item name="windowSplashScreenBackground">@android:color/black</item>\n        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>#' $F
+          sed -i 's#@android:color/black</item>#\#0B1F3A</item>#' $F
+          cat $F
       - name: Version
         run: |
           sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle

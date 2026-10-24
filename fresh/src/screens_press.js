@@ -16,7 +16,7 @@ function quickStrip(anchor,title,sub,acts,top){closeQs();const r=anchor.getBound
   let top0=r.bottom+6;if(top0+h>vh-10)top0=Math.max(10,r.top-h-6);bar.style.top=top0+'px';
   try{if(motionOn())gsap.from(bar,{y:top0>r.top?-8:8,opacity:0,scale:.96,duration:.18,ease:'power2.out'});}catch(e){}
   ov.addEventListener('pointerdown',e=>{if(e.target===ov)closeQs();});
-  const sc=()=>{closeQs();removeEventListener('scroll',sc,true);};setTimeout(()=>addEventListener('scroll',sc,true),300);
+  const sc=e=>{if(e&&e.target&&e.target.closest&&e.target.closest('#qs'))return;closeQs();removeEventListener('scroll',sc,true);};   /* sliding the strip itself does not close it */setTimeout(()=>addEventListener('scroll',sc,true),300);
   ov.querySelectorAll('[data-qi]').forEach(b=>b.onclick=()=>{const k=b.dataset.qi;closeQs();if(k==='more'){fullSheet(title,sub,acts,top);return;}const a=acts[+k];a.fn($('#sheet'));});}
 function actionSheet(title,sub,acts,top){acts=acts.filter(a=>a&&!a.hide);
   if(PRESS&&Date.now()-PRESS.t<1500&&PRESS.el.isConnected){const el=PRESS.el;PRESS=null;quickStrip(el,title,sub,acts,top);return;}

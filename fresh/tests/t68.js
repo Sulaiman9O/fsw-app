@@ -11,7 +11,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(()=>document.querySelectorAll('#toast,#undob').forEach(x=>x.hidden=true));const el=await p.$('.inv-pv');await el.screenshot({path:'inv_modern.png'});
  await p.evaluate(()=>go('settings'));await p.waitForTimeout(400);await p.click('text=شكل الفاتورة');await p.waitForTimeout(500);ok(await p.evaluate(()=>S.r)==='invstyle','settings → invoice look');
  await p.click('[data-ac="#1D6FE0"]');await p.waitForTimeout(200);await p.click('[data-it2="clean"]');await p.waitForTimeout(400);ok(await p.evaluate(()=>DB.ws.invS.t==='clean'&&DB.ws.invS.acc==='#1D6FE0'),'saved template+colour');
- await p.check('[data-sh="sign"]');await p.waitForTimeout(200);ok(!!(await p.$('#ipv .iv2-sign')),'signature lines toggle');
+ await p.check('[data-sh="sign"]');await p.waitForTimeout(200);ok(!!(await p.$('#ipv .iv2-sl')),'signature lines toggle');
  await p.fill('#inote','Bank Muscat 0123-456789');await p.waitForTimeout(200);ok((await p.$eval('#ipv',x=>x.innerText)).includes('Bank Muscat'),'extra line in preview');
  const pv=await p.$('#ipv');await pv.screenshot({path:'inv_clean.png'});await p.screenshot({path:'inv_settings.png'});
  await p.click('[data-lg="en"]');await p.waitForTimeout(300);ok((await p.$eval('#ipv',x=>x.innerText)).includes('Balance due'),'english labels');
