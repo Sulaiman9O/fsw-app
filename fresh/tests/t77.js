@@ -1,0 +1,7 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868}});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(2200);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('Sulaiman');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ await p.evaluate(()=>{DB.users.push({id:uid('u'),name:'sushan',role:'worker',pin:'x',color:'#2F80FF'});save();S.user=null;render();});await p.waitForTimeout(1200);
+ await p.click('.person');await p.waitForTimeout(60);const anims=await p.evaluate(()=>document.getAnimations().length);ok(anims>0,'glide animations running '+anims);await p.waitForTimeout(600);
+ ok(await p.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running'&&!(a instanceof CSSAnimation)).length===0),'settled');await key('1');await p.waitForTimeout(50);ok(await p.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running'&&!(a instanceof CSSAnimation)).length===0),'no animation on each key');
+ console.log('errors',errs);await b.close();})();
