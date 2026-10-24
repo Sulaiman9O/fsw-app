@@ -1,0 +1,17 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();save();},[cat,cu]);
+ const vid=await p.evaluate(()=>{const v=DB.vehicles.find(v=>/pathfinder/i.test(v.model)&&String(v.year)==='2002');return v&&v.id;});ok(!!vid,'Pathfinder 2002 found');
+ const q0=await p.evaluate(id=>oilRecipe(byId('vehicles',id),'usual').qty,vid);console.log('before',q0);
+ await p.evaluate(id=>{S.quote={vid:id,car:null,kind:'oil',vf:'auto',cv:false,q:''};go('quote');},vid);await p.waitForTimeout(500);
+ await p.click('#qqty');await p.waitForTimeout(300);await p.fill('#qtl','5');await p.click('#qtcar');await p.waitForTimeout(500);
+ const q1=await p.evaluate(id=>[oilRecipe(byId('vehicles',id),'usual').qty,quoteRows(byId('vehicles',id),'oil').qty],vid);ok(q1[0]===5&&q1[1]===5,'car litres 5 in recipe and quick price '+q1);
+ await p.evaluate(id=>go('counter',{vid:id}),vid);await p.waitForTimeout(500);await p.click('#coil');await p.waitForTimeout(500);
+ const oq=await p.evaluate(()=>{const j=byId('jobs',S.p.id);const o=j.items.find(i=>i.u==='L');return o&&o.q;});ok(oq===5,'job oil 5 L');
+ await p.click('#rxqty');await p.waitForTimeout(300);await p.fill('#qtl','5.5');await p.click('#qtmod');await p.waitForTimeout(500);
+ const st=await p.evaluate(()=>{const j=byId('jobs',S.p.id);const v=vehOf(j);return [j.items.find(i=>i.u==='L').q,Object.keys(DB.spec||{})];});console.log(JSON.stringify(st));ok(st[0]===5,'car override still wins over model');
+ await p.evaluate(()=>{const v=vehOf(byId('jobs',S.p.id));delete v.oilQ;});const q2=await p.evaluate(id=>oilRecipe(byId('vehicles',id),'usual').qty,vid);ok(q2===5.5,'model litres when no car override '+q2);
+ await p.screenshot({path:'q70.png'});console.log('errors',errs);await b.close();})();

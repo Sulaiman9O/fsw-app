@@ -113,7 +113,9 @@ function oilRecipe(v,mode){if(!v)return null;const I=rcpIndex();const keys=rcpKe
   if(filter&&(+filter.stock||0)<=0){const a=(filter.alts||[]).map(x=>byId('parts',x)).find(x=>x&&(+x.stock||0)>0);if(a){fsrc=Object.assign({},fsrc,{alt:filter.name});filter=a;}}
   if(!filter&&missing)fsrc={missing};
   const sp=specOf(v);let visc='',qty=0,vsrc=null,qsrc=null;
-  if(mode==='maker'&&sp){visc=sp.visc[0];vsrc={maker:1,own:sp.own};if(sp.cap){qty=sp.cap;qsrc={maker:1,own:sp.own};}}
+  /* litres you set yourself win over everything: for this car, or for every car of this model and engine */
+  if(+v.oilQ>0){qty=+v.oilQ;qsrc={car:1};}else if(sp&&sp.own&&sp.cap){qty=sp.cap;qsrc={maker:1,own:1};}
+  if(mode==='maker'&&sp){visc=sp.visc[0];vsrc={maker:1,own:sp.own};if(sp.cap&&!qty){qty=sp.cap;qsrc={maker:1,own:sp.own};}}
   if(!visc&&VI){visc=VI.r[0];vsrc={k:VI.k,n:VI.n};}
   if(!qty&&Q){qty=Q.r;qsrc={k:Q.k,n:Q.n};}
   if(!visc&&sp){visc=sp.visc[0];vsrc={maker:1};}
@@ -143,14 +145,30 @@ function rxAuto(j,added){if(!sx('smart')||isInvoiced(j))return null;const v=vehO
   const o=oilParts(j);const trig=added&&(isOilSvc(added)||isFilterI(added,partOfItem(added))||isOilI(added,partOfItem(added)));if(!trig)return null;
   if(o.svc!=null&&o.filters.length&&o.oils.length)return null;
   const mode=(DB.ws.rxMode)||'usual';return applyOilRecipe(j,mode);}
-const srcTxt=(s,v)=>!s||(!s.k&&!s.maker&&!s.guess)?'':s.maker?(s.own?T_('your maker values'):T_('maker recommendation')):s.guess?T_('engine size'):T_('from '+s.n+' visits')+' · '+keyLabel(s.k,v,s.id);
+const srcTxt=(s,v)=>s&&s.car?T_('set for this car'):!s||(!s.k&&!s.maker&&!s.guess)?'':s.maker?(s.own?T_('your maker values'):T_('maker recommendation')):s.guess?T_('engine size'):T_('from '+s.n+' visits')+' · '+keyLabel(s.k,v,s.id);
 function rxBar(j){if(!j.rx||!j.rx.oil||isInvoiced(j)||!(j.items||[]).some(i=>i.grp==='rxoil'))return '';const v=vehOf(j);const m=j.rx.oil.mode;const R=oilRecipe(v,m)||{};const sp=specOf(v);
   return `<div class="rxbar"><div class="rh"><b>🛢 ${T_('Oil change')}</b><div class="chips" data-notr><button data-rxm="usual" aria-pressed="${m!=='maker'}">${T_('Usual')}</button><button data-rxm="maker" aria-pressed="${m==='maker'}" ${sp?'':'disabled'}>${T_('Maker')}</button></div></div>
    <span class="sub">${R.visc?`${esc(R.visc)} · ${srcTxt(R.vsrc,v)}`:''}${m==='maker'&&sp&&sp.conf==='low'?` (${T_('not confirmed')})`:''}${R.qty?` · ${R.qty} L`:''}${R.fsrc?` · ${T_('filter')}: ${srcTxt(R.fsrc,v)}`:''}${R.fsrc&&R.fsrc.missing?` · ⚠️ ${esc(R.fsrc.missing)} ${T_('is not in the parts list')}`:''}${!sp?` · ${T_('no maker data for this car')}`:''}${sp&&(sp.filter||[]).length&&!makerFilter(v)?` · ⚠️ ${T_('maker filter not in the parts list')}: ${esc(sp.filter.join(' / '))}`:''}</span>
+   <button class="lnk" id="rxqty">✏️ ${T_('Set the litres for this car')}</button>
    ${R.qsrc&&R.qsrc.guess?`<div class="guess">⚠️ ${T_('Litres are a guess for this car: check them. The app learns them from this invoice.')}</div>`:''}
    <div class="rxf">${can.settings()?`<button class="lnk" id="rxspec">${T_('Maker values for this car')} ›</button>`:''}<button class="lnk rxx" id="rxx">✕ ${T_('Remove oil change')}</button></div></div>`;}
 function rxCancel(j){j.items=(j.items||[]).filter(i=>i.grp!=='rxoil'&&i.grp!=='rxsvc');if(j.rx)delete j.rx.oil;logJ(j,'Automatic oil change removed');}
-function rxBind(j){const rx=$('#rxx');if(rx)rx.onclick=()=>{const md=(j.rx&&j.rx.oil&&j.rx.oil.mode)||'usual';rxCancel(j);save();render();undoBar(T_('Oil change removed'),()=>{applyOilRecipe(j,md);save();render();});};$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
+/* set the litres by hand: for this car only, or for every car of this model + engine. The next oil change uses it, whatever was sold before */
+function qtySheet(v,cur,done){const real=v&&v.id&&v.id!=='_q'&&v.id!=='_n'&&byId('vehicles',v.id);const key=lc(v.make).trim()+'|'+baseModel(v.model)+'|'+dispOf(v);const own=(DB.spec||{})[key];
+  openSheet(`<h3>🛢 ${T_('Engine oil litres')}</h3><p class="hint">${T_('With the filter. The next oil change uses this, not what was sold last time.')}</p>
+   <input class="field" id="qtl" inputmode="decimal" value="${cur||''}" style="font-size:1.4rem;text-align:center">
+   ${real?`<button class="btn" id="qtcar">🚗 ${T_('For this car only')}<small style="display:block;font-weight:500;opacity:.85">${esc(carName(v))}${v.plate?' · '+esc(v.plate):''}</small></button>`:''}
+   <button class="btn ${real?'ghost':''}" id="qtmod">📋 ${T_('For every')} ${esc(v.make||'')} ${esc(baseModel(v.model)||'')}${dispOf(v)?' '+esc(dispOf(v))+'L':''}</button>
+   ${real&&+real.oilQ||own&&own.cap?`<button class="btn ghost jb-del" id="qtclr">${T_('Remove what I set')}</button>`:''}`,el=>{
+    const val=()=>{const x=num(el.querySelector('#qtl').value);if(!(x>0&&x<30)){toast(T_('Type the litres'));return 0;}return Math.round(x*10)/10;};
+    const fin=(t)=>{save();closeSheet();toast(t);if(done)done();else render();};
+    const c=el.querySelector('#qtcar');if(c)c.onclick=()=>{const x=val();if(!x)return;real.oilQ=x;audit('settings','Oil litres '+x+' for '+carName(real)+' '+(real.plate||''));fin(T_('Saved for this car'));};
+    el.querySelector('#qtmod').onclick=()=>{const x=val();if(!x)return;DB.spec=DB.spec||{};const o=DB.spec[key]||{visc:(specOf(v)||{}).visc||[]};o.cap=x;DB.spec[key]=o;audit('settings','Oil litres '+x+' for '+key);fin(T_('Saved for this model'));};
+    const cl=el.querySelector('#qtclr');if(cl)cl.onclick=()=>{if(real)delete real.oilQ;if(own){delete own.cap;if(!(own.visc||[]).length)delete DB.spec[key];}fin(T_('Removed'));};
+    setTimeout(()=>{const i=el.querySelector('#qtl');i.focus();i.select();},80);});}
+function rxBind(j){const rq=$('#rxqty');if(rq)rq.onclick=()=>{const v=vehOf(j);const R=oilRecipe(v,(j.rx&&j.rx.oil&&j.rx.oil.mode)||'usual')||{};
+    qtySheet(v,R.qty,()=>{const R2=oilRecipe(v,(j.rx&&j.rx.oil&&j.rx.oil.mode)||'usual');const ol=(j.items||[]).find(i=>i.grp==='rxoil'&&i.k==='part'&&isOilI(i,partOfItem(i)));if(ol&&R2&&R2.qty){ol.q=R2.qty;logJ(j,'Oil litres set to '+R2.qty);save();}render();});};
+const rx=$('#rxx');if(rx)rx.onclick=()=>{const md=(j.rx&&j.rx.oil&&j.rx.oil.mode)||'usual';rxCancel(j);save();render();undoBar(T_('Oil change removed'),()=>{applyOilRecipe(j,md);save();render();});};$$('[data-rxm]').forEach(b=>b.onclick=()=>{const m=b.dataset.rxm;if(j.rx&&j.rx.oil&&j.rx.oil.mode===m)return;applyOilRecipe(j,m);save();render();});
   const sp=$('#rxspec');if(sp)sp.onclick=()=>specSheet(vehOf(j));}
 /* the owner can write the maker values for a model (they win over the built-in list) */
 function specSheet(v){if(!v)return;const key=lc(v.make).trim()+'|'+baseModel(v.model)+'|'+dispOf(v);const s=specOf(v)||{visc:[],cap:''};
