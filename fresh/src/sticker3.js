@@ -52,9 +52,9 @@ function printSticker3(t,d,rb,done){const [w,h]=STK_SIZES[t];const [pw,ph]=STK_P
   if(P){P.printHtml({html:doc,widthMm:pw,heightMm:ph,color:!!rb,name:'Sticker'}).then(()=>done&&done()).catch(e=>toast('Could not print: '+(e&&e.message||e)));return;}
   printHtml(doc,pw,ph,'Sticker');done&&done();}
 /* the job's sticker: pick which reminder and the size; the look, logo and what shows come from Settings → Sticker */
-stickerSheet=window.stickerSheet=function(j){const L=(planRems(j)||[]).filter(r=>r.on!==false);
+stickerSheet=window.stickerSheet=function(j,k0){const A=planRems(j)||[];const L=A.filter(r=>r.on!==false);
   if(!L.length){toast(T_('No reminder on this job. Add one under “Reminders for the customer”.'));return;}
-  const set=stkSet();let k=0,t=STK_ROLLS[set.roll].t.includes(set.tpl)?set.tpl:STK_ROLLS[set.roll].t[0];
+  const set=stkSet();let k=k0!=null&&A[k0]?Math.max(0,L.indexOf(A[k0])):0,t=STK_ROLLS[set.roll].t.includes(set.tpl)?set.tpl:STK_ROLLS[set.roll].t[0];
   const oilLine=()=>{const o=(j.items||[]).find(i=>i.k==='part'&&(i.u==='L'||/oil/i.test(i.d||''))&&!/filter/i.test(i.d||''));return o?o.d.replace(/\s+F\/S.*$/i,'').replace(/\s+\d+\s*ltrs?.*$/i,''):'';};
   const data=()=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
   openSheet(`<h3>🏷️ ${T_('Service sticker')}</h3>${L.length>1?`<div class="chips" id="skr"></div>`:''}<div class="stkpv3" id="spv3"></div><div class="chips" id="skt"></div>
@@ -95,3 +95,8 @@ SCREENS.stkset=m=>{if(!can.settings()){go('more');return;}const s=stkSet();const
   const lr=$('#stlr');if(lr)lr.onclick=()=>{const c=stkSet();delete c.logo[t];put({logo:c.logo});};
   $('#stest').onclick=()=>printSticker3(t,d,s.rb);};
 (function(){const SE=SCREENS.settings;SCREENS.settings=m=>{SE(m);const w=m.querySelector('#swar');const at=w&&w.closest('label');if(!at)return;const b=document.createElement('button');b.className='mitem';b.id='sstk';b.innerHTML=`<span class="ic">🏷️</span><div><b>${T_('Sticker')}</b><span>${T_('Look, logo and size of the service sticker')}</span></div><span class="v">›</span>`;b.onclick=()=>go('stkset');at.before(b);};})();
+/* from the reminders card: a 🏷️ button next to “Add a reminder”, and a long press on a reminder prints that one */
+(function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);const c=m.querySelector('.jrem');if(!j||!c)return;const add=c.querySelector('#jrmadd');
+  if(add&&(planRems(j)||[]).some(r=>r.on!==false)){const w=document.createElement('div');w.className='jrbtns';add.before(w);w.appendChild(add);const b=document.createElement('button');b.className='btn ghost sm';b.id='jrstk';b.innerHTML='🏷️ '+T_('Print sticker');b.onclick=()=>stickerSheet(j);w.appendChild(b);}
+  c.querySelectorAll('[data-rm]').forEach(r=>{if(typeof longPress==='function')longPress(r,()=>{const k=+r.dataset.rm;const x=planRems(j)[k];if(x&&x.on===false){toast(T_('This reminder is off'));return;}stickerSheet(j,k);});});};
+  const st=document.createElement('style');st.textContent='.jrbtns{display:grid;grid-template-columns:1fr auto;gap:8px}.jrbtns .btn{margin:0}';document.head.appendChild(st);})();
