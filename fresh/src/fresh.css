@@ -471,3 +471,9 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .jb-gh{padding:10px 16px 4px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.02em}
 .jrem .row.off{opacity:.5}
 .jrem .btn.sm{margin-top:8px}
+.ctrsale{margin-bottom:10px}
+.slr .st{display:flex;align-items:center;gap:4px;margin-inline:8px}
+.slr .st button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:inherit;font-size:1.1rem}
+.slr .st .qin{width:54px;text-align:center;height:36px;border-radius:10px;border:1px solid var(--line);background:none;color:inherit;font:inherit}
+.slr>div:first-child{flex:1;min-width:0}
+.ssrch .sq{width:auto;flex:0 0 auto;margin:0;padding:0 14px}

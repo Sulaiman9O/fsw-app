@@ -16,7 +16,7 @@ function stepDone(w,i,auto){if(DB.steps[stepKey(w,i)])return true;return !!(auto
 function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,a],i)=>{t++;if(stepDone(w,i,a))d++;}));return [d,t];}
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
-const navOf=r=>({home:'home',search:'home',counter:'home',quote:'home',bugs:'more',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
+const navOf=r=>({home:'home',search:'home',counter:'home',sale:'home',quote:'home',bugs:'more',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
 /* screens with no fixed parent (quick price, debts, checks…) go back to where they were opened from */
 let GO_BACK=false;
 /* Back goes to the screen you came from: every move is kept in a short history. The four bottom tabs start a new history;
