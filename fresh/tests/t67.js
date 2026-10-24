@@ -32,5 +32,5 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(()=>{S.quote={vid:null,car:{make:'Jaguar',model:'XF',year:'2012',engine:''},kind:'oil',vf:'all',cv:false,q:''};go('quote');});await p.waitForTimeout(500);
  ok(!!(await p.$('.guess')),'quote shows guess warning');await hide();await p.screenshot({path:'c7.png'});
  /* customer page: car row → counter */
- await p.evaluate(()=>{const v=DB.vehicles.find(v=>/camry/i.test(v.model));go('custd',{id:v.cust});});await p.waitForTimeout(400);await p.click('[data-ve] .ctrgo');await p.waitForTimeout(400);ok(await p.evaluate(()=>S.r)==='counter','car row → counter');
+ await p.evaluate(()=>{const v=DB.vehicles.find(v=>/camry/i.test(v.model));go('custd',{id:v.cust});});await p.waitForTimeout(400);await p.click('[data-ctr]');await p.waitForTimeout(400);ok(await p.evaluate(()=>S.r)==='counter','car row → counter');
  console.log('errors',errs);await b.close();})();

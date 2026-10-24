@@ -9,10 +9,10 @@ function custStats(){const k=DB.jobs.length+'|'+DB.customers.length+'|'+DB.vehic
   CSTAT={k,m};return m;}
 SCREENS.cust=m=>{const P=S.p;P.f=P.f||'all';P.s=P.s||'last';P.n=P.n||60;const st=custStats();const rd=remindersDue();const remC=new Set(rd.map(r=>r.cust));const q=normQ(P.q||'');
   let L=DB.customers.filter(c=>{const o=st[c.id]||{};if(P.f==='due'&&!(o.due>0))return false;if(P.f==='rem'&&!remC.has(c.id))return false;if(P.f==='nophone'&&phoneKey(c.phone).length>=7)return false;if(P.f==='dup'&&!o.dup)return false;
-    if(!q)return true;return normQ([c.name,c.phone,c.area,c.company,...(o.cars||[]).map(v=>(v.plate||'')+' '+carName(v)+' '+(v.vin||''))].join(' ')).includes(q);});
+    if(!q)return true;return normQ([c.name,c.phone,c.area,c.company,...(c.tags||[]),...(o.cars||[]).map(v=>(v.plate||'')+' '+carName(v)+' '+(v.vin||''))].join(' ')).includes(q);});
   const S_={last:(a,b)=>(st[b.id].last||b.t||0)-(st[a.id].last||a.t||0),name:(a,b)=>String(a.name||'').localeCompare(String(b.name||'')),spent:(a,b)=>st[b.id].spent-st[a.id].spent,due:(a,b)=>st[b.id].due-st[a.id].due};L.sort(S_[P.s]||S_.last);
   const cnt=k=>k==='due'?DB.customers.filter(c=>st[c.id].due>0).length:k==='rem'?remC.size:k==='nophone'?DB.customers.filter(c=>phoneKey(c.phone).length<7).length:k==='dup'?DB.customers.filter(c=>st[c.id].dup).length:DB.customers.length;
-  const row=c=>{const o=st[c.id];return `<button class="row crow2" data-go="custd:${c.id}"><div><b>${esc(c.name||T_('Walk-in'))}${o.dup?` <span class="tg tgw">${T_('same phone')}</span>`:''}</b><span>${c.phone?`<bdi dir="ltr">${esc(c.phone)}</bdi>`:T_('no phone')}${c.area?' · '+esc(c.area):''}</span>
+  const row=c=>{const o=st[c.id];return `<button class="row crow2" data-go="custd:${c.id}"><div><b>${esc(c.name||T_('Walk-in'))}${(c.tags||[]).map(t=>` <span class="tg">${esc(T_(t))}</span>`).join('')}${o.dup?` <span class="tg tgw">${T_('same phone')}</span>`:''}</b><span>${c.phone?`<bdi dir="ltr">${esc(c.phone)}</bdi>`:T_('no phone')}${c.area?' · '+esc(c.area):''}</span>
     ${o.cars.length?`<span class="cars">${o.cars.slice(0,3).map(v=>`<i>${esc(carName(v)||'')}${v.plate?` <bdi class="pl">${esc(v.plate)}</bdi>`:''}</i>`).join('')}${o.cars.length>3?`<i>+${o.cars.length-3}</i>`:''}</span>`:''}</div>
     <span class="v cv2">${o.due>0&&can.money()?`<em class="due">${f3(o.due)}</em>`:''}<small>${o.last?ago(o.last):''}</small><small>${o.visits?o.visits+' '+T_('visits'):''}</small></span></button>`;};
   m.innerHTML=head('Customers',`<button class="lnk" id="cadd">＋ ${T_('Add')}</button>`)+`

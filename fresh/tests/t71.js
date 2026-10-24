@@ -11,7 +11,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.click('[data-cf="due"]');await p.waitForTimeout(400);await p.click('[data-cs="due"]');await p.waitForTimeout(400);const dues=await p.$$eval('.crow2 .due',L=>L.slice(0,3).map(x=>+x.innerText));ok(dues.length&&dues[0]>=dues[1],'owe most first '+dues);
  /* move a car */
  const ids=await p.evaluate(()=>{const v=DB.vehicles.find(v=>v.plate&&/31838/.test(v.plate));const to=DB.customers.find(c=>c.id!==v.cust&&/alyazeedi/i.test(c.name||''));return [v.id,v.cust,to.id,to.name];});
- await p.evaluate(([vid,cid])=>go('custd',{id:cid}),ids);await p.waitForTimeout(400);await p.click(`[data-ve="${ids[0]}"] [data-vedit]`);await p.waitForTimeout(400);
+ await p.evaluate(([vid,cid])=>go('custd',{id:cid}),ids);await p.waitForTimeout(400);await p.click(`[data-ve2="${ids[0]}"]`);await p.waitForTimeout(400);
  ok(!!(await p.$('text=نقل السيارة لعميل ثاني')),'move button in car sheet');await p.click('text=نقل السيارة لعميل ثاني');await p.waitForTimeout(400);
  await p.fill('#pcq',ids[3].slice(0,8));await p.waitForTimeout(400);await p.click(`[data-pc="${ids[2]}"]`);await p.waitForTimeout(400);await p.click('#cfy').catch(async()=>{await p.locator('#sheet .btn').first().click();});await p.waitForTimeout(500);
  ok(await p.evaluate(([vid,,to])=>byId('vehicles',vid).cust===to&&S.p.id===to,ids),'car moved to the other customer');

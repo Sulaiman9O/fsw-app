@@ -486,3 +486,13 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .cv2 .due{font-style:normal;font-weight:800;color:var(--warn)}
 .cv2 small{font-size:.7rem;color:var(--muted);white-space:nowrap}
 .chips.sm button{min-height:32px;font-size:.8rem}
+/* customer page */
+.chd{display:flex;gap:14px;align-items:center}
+.cav{width:56px;height:56px;border-radius:50%;background:hsl(214 85% 52%);color:hsl(0 0% 100%);display:grid;place-items:center;font-weight:800;font-size:1.2rem;flex:0 0 auto}
+.cinfo{min-width:0;flex:1}.cinfo>b{font-size:1.15rem;display:block}
+.ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0}.ctags .lnk{min-height:0;padding:2px 4px;font-size:.8rem}
+.ctabs{overflow-x:auto;flex-wrap:nowrap;margin-top:14px}.ctabs button{flex:0 0 auto}
+.ctab{margin-top:8px}
+.ccar .h{display:flex;justify-content:space-between;align-items:center}
+.cnote{margin-top:8px;padding:8px 10px;border-radius:10px;background:hsl(42 95% 55% / .14);font-size:.85rem}
+.jb-r b.pos{color:var(--ok)}
