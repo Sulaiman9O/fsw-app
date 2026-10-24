@@ -37,7 +37,6 @@ function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const 
   actionSheet(esc(it.d),sub,[
    {ic:'🔁',t:'Change to another',s:'Change',d:alts.length?alts.length+' alternative'+(alts.length>1?'s':'')+' · same category':'Same category',hide:!pt||(!same.length),fn:()=>swapSheet(j,i,alts,same)},
    {ic:'✏️',t:'Edit',s:'Edit',d:'Name, price, quantity',fn:()=>editItemSheet(j,i)},
-   {ic:'📄',t:'Duplicate',s:'Copy',fn:()=>{j.items.splice(i+1,0,JSON.parse(JSON.stringify(it)));logJ(j,'Duplicated '+it.d);save();render();}},
    {ic:'⏳',s:'Price?',t:it.pend?'Price is known now':'Ask owner for the price',d:it.pend?'Open to type the price':'Shows “Price?” until the owner sets it',fn:()=>{if(it.pend){editItemSheet(j,i);return;}it.pend=true;logJ(j,'Price pending · '+it.d);save();render();}},
    {ic:'🎁',t:'No charge',s:'Free',d:'Price 0, part still leaves stock',hide:!can.discount(),fn:()=>{const o=it.p;it.p=0;it.pend=false;it.free=1;audit('discount','No charge: '+it.d+' (was '+f3(o)+') · job #'+j.no);logJ(j,'No charge · '+it.d);save();render();}},
    {ic:'🧑‍🔧',s:'Customer part',t:it.custPart?'Undo: customer brought it':'Customer brought this part',d:'Price 0 and it does not leave our stock',hide:it.k!=='part',fn:()=>{it.custPart=!it.custPart;if(it.custPart){it._p=it.p;it.p=0;}else{it.p=it._p||it.p;delete it._p;}logJ(j,(it.custPart?'Customer part · ':'Our part again · ')+it.d);save();render();}},

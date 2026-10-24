@@ -32,7 +32,7 @@ SCREENS.job=m=>{
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);rxBind(j);
   $$('[data-sa]').forEach(b=>b.onclick=()=>selAct(j,b.dataset.sa));
-  $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){toast('Invoice made. Return it to change items.');return;}PRESS=null;itemMenu(j,+b.dataset.it);});
+  $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){editInvAsk(j);return;}PRESS=null;itemMenu(j,+b.dataset.it);});
   const ds=$('#jdisc');if(ds)ds.onclick=()=>openSheet(`<h3>Discount</h3><div class="in2"><input class="field" id="dam" inputmode="decimal" placeholder="Amount (${DB.ws.currency})" value="${j.discPct?'':j.disc||''}"><input class="field" id="dpc" inputmode="decimal" placeholder="or %" value="${j.discPct||''}"></div><button class="btn" id="dok">Save</button>`,el=>el.querySelector('#dok').onclick=()=>{const p=num($('#dpc').value),a=num($('#dam').value);j.discPct=p||0;j.disc=p?0:a;audit('discount','Discount on #'+j.no+': '+(p?p+'%':f3(a)));logJ(j,'Discount '+(p?p+'%':f3(a)));save();closeSheet();render();});
   $('#jnotes').onchange=e=>{j.notes=e.target.value;save();};
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
@@ -162,7 +162,7 @@ function makeInvoice(j){
   confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{issueInvoice(j);save();go('inv',{id:j.id});});
 }
 function issueInvoice(j){const T=jobTotals(j);
-    delete j.returned;j.inv={no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&!it.custPart){if(!it.ref){const p0=partOfItem(it);if(p0)it.ref=p0.id;}const p=it.ref&&byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
+    delete j.returned;const re=j.invEdit;j.inv={no:re?re.no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};if(re){j.inv.edited=(+re.edited||0)+1;delete j.invEdit;}audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&!it.custPart){if(!it.ref){const p0=partOfItem(it);if(p0)it.ref=p0.id;}const p=it.ref&&byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
     if(j.stage==='new'||j.stage==='work')j.stage='ready';if(j.stage==='done'){try{makeReminders(j);}catch(e){}}logJ(j,'Invoice #'+j.inv.no);}
 /* paid in full, or left as a debt: the car has left, so the job is done and its reminders are made (no extra "Delivered" tap) */
 function closeJob(j){if(j.stage==='done')return;j.stage='done';logJ(j,STAGE.done[0]);try{makeReminders(j);}catch(e){}}
