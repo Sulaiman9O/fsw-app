@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:800,height:1280},deviceScaleFactor:1});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ /* a wide font like some tablets */
+ await p.addStyleTag({content:'.stk,.stk *{font-family:"DejaVu Sans",sans-serif!important}'});
+ await p.evaluate(()=>{DB.ws.lang='ar';S.user.lang='ar';DB.ws.phone='+96894702061';langApply();window.toast=()=>{};});
+ const bad=()=>p.evaluate(()=>{const out=[];document.querySelectorAll('.stk').forEach(s=>{if(s.scrollWidth>s.clientWidth+1)out.push((s.closest('[id]')||{}).id+':stk '+s.className+' '+s.scrollWidth+'/'+s.clientWidth);s.querySelectorAll(STK_FIT).forEach(e=>{if(e.scrollWidth>e.clientWidth+1)out.push((s.closest('[id]')||{}).id+':'+s.className+' > '+e.className+' '+e.scrollWidth+'/'+e.clientWidth);});});return out;});
+ for(const roll of ['r62','r29']){for(const v of [0,1,2,3]){await p.evaluate(([r,v])=>{DB.ws.stk={roll:r,tpl:r==='r29'?'D':'B',sty:{A:v,B:v,C:v,D:v}};go('stkset');render();},[roll,v]);await p.waitForTimeout(500);
+   const tps=roll==='r62'?['B','A','C']:['D'];for(const t of tps){await p.evaluate(t=>{const c=stkSet();c.tpl=t;DB.ws.stk=c;render();},t);await p.waitForTimeout(400);const x=await bad();ok(!x.length,roll+' look'+v+' '+t+' '+x.slice(0,3).join(' | '));if(v===0&&t==='B')await (await p.$('#spvS')).screenshot({path:'f'+t+'.png'});}}}
+ /* print html: same fitted sizes */
+ const doc=await p.evaluate(()=>{let d='';window.printHtml=x=>{d=x;};DB.ws.stk={sty:{B:0}};printSticker3('B',{kind:'oil',next:Date.now(),nextKm:233630,km:226630,line:'Toyota Motor Oil 5W-30'},0);return d;});ok(/font-size:\d/.test(doc.split('class="pg"')[1]),'print has fitted sizes');
+ /* small strip moves */
+ await p.evaluate(()=>{DB.ws.stk={roll:'r62',tpl:'A'};go('stkset');render();});await p.waitForTimeout(400);const pos=()=>p.evaluate(()=>{const a=document.querySelector('#sppv .stkpp').getBoundingClientRect(),s=document.querySelector('#sppv .stk').getBoundingClientRect();return Math.round(s.left-a.left);});
+ const x0=await pos();await p.evaluate(()=>{const e=document.querySelector('#spox');e.value=-5;e.dispatchEvent(new Event('input'));});const x1=await pos();console.log(x0,x1);ok(x1<x0,'small strip moves');
+ console.log('errors',errs);await b.close();})();
