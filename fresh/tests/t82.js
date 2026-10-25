@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ await p.evaluate(()=>{DB.ws.lang='ar';S.user.lang='ar';DB.ws.phone='99887766';langApply();window.toast=()=>{};go('stkset');});await p.waitForTimeout(700);
+ const pos=()=>p.evaluate(()=>{const a=document.querySelector('#sppv .stkpp').getBoundingClientRect(),s=document.querySelector('#sppv .stk').getBoundingClientRect();return Math.round(s.left-a.left);});
+ const x0=await pos();await p.locator('#sppv').scrollIntoViewIfNeeded();await (await p.$('#sppv')).screenshot({path:'pp1.png'});
+ await p.evaluate(()=>{const e=document.querySelector('#spox');e.value=-4;e.dispatchEvent(new Event('input'));e.dispatchEvent(new Event('change'));});await p.waitForTimeout(200);
+ const x1=await pos();console.log(x0,x1);ok(x1<x0,'preview moves left');ok(await p.evaluate(()=>DB.ws.stk.pox===-4),'saved');
+ await p.evaluate(()=>{const e=document.querySelector('#spsc');e.value=85;e.dispatchEvent(new Event('input'));});await p.waitForTimeout(200);await (await p.$('#sppv')).screenshot({path:'pp2.png'});
+ console.log('errors',errs);await b.close();})();

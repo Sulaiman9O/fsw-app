@@ -173,3 +173,4 @@ Object.assign(AR_DICT,{'This reminder is off':'هذا التذكير مطفّي'
 Object.assign(AR_DICT,{'Car size for the price':'حجم السيارة للسعر','The car keeps this size next time.':'السيارة تحفظ هالحجم للمرات الجاية.','Price changed':'تغيّر السعر'});
 Object.assign(AR_DICT,{'Print adjust':'ضبط الطباعة','If the printed sticker is off to one side or cut, move it here and print a test.':'لو الملصق طلع مايل لجهة أو مقطوع، حرّكه من هنا واطبع تجربة.','Move left / right':'تحريك يسار / يمين','Move up / down':'تحريك فوق / تحت','Print size':'حجم الطباعة'});
 Object.assign(AR_DICT,{'One price for all sizes':'سعر واحد لكل الأحجام','Saved: one price for all sizes':'انحفظ: سعر واحد لكل الأحجام'});
+Object.assign(AR_DICT,{'Paper':'الورقة'});
