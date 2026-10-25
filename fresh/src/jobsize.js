@@ -10,7 +10,8 @@ function jobSizeSheet(j,i){const v=vehOf(j);const it=j.items[i];const s=svcOfIte
   if(j.inv){if(typeof editInvAsk==='function')editInvAsk(j);else toast(T_('The invoice is ready'));return;}
   const cur=sizeOf(v);
   openSheet(`<h3>🚙 ${T_('Car size for the price')}</h3><p class="hint">${esc(s.name)}</p><div class="list">${DB.sizes.map((n,k)=>`<button class="row" data-zz="${k}" aria-pressed="${k===cur}"><div><b>${k===cur?'✓ ':''}${esc(T_(n))}</b></div><span class="v"><bdi>${f3(svcPrice(s,{size:k,model:''}))}</bdi></span></button>`).join('')}</div>
-   <p class="hint">${v?T_('The car keeps this size next time.'):''}</p>`,el=>{
+   <p class="hint">${v?T_('The car keeps this size next time.'):''}</p>${can.settings()?`<button class="btn ghost sm" id="zz1">⚙️ ${T_('One price for all sizes')} (<bdi>${f3(+it.p||0)}</bdi>)</button>`:''}`,el=>{
+    const z1=el.querySelector('#zz1');if(z1)z1.onclick=()=>{const sv=byId('services',s.id)||s;sv.p=[+it.p||0];audit('settings','One price for all sizes · '+sv.name);save();closeSheet();render();toast(T_('Saved: one price for all sizes'));};
     el.querySelectorAll('[data-zz]').forEach(b=>b.onclick=()=>{const k=+b.dataset.zz;const old=cur;let n=0;
       (j.items||[]).forEach(x=>{if(x.k==='part')return;const sv=svcOfItem(x);if(!sv||!svcHasSizes(sv))return;const was=svcPrice(sv,{size:old,model:''});if(x===it||Math.abs((+x.p||0)-was)<0.0005){x.p=svcPrice(sv,{size:k,model:''});n++;}});
       if(v){v.size=k;}logJ(j,'Car size → '+DB.sizes[k]);save();closeSheet();render();toast(T_('Price changed')+(n>1?' ('+n+')':''));});});}
