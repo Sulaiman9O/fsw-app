@@ -1,0 +1,12 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2,colorScheme:'dark'});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();save();},[cat,cu]);
+ const id=await p.evaluate(()=>{const v=DB.vehicles.find(v=>/hilux/i.test(v.model||''));delete v.size;const j=newJobFor(v,150000);const s=DB.services.find(s=>/engine oil change/i.test(s.name));j.items.push({k:'svc',ref:s.id,d:s.name,q:1,p:svcPrice(s,v)});const pt=DB.parts.find(p=>/oil filter/i.test(p.name));j.items.push({k:'part',ref:pt.id,d:pt.name,num:pt.num,q:1,p:+pt.price});save();go('job',{id:j.id});return j.id;});
+ await p.waitForTimeout(600);const r=p.locator('.jb-r.it').first();await r.scrollIntoViewIfNeeded();await (await p.$('.jb-list')).screenshot({path:'s1.png'});
+ ok(await p.$('.szc'),'size chip');ok((await p.$$('.kt.lab')).length===1&&(await p.$$('.kt.prt')).length===1,'tags');
+ await p.click('.szc');await p.waitForTimeout(400);ok(await p.evaluate(()=>S.r==='job'&&!!document.querySelector('[data-zz]')),'size sheet (not item menu)');
+ await p.click('[data-zz="1"]');await p.waitForTimeout(500);const r2=await p.evaluate(id=>{const j=byId('jobs',id);return [j.items[0].p,vehOf(j).size];},id);console.log(r2);ok(r2[0]===2.5&&r2[1]===1,'repriced to sedan, car remembers');
+ await (await p.$('.jb-list')).screenshot({path:'s2.png'});console.log('errors',errs);await b.close();})();
