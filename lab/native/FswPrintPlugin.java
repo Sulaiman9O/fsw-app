@@ -26,6 +26,7 @@ public class FswPrintPlugin extends Plugin {
         getActivity().runOnUiThread(() -> {
             try {
                 printView = new WebView(getContext());
+                printView.getSettings().setTextZoom(100); // ignore the tablet font-size setting: stickers are measured in mm
                 printView.setWebViewClient(new WebViewClient() {
                     private boolean done = false;
                     @Override

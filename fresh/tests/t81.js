@@ -10,6 +10,6 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(()=>go('jobs'));await p.evaluate(id=>go('job',{id}),ids[0]);ok(!(await p.evaluate(()=>showCost())),'hidden after leaving and coming back');
  await p.click('[data-eye]');await p.evaluate(id=>go('job',{id}),ids[1]);ok(!(await p.evaluate(()=>showCost())),'hidden on another job');
  /* print doc: sticker sits inside the 62 mm paper */
- const r=await p.evaluate(()=>{let doc='';window.printHtml=(d)=>{doc=d;};DB.ws.stk={};printSticker3('B',{kind:'oil',next:Date.now(),nextKm:100000,km:93000,line:'x'},0);return doc;});
- const q=await b.newPage({viewport:{width:234,height:400}});await q.setContent(r);const bx=await q.evaluate(()=>{const e=document.querySelector('.stk').getBoundingClientRect();const mm=96/25.4;return [e.left/mm,e.right/mm];});console.log(bx);ok(bx[0]>=0&&bx[1]<=62,'inside the paper');
+ const r=await p.evaluate(()=>{let doc='';window.printHtml=(d)=>{doc=d;};DB.ws.stk={};DB.ws.phone='+96894702061';DB.ws.stk={sty:{A:3}};printSticker3('A',{kind:'oil',next:Date.now(),nextKm:100000,km:93000,line:'x'},0);return doc;});
+ const q=await b.newPage({viewport:{width:234,height:400}});await q.setContent(r);await q.waitForTimeout(500);await q.screenshot({path:'prt.png'});const bx=await q.evaluate(()=>{const e=document.querySelector('.pg img').getBoundingClientRect();const mm=96/25.4;return [e.left/mm,e.right/mm];});console.log(bx);ok(bx[0]>=0&&bx[1]<=62,'inside the paper');
  console.log('errors',errs);await b.close();})();

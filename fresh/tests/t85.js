@@ -1,0 +1,15 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:400,height:868},deviceScaleFactor:2});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const logo=fs.readFileSync('/home/claude/fsw-app/fresh/assets/icon-only.png').toString('base64');
+ await p.evaluate(l=>{DB.ws.logo='data:image/png;base64,'+l;DB.ws.phone='+96894702061';DB.ws.lang='ar';S.user.lang='ar';langApply();window.toast=()=>{};DB.ws.stk={roll:'r62',tpl:'B'};save();go('stkset');},logo);await p.waitForTimeout(800);
+ ok((await p.$$('input[data-fz]')).length===5,'5 text sliders');
+ const fs0=()=>p.evaluate(()=>{const b=document.createElement('div');b.innerHTML=document.querySelector('#spvS')._stk;const t=b.querySelector('.tel');return t&&t.style.fontSize;});
+ const a=await fs0();await (await p.$('#spvS')).screenshot({path:'fz0.png'});
+ await p.evaluate(()=>{const e=document.querySelector('input[data-fz="tel"]');e.value=60;e.dispatchEvent(new Event('input'));e.dispatchEvent(new Event('change'));const k=document.querySelector('input[data-fz="km"]');k.value=150;k.dispatchEvent(new Event('input'));k.dispatchEvent(new Event('change'));});await p.waitForTimeout(500);
+ const c=await fs0();console.log(a,c);ok(parseFloat(c)<parseFloat(a||'99'),'phone smaller');ok(await p.evaluate(()=>DB.ws.stk.fz.B.tel===60&&DB.ws.stk.fz.B.km===150),'saved');
+ await (await p.$('#spvS')).screenshot({path:'fz1.png'});
+ const doc=await p.evaluate(()=>{let d='';window.printHtml=x=>{d=x;};printSticker3('B',{kind:'oil',next:Date.now(),nextKm:233630,km:226630,line:'Toyota Motor Oil 5W-30'},0);return d;});
+ const q=await b.newPage({viewport:{width:240,height:400},deviceScaleFactor:3});await q.setContent(doc);await q.waitForTimeout(600);await q.screenshot({path:'prt.png'});ok(await q.evaluate(()=>{const i=document.querySelector('.pg img');return i.complete&&i.naturalWidth>0;}),'print picture loads');
+ console.log('errors',errs);await b.close();})();

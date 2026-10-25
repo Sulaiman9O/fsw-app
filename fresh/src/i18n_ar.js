@@ -174,3 +174,4 @@ Object.assign(AR_DICT,{'Car size for the price':'حجم السيارة للسع�
 Object.assign(AR_DICT,{'Print adjust':'ضبط الطباعة','If the printed sticker is off to one side or cut, move it here and print a test.':'لو الملصق طلع مايل لجهة أو مقطوع، حرّكه من هنا واطبع تجربة.','Move left / right':'تحريك يسار / يمين','Move up / down':'تحريك فوق / تحت','Print size':'حجم الطباعة'});
 Object.assign(AR_DICT,{'One price for all sizes':'سعر واحد لكل الأحجام','Saved: one price for all sizes':'انحفظ: سعر واحد لكل الأحجام'});
 Object.assign(AR_DICT,{'Paper':'الورقة'});
+Object.assign(AR_DICT,{'Text sizes of the':'أحجام الكتابة في','Too big for its place? It shrinks back to fit by itself.':'لو كبّرت شي أكثر من مكانه، يصغر لحاله لين يدخل.','Title':'العنوان','Next km':'الكيلومتر القادم','Next date':'التاريخ القادم','Oil name & today':'اسم الزيت وتاريخ اليوم','Back to normal sizes':'رجّع الأحجام الأصلية'});
