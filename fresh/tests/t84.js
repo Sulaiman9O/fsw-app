@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1.5});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const logo=fs.readFileSync('/home/claude/fsw-app/fresh/assets/icon-only.png').toString('base64');
+ await p.evaluate(l=>{DB.ws.logo='data:image/png;base64,'+l;DB.ws.phone='+96894702061';DB.ws.lang='ar';S.user.lang='ar';langApply();window.toast=()=>{};DB.ws.stk={roll:'r62',tpl:'A',sty:{A:3,C:2}};save();},logo);
+ const t0=Date.now();await p.evaluate(()=>go('stkset'));await p.waitForTimeout(100);const ms=await p.evaluate(()=>{const t=performance.now();render();return performance.now()-t;});console.log('render ms',Math.round(ms));
+ await p.waitForTimeout(900);const imgs=await p.evaluate(()=>[...document.querySelectorAll('.stkim')].map(i=>i.complete&&i.naturalWidth>0));ok(imgs.length>=8&&imgs.every(Boolean),'all previews drawn '+imgs.length);
+ await p.screenshot({path:'tab1.png'});await p.mouse.wheel(0,700);await p.waitForTimeout(300);await p.screenshot({path:'tab2.png'});
+ console.log('errors',errs);await b.close();})();

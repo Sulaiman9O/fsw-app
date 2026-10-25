@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
  const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
  await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
  await p.evaluate(()=>{DB.ws.lang='ar';S.user.lang='ar';DB.ws.phone='99887766';langApply();window.toast=()=>{};go('stkset');});await p.waitForTimeout(700);
- const pos=()=>p.evaluate(()=>{const a=document.querySelector('#sppv .stkpp').getBoundingClientRect(),s=document.querySelector('#sppv .stk').getBoundingClientRect();return Math.round(s.left-a.left);});
+ const pos=()=>p.evaluate(()=>{const a=document.querySelector('#sppv .stkpp').getBoundingClientRect(),s=document.querySelector('#sppv .stkim').getBoundingClientRect();return Math.round(s.left-a.left);});
  const x0=await pos();await p.locator('#sppv').scrollIntoViewIfNeeded();await (await p.$('#sppv')).screenshot({path:'pp1.png'});
  await p.evaluate(()=>{const e=document.querySelector('#spox');e.value=-4;e.dispatchEvent(new Event('input'));e.dispatchEvent(new Event('change'));});await p.waitForTimeout(200);
  const x1=await pos();console.log(x0,x1);ok(x1<x0,'preview moves left');ok(await p.evaluate(()=>DB.ws.stk.pox===-4),'saved');
