@@ -1,0 +1,9 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const W=+process.argv[2]||1920;const b=await chromium.launch();const p=await b.newPage({viewport:{width:W,height:1000},colorScheme:'dark'});await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();save();window.toast=()=>{};},[cat,cu]);
+ await p.evaluate(()=>{inspSeed();const j=DB.jobs.find(x=>!isInvoiced(x));inspStart(j,DB.insp[0]);j.insp.r[0]='ok';j.insp.r[4]='warn';save();go('inspj',{id:j.id});});await p.waitForTimeout(600);
+ await p.screenshot({path:'ix_'+W+'.png'});
+ console.log(await p.evaluate(()=>{const e=document.querySelector('.ii');const o=[];e.querySelectorAll('*').forEach(x=>{const r=x.getBoundingClientRect();if(r.width>300)o.push(x.tagName+'.'+x.className+' '+Math.round(r.x)+','+Math.round(r.y)+' '+Math.round(r.width)+'x'+Math.round(r.height)+' '+getComputedStyle(x).display);});return o.join('\n');}));await b.close();})();

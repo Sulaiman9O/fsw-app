@@ -7,10 +7,18 @@ const DESK={
   customers:{top:'.srch',side:'.qbtn,.kpis3,.grp,.morerow'},
   job:{top:'.nh-head',side:'#jinsp,.jrem,.jrbtns,label.field-l,.jb-log',sideSec:1},
   custd:{top:'.nh-head',side:'.chd,.two,.kpis3'},
-  inv:{top:'.nh-head',side:'.lnk,.ops-sec,.jb-list,.two,.btn',main:'.inv-pv'}};
+  inv:{top:'.nh-head',side:'.lnk,.ops-sec,.jb-list,.two,.btn',main:'.inv-pv'},
+  inspr:{top:'.nh-head',side:'.two',main:'.invwrap'},
+  invstyle:{top:'.nh-head',from:'#ipv'},
+  stkset:{top:'.nh-head',from:'#spvS'}};
+/* pages whose repeated blocks sit side by side (a grid of cards) */
+const DESK_GRID={inspj:'.isec'};
+function deskGrid(m){const sel=DESK_GRID[S.r];if(!sel||m.querySelector(':scope>.dkg'))return;const L=[...m.children].filter(e=>e.matches(sel));if(L.length<2)return;
+  const g=document.createElement('div');g.className='dkg dkg-'+S.r;m.insertBefore(g,L[0]);L.forEach(e=>g.appendChild(e));}
 function deskLayout(){const m=document.getElementById('main');if(!m)return;document.body.dataset.r=S.r||'';if(window.innerWidth<DESK_W||!S.user)return;
-  const c=DESK[S.r];if(!c||m.querySelector(':scope>.dk'))return;
-  try{const kids=[...m.children];const isTop=e=>c.top&&e.matches(c.top);const sideSet=new Set(kids.filter(e=>!isTop(e)&&!(c.main&&e.matches(c.main))&&e.matches(c.side)));
+  try{deskGrid(m);}catch(e){}const c=DESK[S.r];if(!c||m.querySelector(':scope>.dk'))return;
+  try{const kids=[...m.children];const isTop=e=>c.top&&e.matches(c.top);let fi=c.from?kids.findIndex(e=>e.matches(c.from)):-1;if(fi>0&&kids[fi-1].classList.contains('ops-sec'))fi--;
+    const sideSet=new Set(kids.filter((e,i)=>!isTop(e)&&!(c.main&&e.matches(c.main))&&(c.from?(fi>=0&&i>=fi):e.matches(c.side))));
     /* a section title goes with the block right after it */
     if(c.sideSec||1)kids.forEach(e=>{if(e.classList.contains('ops-sec')&&e.nextElementSibling&&sideSet.has(e.nextElementSibling))sideSet.add(e);});
     if(!sideSet.size)return;
