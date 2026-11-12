@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:800,height:1100}});await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;save();window.toast=()=>{};},[cat,cu]);
+ await p.evaluate(()=>{const v=DB.vehicles.find(v=>/camry/i.test(v.model));go('counter',{vid:v.id});});await p.waitForTimeout(400);await p.click('#coil');await p.waitForTimeout(600);
+ await p.evaluate(()=>{inspSeed();const j=byId('jobs',S.p.id);inspStart(j,DB.insp[0]);save();go('inspj',{id:j.id});});await p.waitForTimeout(500);
+ await p.click('[data-is="4:warn"]');await p.waitForTimeout(300);await p.evaluate(()=>window.scrollTo(0,0));await p.screenshot({path:'i4.png',clip:{x:0,y:0,width:800,height:700}});
+ await p.click('[data-iai="0"]');await p.waitForTimeout(400);await p.screenshot({path:'i5.png'});await b.close();})();

@@ -42,12 +42,12 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
      <div class="isb">${['ok','warn','bad'].map(x=>`<button data-is="${i}:${x}" class="s-${x}${s===x?' on':''}" ${lock?'disabled':''} aria-label="${x}">${ST_IC[x]}</button>`).join('')}</div></div>
      ${exp?`<div class="ix"><input class="field" data-in="${i}" placeholder="${T_('Note (what you saw)')}" value="${esc(d.note||'')}" ${lock?'disabled':''}>
       <div class="iph">${(d.ph||[]).map(id=>{const p=photoOf(id);return p?`<button class="iphi" data-ipv="${id}"><img src="${p.img}" alt=""></button>`:'';}).join('')}${lock?'':`<button class="iphadd" data-ipa="${i}">📷 ${T_('Photo')}</button>`}</div>
-      ${sv&&(s==='warn'||s==='bad')?`<div class="isv"><div><b>🛠 ${esc(I18N.lang==='ar'&&sv.ar?sv.ar:sv.name)}</b><span>${f3(svcPrice(sv,v))}</span></div>${inspAdded(j,i)?`<button class="btn ghost sm" data-irm="${i}">✓ ${T_('Added to the job')}</button>`:`<button class="btn sm okb" data-iadd="${i}" ${lock?'disabled':''}>＋ ${T_('Add to the job')}</button>`}</div>`:''}
       ${s==='warn'?`<div class="chips irem">${[['3m',T_('Remind in 3 months')],['5k',T_('Remind in 5,000 km')]].map(([k,l])=>`<button data-irem="${i}:${k}" aria-pressed="${d.rem===k}">🔔 ${l}</button>`).join('')}</div>`:''}</div>`:''}</div>`;};
   m.innerHTML=head('📋 '+esc(I.name),`<button class="lnk" id="irep">📤 ${T_('Report')}</button>`)+
-   `<div class="icar card"><b>${esc(carName(v)||'')}${v&&v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${done}/${I.items.length} ${T_('checked')} · <i class="dot bad"></i> ${red} · <i class="dot warn"></i> ${yel}</span><div class="ibar"><i style="width:${Math.round(done/I.items.length*100)}%"></i></div></div>
+   `<div class="icar card"><b>${esc(carName(v)||'')}${v&&v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}${lock?'':`<button class="lnk isw" id="isw">🔄 ${T_('Change list')}</button>`}</b><span>${done}/${I.items.length} ${T_('checked')} · <i class="dot bad"></i> ${red} · <i class="dot warn"></i> ${yel}</span><div class="ibar"><i style="width:${Math.round(done/I.items.length*100)}%"></i></div></div>
    ${lock?`<p class="hint">${T_('Invoice made: the inspection can be read, not changed.')}</p>`:''}
-   ${secs.map(s=>{const dn=s.idx.filter(i=>I.r[i]).length;return `<div class="isec"><div class="ish"><b>${esc(T_(s.n))}</b><span>${dn}/${s.idx.length}</span>${lock?'':`<button class="lnk" data-iall="${s.idx.join(',')}">✓ ${T_('All good')}</button>`}</div>${s.idx.map(row).join('')}</div>`;}).join('')}
+   ${secs.map((s,si)=>{const dn=s.idx.filter(i=>I.r[i]).length;return `<div class="isec"><div class="ish"><b>${esc(T_(s.n))}</b><span>${dn}/${s.idx.length}</span>${lock?'':`<button class="lnk" data-iall="${s.idx.join(',')}">✓ ${T_('All good')}</button>`}</div>${s.idx.map(row).join('')}${lock?'':`<button class="iadd1" data-iai="${si}">＋ ${T_('Add a check')}</button>`}</div>`;}).join('')}
+   ${lock?'':`<button class="iadd1 sec" id="iasec">＋ ${T_('Add a section')}</button>`}
    <button class="btn" id="idone">${T_('Done')}</button>`;
   const setS=(i,x)=>{I.r[i]=I.r[i]===x?undefined:x;if(!I.r[i])delete I.r[i];save();S.p.open=undefined;render();const e=$('#ii'+i);if(e&&I.r[i]!=='ok')e.scrollIntoView({block:'nearest'});};
   $$('[data-is]').forEach(b=>b.onclick=()=>{const [i,x]=b.dataset.is.split(':');setS(+i,x);});
@@ -61,7 +61,58 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
   $$('[data-irm]').forEach(b=>b.onclick=()=>{const i=b.dataset.irm;j.items=j.items.filter(x=>x.fromInsp!==String(i));save();render();});
   $$('[data-irem]').forEach(b=>b.onclick=()=>{const [i,k]=b.dataset.irem.split(':');const d=I.d[i]=I.d[i]||{};d.rem=d.rem===k?undefined:k;save();render();});
   $('#irep').onclick=()=>go('inspr',{id:j.id});
-  $('#idone').onclick=()=>{inspFinish(j);go('job',{id:j.id});};};
+  if(!lock){$('#isw').onclick=()=>inspSwitchSheet(j);$$('[data-iai]').forEach(b=>b.onclick=()=>inspAddSheet(j,+b.dataset.iai));$('#iasec').onclick=()=>inspAddSheet(j,-1);
+    $$('[data-io]').forEach(b=>longPress(b,()=>inspItemSheet(j,+b.dataset.io)));}
+  $('#idone').onclick=()=>{inspFinish(j);if(lock||!inspQuoteSheet(j))go('job',{id:j.id});};};
+/* ---- change the inspection while working: switch list, add checks or a section, rename/remove a check ---- */
+/* a check is put in at place pos: the answers after it move one place */
+function inspShift(j,pos,by){const I=j.insp;const sh=o=>{const n={};Object.keys(o||{}).forEach(k=>{const x=+k;if(by<0&&x===pos)return;n[x>=pos+(by<0?1:0)?x+by:x]=o[k];});return n;};I.r=sh(I.r);I.d=sh(I.d);
+  (j.items||[]).forEach(x=>{if(x.fromInsp==null)return;const f=+x.fromInsp;if(by<0&&f===pos)delete x.fromInsp;else if(f>=pos+(by<0?1:0))x.fromInsp=String(f+by);});}
+function inspSecFix(I){if(!I.sec||!I.sec.length)I.sec=inspSecs(I).map(s=>({n:s.n,c:s.idx.length}));return I.sec;}
+function inspAddTo(t,secName,names,isJob,j){const sec=inspSecFix(t);t.meta=t.meta||t.items.map(()=>({m:'',svc:''}));let si=sec.findIndex(x=>x.n===secName);if(si<0){sec.push({n:secName,c:0});si=sec.length-1;}
+  let pos=sec.slice(0,si+1).reduce((a,x)=>a+x.c,0);names.forEach(n=>{if(isJob)inspShift(j,pos,1);t.items.splice(pos,0,n);t.meta.splice(pos,0,{m:'',svc:isJob?inspGuess(n):''});sec[si].c++;pos++;});}
+function inspAddSheet(j,si){const I=j.insp;const secs=inspSecFix(I);const tpl=(DB.insp||[]).find(t=>t.id===I.tpl);const nsec=si<0;
+  openSheet(`<h3>${nsec?T_('Add a section'):T_('Add a check')+' · '+esc(T_(secs[si].n))}</h3>${nsec?`<label class="lbl">${T_('Section name')}</label><input class="field" id="ian" placeholder="${T_('e.g. Under the car')}">`:''}
+    <label class="lbl">${T_('Checks (one per line)')}</label><textarea class="field" id="iat" rows="4" placeholder="${T_('e.g. Engine mounts')}"></textarea>
+    ${tpl&&can.settings()?`<label class="lrow tgl2"><span class="lname"><div><b>${T_('Save in the list for next time')}</b><span>${esc(tpl.name)}</span></div></span><input type="checkbox" id="iasv"></label>`:''}
+    <button class="btn" id="iaok">${T_('Add')}</button>`,el=>{setTimeout(()=>{const f=el.querySelector(nsec?'#ian':'#iat');f&&f.focus();},80);
+    el.querySelector('#iaok').onclick=()=>{const names=el.querySelector('#iat').value.split('\n').map(x=>x.trim()).filter(Boolean);const sn=nsec?el.querySelector('#ian').value.trim():secs[si].n;
+      if(!sn){toast(T_('Write the section name'));return;}if(!names.length){toast(T_('Write at least one check'));return;}
+      inspAddTo(I,sn,names,true,j);const sv=el.querySelector('#iasv');if(sv&&sv.checked&&tpl)inspAddTo(tpl,sn,names,false);
+      logJ(j,'Inspection: added '+names.join(', '));save();closeSheet();render();toast(T_('Added'));};});}
+function inspItemSheet(j,i){const I=j.insp;
+  openSheet(`<h3>${esc(I.items[i])}</h3><label class="lbl">${T_('Name')}</label><input class="field" id="ien" value="${esc(I.items[i])}"><button class="btn" id="ieok">${T_('Save')}</button>
+    <button class="btn ghost jb-del" id="iedel">🗑 ${T_('Remove from this inspection')}</button>`,el=>{
+    el.querySelector('#ieok').onclick=()=>{const n=el.querySelector('#ien').value.trim();if(n){I.items[i]=n;save();}closeSheet();render();};
+    el.querySelector('#iedel').onclick=()=>{const sec=inspSecFix(I);let k=0;for(const x of sec){if(i<k+x.c){x.c--;break;}k+=x.c;}inspShift(j,i,-1);I.items.splice(i,1);(I.meta||[]).splice(i,1);
+      logJ(j,'Inspection: removed '+el.querySelector('#ien').defaultValue);save();closeSheet();render();};});}
+/* another list: answers of checks with the same name are kept */
+function inspSwitch(j,t){const O=j.insp;const by={};O.items.forEach((n,i)=>{by[n.toLowerCase()]=i;});inspStart(j,t);const N=j.insp;N.at=O.at||N.at;N.by=O.by||N.by;
+  const map={};N.items.forEach((n,i)=>{const o=by[n.toLowerCase()];if(o==null)return;map[o]=i;if(O.r[o])N.r[i]=O.r[o];if(O.d&&O.d[o])N.d[i]=O.d[o];});
+  (j.items||[]).forEach(x=>{if(x.fromInsp==null)return;const k=map[+x.fromInsp];if(k==null)delete x.fromInsp;else x.fromInsp=String(k);});}
+function inspSwitchSheet(j){inspSeed();const I=j.insp;let sure=0;
+  openSheet(`<h3>${T_('Change list')}</h3><p class="hint">${T_('Answers of checks that are in the new list stay.')}</p><div class="list">${DB.insp.map(t=>`<button class="row" data-ts="${t.id}"><div><b>${esc(t.name)}${t.id===I.tpl?' ✓':''}</b><span>${inspSecs(t).length} ${T_('sections')} · ${t.items.length} ${T_('items')}</span></div><span class="v">›</span></button>`).join('')}</div>
+    <button class="btn ghost jb-del" id="iswdel">🗑 ${T_('Remove the inspection')}</button>`,el=>{
+    el.querySelectorAll('[data-ts]').forEach(x=>x.onclick=()=>{const t=DB.insp.find(y=>y.id===x.dataset.ts);if(!t||t.id===I.tpl){closeSheet();return;}inspSwitch(j,t);save();closeSheet();render();toast(T_('List changed')+' · '+t.name);});
+    el.querySelector('#iswdel').onclick=e=>{if(!sure){sure=1;e.currentTarget.textContent='⚠ '+T_('Tap again to remove the inspection');return;}
+      (j.items||[]).forEach(x=>delete x.fromInsp);logJ(j,'Inspection removed · '+I.name);delete j.insp;save();closeSheet();go('job',{id:j.id});};});}
+/* after Done: a suggested quote for the yellow and red checks; untick what you don't want, change the service, then add to the job */
+function inspQuoteSheet(j){const I=j.insp,v=vehOf(j);const L=I.items.map((n,i)=>({n,i,s:I.r[i]})).filter(x=>x.s==='bad'||x.s==='warn').sort((a,b)=>(a.s==='bad'?0:1)-(b.s==='bad'?0:1));if(!L.length)return false;
+  const SV=DB.services.filter(s=>!s.hidden).sort((a,b)=>String(a.name).localeCompare(String(b.name)));const nm=s=>I18N.lang==='ar'&&s.ar?s.ar:s.name;
+  const pick={};L.forEach(x=>{const sv=(I.meta[x.i]||{}).svc||inspGuess(x.n);pick[x.i]={sv,on:!!sv&&!inspAdded(j,x.i)};});
+  const tot=()=>L.reduce((a,x)=>{const p=pick[x.i],s=p.on&&byId('services',p.sv);return a+(s?svcPrice(s,v):0);},0);
+  openSheet(`<h3>💡 ${T_('Suggested quote')}</h3><p class="hint">${T_('From the yellow and red checks. Untick what you don\'t want or change the service.')}</p><div class="iqs">${L.map(x=>{const p=pick[x.i],done=inspAdded(j,x.i);return `<div class="iqr ${x.s}">
+      <label class="iqc"><input type="checkbox" data-qc="${x.i}" ${p.on?'checked':''} ${done?'disabled':''}><span><i class="dot ${x.s}"></i> ${esc(x.n)}${(I.d[x.i]||{}).note?`<small>${esc(I.d[x.i].note)}</small>`:''}</span></label>
+      ${done?`<span class="iqd">✓ ${T_('Already in the job')}</span>`:`<div class="iqv"><select class="field" data-qs="${x.i}"><option value="">— ${T_('Choose a service')} —</option>${SV.map(s=>`<option value="${s.id}" ${s.id===p.sv?'selected':''}>${esc(nm(s))}</option>`).join('')}</select><b data-qp="${x.i}"></b></div>`}</div>`;}).join('')}</div>
+    <div class="iqt"><span>${T_('Total')}</span><b id="iqtot"></b></div><button class="btn okb" id="iqok"></button><button class="btn ghost" id="iqno">${T_('Not now')}</button>`,el=>{
+    const upd=()=>{L.forEach(x=>{const b=el.querySelector('[data-qp="'+x.i+'"]');if(!b)return;const s=byId('services',pick[x.i].sv);b.textContent=s?f3(svcPrice(s,v)):'';});
+      const n=L.filter(x=>pick[x.i].on&&pick[x.i].sv&&!inspAdded(j,x.i)).length;el.querySelector('#iqtot').textContent=f3(tot())+' '+DB.ws.currency;const ok=el.querySelector('#iqok');ok.textContent='＋ '+T_('Add {n} to the job'.replace('{n}',n));ok.disabled=!n;};
+    el.querySelectorAll('[data-qc]').forEach(c=>c.onchange=()=>{pick[c.dataset.qc].on=c.checked;upd();});
+    el.querySelectorAll('[data-qs]').forEach(c=>c.onchange=()=>{const p=pick[c.dataset.qs];p.sv=c.value;p.on=!!c.value;const cb=el.querySelector('[data-qc="'+c.dataset.qs+'"]');if(cb)cb.checked=p.on;upd();});
+    el.querySelector('#iqno').onclick=()=>{closeSheet();go('job',{id:j.id});};
+    el.querySelector('#iqok').onclick=()=>{let n=0;j.items=j.items||[];L.forEach(x=>{const p=pick[x.i];if(p.sv)I.meta[x.i].svc=p.sv;if(!p.on||!p.sv||inspAdded(j,x.i))return;const s=byId('services',p.sv);if(!s)return;
+        const it=svcItem(s,v);it.fromInsp=String(x.i);it.note=T_('From inspection')+': '+x.n;j.items.push(it);n++;});
+      if(n)logJ(j,'Added from inspection · '+n);save();closeSheet();toast(T_('Added {n} to the job'.replace('{n}',n)));go('job',{id:j.id});};upd();});return true;}
 /* finishing: log the red items, make reminders for the yellow ones the worker asked for */
 function inspFinish(j){const I=j.insp;if(!I)return;const red=Object.entries(I.r).filter(([,s])=>s==='bad').map(([i])=>I.items[i]);if(red.length&&!I.logged)logJ(j,'Inspection: red '+red.join(', '));I.logged=1;
   const v=vehOf(j);Object.entries(I.d||{}).forEach(([i,d])=>{if(!d.rem||d.remDone)return;const due=new Date();if(d.rem==='3m')due.setMonth(due.getMonth()+3);else due.setMonth(due.getMonth()+6);

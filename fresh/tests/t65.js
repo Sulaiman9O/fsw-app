@@ -25,7 +25,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.click('#irep');await p.waitForTimeout(400);await p.screenshot({path:'i2.png',fullPage:true});ok(await p.evaluate(()=>document.querySelector('.irep')!==null),'report page');
  const txt=await p.evaluate(()=>inspReportText(byId('jobs',S.p.id)));console.log(txt.split('\n').slice(0,12).join(' / '));
  await p.evaluate(()=>back());await p.waitForTimeout(300);await p.click('#idone');await p.waitForTimeout(300);
- const R=await p.evaluate(()=>{const j=byId('jobs',S.p.id);return {r:S.r,rem:DB.reminders.filter(r=>r.job===j.id).map(r=>r.name),log:j.log.map(l=>l[1]).join(' | ')};});ok(R.r==='job'&&R.rem.length===1,'reminder for yellow item '+JSON.stringify(R.rem));
+ const R=await p.evaluate(()=>{const j=byId('jobs',S.p.id);return {r:S.r,rem:DB.reminders.filter(r=>r.job===j.id).map(r=>r.name),log:j.log.map(l=>l[1]).join(' | ')};});ok(R.r==='inspj'&&R.rem.length===1,'reminder for yellow item (quote sheet open) '+JSON.stringify(R.rem));
  await p.screenshot({path:'i3.png'});
  // next visit shows last result
  await mk();await p.waitForTimeout(300);await p.click('#jinsp');await p.waitForTimeout(300);await p.locator('[data-ti]').first().click();await p.waitForTimeout(400);
