@@ -10,6 +10,7 @@ SCREENS.sale=m=>{const Q=S.sale||(S.sale={items:[],q:'',phone:'',name:''});const
   const unitOf=p=>p.unit==='L'||p.cat==='Engine oil'?'L':'';
   m.innerHTML=head('Quick sale',Q.items.length?`<button class="lnk" id="slclr">${T_('Clear')}</button>`:'')+`
    <div class="srow ssrch"><input class="field" id="slq" placeholder="${T_('Part name or number…')}" value="${esc(Q.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><button class="btn ghost sq" id="slscan">📷</button></div>
+   <button class="btn ghost sm" id="slcust">✏️ ${T_('Something else (type name and price)')}</button>
    <div id="slres"></div>
    ${Q.items.length?`${sec(T_('Basket'),Q.items.length+' '+T_('items'))}<div class="jb-list">${Q.items.map((i,k)=>`<div class="jb-r slr"><div><bdi>${esc(i.d)}</bdi><small><bdi>${f3(i.p)}${i.u?' / '+i.u:''}</bdi>${(()=>{const p=i.ref&&byId('parts',i.ref);return p&&(+p.stock||0)<(+i.q||0)?' · ⚠️ '+T_('not enough in stock'):'';})()}</small></div>
      <div class="st"><button data-sq="${k}|-1">−</button><input class="qin" data-sqi="${k}" inputmode="decimal" value="${+i.q}"><button data-sq="${k}|1">+</button></div><b><bdi>${f3((+i.q||0)*(+i.p||0))}</bdi></b></div>`).join('')}
@@ -26,6 +27,14 @@ SCREENS.sale=m=>{const Q=S.sale||(S.sale={items:[],q:'',phone:'',name:''});const
   inp.oninput=draw;draw();if(!Q.items.length)setTimeout(()=>inp.focus(),60);
   $('#slscan').onclick=()=>scanSheet(c=>{const p=findByCode(c);if(p)add(p);else toast(T_('No part with this barcode'));});
   const cl=$('#slclr');if(cl)cl.onclick=()=>{S.sale=null;render();};
+  /* not a stock part: used oil or scrap sold, a check for a car not in the list… typed by hand */
+  $('#slcust').onclick=()=>{let k='labour';openSheet(`<h3>✏️ ${T_('Something else')}</h3><input class="field" id="sxd" placeholder="${T_('Name (e.g. used oil sale)')}">
+      <div class="chips"><button data-sk="labour" aria-pressed="true">${T_('Service / other')}</button><button data-sk="part" aria-pressed="false">${T_('Part')}</button></div>
+      <div class="in2"><label class="field-l">${T_('Qty')}<input class="field" id="sxq" inputmode="decimal" value="1"></label><label class="field-l">${T_('Price each')}<input class="field" id="sxp" inputmode="decimal" placeholder="0.000"></label></div>
+      <button class="btn" id="sxok">${T_('Add')}</button>`,el=>{setTimeout(()=>{const f=el.querySelector('#sxd');f&&f.focus();},80);
+      el.querySelectorAll('[data-sk]').forEach(b=>b.onclick=()=>{k=b.dataset.sk;el.querySelectorAll('[data-sk]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+      el.querySelector('#sxok').onclick=()=>{const d=el.querySelector('#sxd').value.trim(),q=num(el.querySelector('#sxq').value)||1,pr=num(el.querySelector('#sxp').value);
+        if(!d){toast(T_('Type a name'));return;}if(!(pr>0)){toast(T_('Type the price'));return;}Q.items.push({k,d,q,u:'',p:pr,cost:0,by:S.user.name,typed:1});closeSheet();render();};});};
   $$('[data-sq]').forEach(b=>b.onclick=()=>{const [k,d]=b.dataset.sq.split('|');const it=Q.items[+k];const st=it.u==='L'?0.5:1;it.q=Math.round(((+it.q||0)+st*(+d))*100)/100;if(it.q<=0)Q.items.splice(+k,1);render();});
   $$('[data-sqi]').forEach(e=>e.onchange=()=>{const it=Q.items[+e.dataset.sqi];const x=num(e.value);if(x>0)it.q=x;else Q.items.splice(+e.dataset.sqi,1);render();});
   const ph=$('#slph'),nm=$('#slnm');if(ph)ph.oninput=()=>{Q.phone=ph.value;};if(nm)nm.oninput=()=>{Q.name=nm.value;};

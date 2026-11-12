@@ -32,7 +32,14 @@ const jobTot=j=>r3((j.items||[]).reduce((a,i)=>a+(+i.q)*(+i.p),0)-(+j.disc||0));
  let n=0;const t00=Date.now();
  for(const e of ev){
   try{
-   if(e.k==='job'){const j=e.j;cur=j.no;await setNow(e.t);const v=SRC.vehicles.find(x=>x.id===j.veh)||{};const c=SRC.customers.find(x=>x.id===j.cust)||{};
+   if(e.k==='job'){const j=e.j;cur=j.no;await setNow(e.t);
+    if(!j.veh){/* no car: a counter sale (used oil, scrap, parts) through 🛒 Quick sale */
+      const c=SRC.customers.find(x=>x.id===j.cust)||{};await p.evaluate(()=>{closeSheet();S.sale=null;go('counter');});await W(60);await p.click('.ctrsale');await W(80);
+      for(const it of j.items){await p.click('#slcust');await W(60);await p.fill('#sxd',it.d||'Item');await p.click(`#sheet [data-sk="${it.k==='part'?'part':'labour'}"]`);await p.fill('#sxq',String(it.q));await p.fill('#sxp',String(it.p));await p.click('#sxok');await W(60);}
+      const sum=await p.evaluate(()=>S.sale.items.reduce((a,i)=>a+i.q*i.p,0));if(Math.abs(sum-(jobTot(j)+(+j.disc||0)))>0.0006)iss(j,'sale total differs',{exp:jobTot(j),got:sum});
+      if(c.phone||c.name){await p.evaluate(()=>{const d=document.querySelector('details.pmore');if(d)d.open=true;});if(c.phone)await p.fill('#slph',c.phone);if(c.name)await p.fill('#slnm',c.name);}
+      const paid=jobPaid(j);await p.click('#slpay');await W(80);await p.click(paid>=jobTot(j)-0.0005?'#sheet [data-pm="Cash"]':'#sheet [data-pm="Credit"]').catch(async()=>{iss(j,'no credit button in sale');await p.click('#sheet [data-pm="Cash"]');});await W(120);
+      const jid=await p.evaluate(()=>S.p.id);map[j.id]=jid;n++;continue;}const v=SRC.vehicles.find(x=>x.id===j.veh)||{};const c=SRC.customers.find(x=>x.id===j.cust)||{};
     await p.evaluate(()=>{closeSheet();go('counter');S.ctr={q:'',vid:null,km:''};render();});await W(60);
     const q=(v.plate||'').trim()||(c.phone||'').trim()||(c.name||'').trim();await p.fill('#cq',q);await W(120);
     const hit=await p.$(`[data-cv="${j.veh}"]`);if(hit)await hit.click();else{iss(j,'counter search did not find the car',{q});await p.evaluate(v=>{S.ctr.vid=v;render();},j.veh);}await W(80);

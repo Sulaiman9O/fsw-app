@@ -6,7 +6,7 @@ function newJobFor(v,km){const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syn
 const openJobOf=v=>DB.jobs.filter(j=>j.veh===v.id&&!isInvoiced(j)&&j.stage!=='done'&&j.stage!=='estimate').sort((a,b)=>b.t-a.t)[0]||null;
 /* a price preview without touching the real jobs */
 function ctrPreview(v,fill){const t={id:'_ctr',veh:v.id,cust:v.cust,items:[],log:[],pays:[],disc:0};try{fill(t);}catch(e){return null;}return (t.items||[]).length?t:null;}
-function ctrFind(q){const n=lc(q).replace(/\s/g,'');if(n.length<2)return [];const dig=q.replace(/\D/g,'');
+function ctrFind(q){const n=lc(q).replace(/\s/g,'');if(n.length<2)return [];const dig=/^[\s+\d()-]+$/.test(q)?phoneKey(q):q.replace(/\D/g,'');/* +968 9… or 00968… finds 9… */
   const cs=new Set(DB.customers.filter(c=>lc(c.name).includes(lc(q).trim())||(dig.length>=4&&phoneKey(c.phone).includes(dig))).map(c=>c.id));
   const last={};DB.jobs.forEach(j=>{if(!last[j.veh]||last[j.veh]<j.t)last[j.veh]=j.t;});
   return DB.vehicles.filter(v=>lc(v.plate).replace(/\s/g,'').includes(n)||lc(v.vin).includes(n)||cs.has(v.cust)||lc(carName(v)).replace(/\s/g,'').includes(n)).sort((a,b)=>(last[b.id]||0)-(last[a.id]||0)).slice(0,12).map(v=>({v,last:last[v.id]}));}
