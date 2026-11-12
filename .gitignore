@@ -10,3 +10,6 @@ fresh/tests/*.html
 !fresh/tests/logo.png
 fresh/tests/*.log
 fresh/tests/logs_*
+fresh/tests/*.out
+fresh/tests/fmap_report_*.json
+fresh/tests/trem_sticker.png
