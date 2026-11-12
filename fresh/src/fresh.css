@@ -510,3 +510,20 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .ii.lp-flash{box-shadow:0 0 0 3px var(--acc,#2563eb);transition:box-shadow .3s}
 .pad .key.kb-hit{transform:scale(.94);filter:brightness(1.15)}
 @media(min-width:760px){#main{margin-inline:auto;width:100%}}
+/* ---------- desktop 1100px+ (desk.js) ---------- */
+@media(min-width:1100px){
+  #main{max-width:1560px;padding:24px 32px 48px}
+  .dk{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(360px,1fr);gap:22px;align-items:start}
+  .dkA,.dkB{display:grid;gap:14px;align-content:start;min-width:0}.dkA>*,.dkB>*{min-width:0}
+  .dk-job .dkB,.dk-custd .dkB,.dk-inv .dkB{position:sticky;top:20px}
+  .dk-inv{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr)}
+  .dkB .grp{grid-template-columns:repeat(2,minmax(0,1fr))!important}.dkB .grp>:last-child:nth-child(odd){grid-column:1/-1}
+  .dkB .bigbtn,.dkA .bigbtn{min-height:84px}
+  body[data-r=work] #main>.list,body[data-r=cust] #main>.list,body[data-r=stock] #plist,body[data-r=svc] #main .list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  body[data-r=more] #main>.list,body[data-r=settings] #main>.list{grid-template-columns:repeat(3,minmax(0,1fr))}
+  body[data-r=home] .dkA>.list,body[data-r=customers] .dkA>.list{grid-template-columns:1fr}
+  body[data-r=counter] #main,body[data-r=newjob] #main,body[data-r=quote] #main{max-width:880px}
+  body[data-r=work] .pipe{max-width:none}
+}
+@media(min-width:1600px){body[data-r=more] #main>.list,body[data-r=settings] #main>.list{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1100px){.dkB .grp{grid-template-columns:repeat(6,minmax(0,1fr))!important}.dkB .grp>*{grid-column:span 2!important}.dkB .grp>:nth-child(n+4):nth-last-child(-n+2){grid-column:span 3!important}}
