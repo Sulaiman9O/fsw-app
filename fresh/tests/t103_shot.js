@@ -1,0 +1,12 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});const ctx=await b.newContext({viewport:{width:400,height:868},permissions:['camera']});await ctx.addInitScript(()=>{window.__OCR_BASE='http://localhost:8812/ocr/';});
+ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());
+ const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ await p.evaluate(()=>{go('newjob');document.querySelectorAll('#tour').forEach(x=>x.remove());});await p.waitForTimeout(400);
+ await p.click('.vinb');await p.waitForTimeout(1500);
+ const t0=Date.now();await p.click('#vsocr');const r=await p.evaluate(()=>({img:!!$('#vsimg'),vid:$('#vsvid').hidden,live:!!($('#vsvid').srcObject&&$('#vsvid').srcObject.getVideoTracks()[0].readyState==='live'),btn:$('#vsocr').textContent,st:$('#vsst').textContent}));console.log(r,Date.now()-t0,'ms');
+ ok(r.img&&r.vid&&!r.live,'photo frozen at once, camera off');await p.waitForTimeout(4000);
+ await p.click('#vsocr');await p.waitForTimeout(1500);ok(await p.evaluate(()=>!$('#vsimg')&&$('#vsvid').videoWidth>0&&!$('#vsvid').hidden),'another photo: camera back');
+ await p.click('[data-close]');console.log('errors',errs);await b.close();})();

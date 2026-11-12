@@ -91,15 +91,26 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const band=c=>({x:0,y:Math.round(c.height*.3),w:c.width,h:Math.round(c.height*.4)});/* the frame on screen */
     const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{const raw=await ocrRead(ocrPrep(src,crop),st);let L=vinFind(raw);if(!L.length&&crop){const raw2=await ocrRead(ocrPrep(src),st);L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
       catch(e){st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
-    el.querySelector('#vsocr').onclick=()=>{if(vid.videoWidth){const c=grab();ocrFrom(c,band(c));}else st(T_('No camera here. Use «From a photo».'));};
+    /* 📸: take the picture at once (the camera stops and the picture stays on screen), then read it — no need to keep aiming */
+    let frozen=false;const shot=el.querySelector('#vsocr');
+    const unfreeze=()=>{frozen=false;const im=el.querySelector('#vsimg');if(im)im.remove();vid.hidden=false;shot.textContent='📸 '+T_('Read the number');el.querySelector('#vsres').innerHTML='';startCam();};
+    const take=async()=>{if(frozen){unfreeze();return;}if(!vid.videoWidth){st(T_('No camera here. Use «From a photo».'));return;}
+      const c=grab();frozen=true;end();try{navigator.vibrate&&navigator.vibrate(25);}catch(e){}
+      const im=document.createElement('img');im.id='vsimg';im.src=c.toDataURL('image/jpeg',.85);vid.hidden=true;vid.after(im);shot.textContent='📸 '+T_('Another photo');
+      st(T_('Photo taken — reading it now. You can put the phone down.'));
+      if(await barcodeReader()){const B=(await barcodeRead(c)).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));return;}}
+      ocrFrom(c,band(c));};
+    shot.onclick=take;vid.onclick=take;
     el.querySelector('#vspic').onclick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;const im=new Image();im.onload=async()=>{
         const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);await barcodeReader();const B=(await barcodeRead(c)).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));return;}ocrFrom(c);};im.src=URL.createObjectURL(x);};f.click();};
     /* live camera: keep looking for a barcode */
-    (async()=>{try{stream=await camOpen(vid,el,s=>{stream=s;});if(stop){end();return;}}
+    const startCam=async()=>{stop=false;try{stream=await camOpen(vid,el,s=>{stream=s;});if(stop){end();return;}}
       catch(e){st(T_('No camera here. Use «From a photo».'));el.querySelector('.vsv').hidden=true;return;}
       const ok=await barcodeReader();const loop=async()=>{if(stop||!document.body.contains(vid))return end();
         if(!busy&&ok&&vid.videoWidth){const B=(await barcodeRead(grab())).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));try{navigator.vibrate&&navigator.vibrate(30);}catch(e){}return;}}
-        setTimeout(loop,350);};loop();})();
+        setTimeout(loop,350);};loop();};startCam();
+    /* get the reader ready while the camera is open, so reading starts at once after 📸 */
+    setTimeout(()=>{if(!stop||frozen)ocrWorker().catch(()=>{});},600);
     const x=el.querySelector('[data-close]');if(x){const c0=x.onclick;x.onclick=()=>{end();c0&&c0();};}
     const sh=$('#sheet');if(sh){const o=sh.onclick;sh.onclick=e=>{if(e.target===sh)end();o&&o(e);};}});}
 /* a 📷 button next to every VIN field (new car in, edit car) */
