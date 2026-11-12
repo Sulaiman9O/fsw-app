@@ -62,15 +62,16 @@ async function barcodeRead(canvas){if(BCD){try{const r=await BCD.detect(canvas);
 const camSaved=()=>{try{return localStorage.getItem('ws_cam')||'';}catch(e){return '';}};
 async function camBacks(){try{const L=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const back=L.filter(d=>/back|rear|environment|خلف/i.test(d.label));
   const B=(back.length?back:L).slice().sort((a,b)=>{const n=x=>{const m=x.label.match(/camera2?\s*(\d+)/i)||x.label.match(/(\d+)/);return m?+m[1]:99;};return n(a)-n(b);});return B;}catch(e){return [];}}
-async function camOpen(vid,el,setS){const md=navigator.mediaDevices;const q=id=>({video:Object.assign(id?{deviceId:{exact:id}}:{facingMode:'environment'},{width:{ideal:1920},height:{ideal:1080}}),audio:false});
+async function camOpen(vid,el,setS){const md=navigator.mediaDevices;const q=id=>({video:Object.assign(id?{deviceId:{exact:id}}:{facingMode:'environment'},{width:{ideal:1920},height:{ideal:1440},aspectRatio:{ideal:4/3}}),audio:false});
   let s=null;const want=camSaved();try{s=await md.getUserMedia(q(want||null));}catch(e){s=await md.getUserMedia(q(null));}
   let B=await camBacks();const cur=()=>{const t=s.getVideoTracks()[0];return t&&t.getSettings?t.getSettings().deviceId:'';};
   /* first time: if the phone gave a side lens, move to the main back camera */
   if(!want&&B.length>1&&B[0].deviceId&&cur()!==B[0].deviceId){try{const s2=await md.getUserMedia(q(B[0].deviceId));s.getTracks().forEach(t=>t.stop());s=s2;}catch(e){}}
-  const tune=()=>{const t=s.getVideoTracks()[0];if(!t)return;try{const c=t.getCapabilities?t.getCapabilities():{};if(c.focusMode&&c.focusMode.includes('continuous'))t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+  const tune=()=>{const t=s.getVideoTracks()[0];if(!t)return;try{const c=t.getCapabilities?t.getCapabilities():{};if(c.zoom&&c.zoom.min!=null)t.applyConstraints({advanced:[{zoom:c.zoom.min}]}).catch(()=>{});if(c.focusMode&&c.focusMode.includes('continuous'))t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
       const tb=el.querySelector('#vstorch');if(tb){tb.hidden=!c.torch;let on=false;tb.onclick=()=>{on=!on;t.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});tb.classList.toggle('on',on);};}}catch(e){}};
   const lens=()=>{const lb=el.querySelector('#vslens');if(!lb)return;lb.hidden=B.length<2;const i=Math.max(0,B.findIndex(d=>d.deviceId===cur()));lb.querySelector('span').textContent=(i+1)+'/'+B.length;
     lb.onclick=async()=>{const nx=B[(i+1)%B.length];try{s.getTracks().forEach(t=>t.stop());s=await md.getUserMedia(q(nx.deviceId));setS(s);vid.srcObject=s;await vid.play().catch(()=>{});try{localStorage.setItem('ws_cam',nx.deviceId);}catch(e){}tune();lens();}catch(e){toast(T_('This lens could not open'));}};};
+  const fit=()=>{const w=vid.videoWidth,h=vid.videoHeight;const box=vid.parentNode;if(w&&h&&box){box.style.setProperty('--ar',w+' / '+h);box.style.setProperty('--arn',String(w/h));}};vid.onloadedmetadata=fit;vid.onresize=fit;
   vid.srcObject=s;await vid.play().catch(()=>{});setS(s);tune();lens();return s;}
 /* ---- the scanner sheet ---- */
 function vinScan(onPick){let stream=null,stop=false,busy=false;

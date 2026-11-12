@@ -564,7 +564,7 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 /* VIN scanner */
 .vinw{display:flex;gap:8px;align-items:stretch}.vinw>.field{flex:1;min-width:0}
 .vinb{flex:none;width:52px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);font-size:1.25rem;color:inherit}
-.vsv{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;max-height:52vh}.vsv video{width:100%;height:100%;object-fit:cover;display:block}
+.vsv{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:var(--ar,4/3);width:min(100%,calc(58vh * var(--arn,1.3333)));margin:0 auto}.vsv video{width:100%;height:100%;object-fit:contain;display:block}
 .vsbox{position:absolute;left:6%;right:6%;top:30%;height:40%;border:3px solid #22c55e;border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
 .vsc{display:grid;grid-template-columns:1fr auto;gap:6px 8px;align-items:center;margin:6px 0}.vsc small{grid-column:1/-1;color:var(--muted);font-size:.78rem}.vsc .btn{width:auto;min-height:44px}
 .vsraw{white-space:pre-wrap;font-size:.75rem;max-height:160px;overflow:auto}
