@@ -16,7 +16,7 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
     m.innerHTML=head('Counter')+`<input class="field ctrq" id="cq" placeholder="${T_('Plate, phone or name…')}" value="${esc(C.q)}" autocomplete="off" autocorrect="off" spellcheck="false"><div id="cres"></div>
      <button class="btn ghost" id="cnew">＋ ${T_('New customer or car')}</button>`;
     const inp=$('#cq');const draw=()=>{C.q=inp.value;const R=ctrFind(inp.value);const box=$('#cres');
-      box.innerHTML=R.length?`<div class="list">${R.map(({v,last})=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-cv="${v.id}"><div><b>${esc(carName(v)||T_('Car'))} ${v.plate?`<span class="pl"><bdi>${esc(v.plate)}</bdi></span>`:''}</b><span>${esc(c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${last?' · '+T_('last visit')+' '+fmtDs(last):''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`:(inp.value.trim().length>=2?`<p class="hint">${T_('Not found. Tap “New customer or car”.')}</p>`:'');
+      box.innerHTML=R.length?`<div class="list">${R.map(({v,last})=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-cv="${v.id}">${typeof vehThumb==='function'?vehThumb(v):''}<div><b>${esc(carName(v)||T_('Car'))} ${v.plate?`<span class="pl"><bdi>${esc(v.plate)}</bdi></span>`:''}</b><span>${esc(c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${last?' · '+T_('last visit')+' '+fmtDs(last):''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`:(inp.value.trim().length>=2?`<p class="hint">${T_('Not found. Tap “New customer or car”.')}</p>`:'');
       box.querySelectorAll('[data-cv]').forEach(b=>b.onclick=()=>{C.vid=b.dataset.cv;C.km='';render();});};
     inp.oninput=draw;draw();setTimeout(()=>inp.focus(),60);
     $('#cnew').onclick=()=>{const q=inp.value.trim(),dig=q.replace(/\D/g,'');const isPh=dig.length>=7&&dig.length===q.replace(/[\s+]/g,'').length;
@@ -27,7 +27,7 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
   const oilR=oil&&oilRecipe(v,(DB.ws.rxMode)||'usual');const guess=oilR&&oilR.qsrc&&oilR.qsrc.guess;
   const sum=t=>t.items.map(i=>i.d.replace(/\s+F\/S.*$/i,'').slice(0,34)).join(' + ');
   m.innerHTML=head('Counter',`<button class="lnk" id="cchg">${T_('Change')}</button>`)+`
-   <div class="card ctrcar"><div class="h"><b>${esc(carName(v)||T_('Car'))}</b>${v.plate?`<span class="pl"><bdi>${esc(v.plate)}</bdi></span>`:''}</div>
+   <div class="card ctrcar"><div class="h">${typeof vehThumb==='function'?vehThumb(v,'big'):''}<b>${esc(carName(v)||T_('Car'))}</b>${v.plate?`<span class="pl"><bdi>${esc(v.plate)}</bdi></span>`:''}</div>
     <span class="sub">${v.engine?'⚙️ '+esc(effEng(v)||v.engine)+' · ':''}${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${v.km?' · '+T_('last km')+' <bdi>'+kmf(v.km)+'</bdi>':''}</span>
     <label class="field-l">${T_('Km now (optional)')}<input class="field" id="ckm" inputmode="numeric" value="${esc(C.km)}" placeholder="${v.km?kmf(v.km):''}"></label></div>
    ${debtNote(v.cust)}

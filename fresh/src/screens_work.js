@@ -2,7 +2,7 @@
 const SCREENS={};
 function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let [sl,sc]=STAGE[j.stage];const unpaid=isInvoiced(j)&&!j.returned&&T.due>=0.005&&j.stage!=='ready';if(unpaid){sl='Not paid';sc='var(--bad)';}
   const right=unpaid?f3(T.due):j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
-  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div><div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small></div></button>`;}
+  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div>${typeof vehThumb==='function'?vehThumb(v):''}<div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small></div></button>`;}
 SCREENS.home=m=>{
   const open=openJobs(),[pd,pt]=stepsProgress(),due=totalDue(),low=lowParts().length,rem=remindersDue().length;
   const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
@@ -31,7 +31,7 @@ SCREENS.search=m=>{
     const vs=DB.vehicles.filter(v=>[v.plate,v.vin,carName(v)].some(x=>(x||'').toLowerCase().includes(q)));
     const cs=DB.customers.filter(c=>[c.name,c.phone].some(x=>(x||'').toLowerCase().includes(q)));
     const js=DB.jobs.filter(j=>String(j.no)===q.replace('#','')||(j.inv&&String(j.inv.no)===q.replace('#','')));
-    box.innerHTML=(js.length?sec('Jobs')+`<div class="list">${js.map(carRow).join('')}</div>`:'')+(cs.length?sec('Customers')+`<div class="list">${cs.map(custRow).join('')}</div>`:'')+(vs.length?sec('Cars')+`<div class="list">${vs.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-go="custd:${v.cust}"><div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'')}${v.km?' · '+kmf(v.km)+' km':''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`:'')||empty('🔍','Nothing found.');
+    box.innerHTML=(js.length?sec('Jobs')+`<div class="list">${js.map(carRow).join('')}</div>`:'')+(cs.length?sec('Customers')+`<div class="list">${cs.map(custRow).join('')}</div>`:'')+(vs.length?sec('Cars')+`<div class="list">${vs.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-go="custd:${v.cust}">${typeof vehThumb==='function'?vehThumb(v):''}<div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'')}${v.km?' · '+kmf(v.km)+' km':''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`:'')||empty('🔍','Nothing found.');
     box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,{id});});};
   inp.oninput=run;run();setTimeout(()=>inp.focus(),50);
 };
