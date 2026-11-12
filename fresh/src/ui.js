@@ -112,7 +112,8 @@ function bindPad(f){$$('.pad button').forEach(b=>b.onclick=()=>f(b.dataset.k));}
 
 /* ---------- login ---------- */
 let pick=null,pinBuf='';
-const PINLOCK={n:0,until:0};
+const PINLOCK=(()=>{try{return Object.assign({n:0,until:0,r:0},JSON.parse(localStorage.getItem('ws_pinlock')||'{}'));}catch(e){return {n:0,until:0,r:0};}})();
+function pinLockSave(){try{localStorage.setItem('ws_pinlock',JSON.stringify(PINLOCK));}catch(e){}}
 function renderLogin(){
   const us=DB.users;if(us.length===1&&!pick)pick=us[0].id;
   $('#root').innerHTML=`<div class="login"><div class="in"><div class="brandline" data-notr>${window.SF_LOGO||"ShopFlo"}</div>${DB.ws.logo?`<img class="logo" src="${DB.ws.logo}" alt="">`:`<div class="ob-hero"><span class="wsmark big">${esc(initials(DB.ws.name))}</span><h2 style="font:400 1.5rem var(--f-brand)">${esc(DB.ws.name)}</h2></div>`}
@@ -121,7 +122,7 @@ function renderLogin(){
    ${pick?dots(pinBuf.length)+pad():'<p>Tap your name</p>'}<div class="err" id="err"></div></div></div>`;
   $$('.person').forEach(b=>b.onclick=()=>{pick=b.dataset.u;pinBuf='';renderLogin();});
   bindPad(async k=>{if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;
-    if(pinBuf.length===4){if(PINLOCK.until>Date.now()){pinBuf='';renderLogin();$('#err').textContent=T_('Too many wrong PINs. Wait '+Math.ceil((PINLOCK.until-Date.now())/1000)+' seconds.');return;}const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){PINLOCK.n=0;S.user=u;audit('login','Logged in');save();S.r='home';render();setTimeout(showNewsPrompt,500);return;}{const S0=S.user;S.user={name:(u&&u.name)||'?'};audit('fail','Wrong PIN for '+((u&&u.name)||'?'));S.user=S0;save();PINLOCK.n++;if(PINLOCK.n>=5){PINLOCK.n=0;PINLOCK.until=Date.now()+30000;}}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
+    if(pinBuf.length===4){if(PINLOCK.until>Date.now()){pinBuf='';renderLogin();$('#err').textContent=T_('Too many wrong PINs. Wait '+Math.ceil((PINLOCK.until-Date.now())/1000)+' seconds.');return;}const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){PINLOCK.n=0;PINLOCK.r=0;pinLockSave();S.user=u;audit('login','Logged in');save();S.r='home';render();setTimeout(showNewsPrompt,500);return;}{const S0=S.user;S.user={name:(u&&u.name)||'?'};audit('fail','Wrong PIN for '+((u&&u.name)||'?'));S.user=S0;save();PINLOCK.n++;if(PINLOCK.n>=5){PINLOCK.n=0;PINLOCK.r=Math.min(6,(PINLOCK.r||0)+1);PINLOCK.until=Date.now()+30000*Math.pow(2,PINLOCK.r-1);}pinLockSave();}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
     renderLogin();});
 }
 /* the number pad (PIN) also takes the computer keyboard: digits (also Arabic ٠-٩), Backspace; ignored while typing in a field */

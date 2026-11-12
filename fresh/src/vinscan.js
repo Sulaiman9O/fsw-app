@@ -2,13 +2,14 @@
    Everything runs on the device: the reading files (about 7 MB) download once from the app's site and are kept in the
    browser database, so after the first time it works without internet. Nothing is sent anywhere. ---------- */
 const OCR_BASE=()=>window.__OCR_BASE||(/github\.io$/.test(location.hostname)?'ocr/':'https://sulaiman9o.github.io/fsw-app/garage/ocr/');
-const OCR_V='1';/* bump when the files in docs/garage/ocr change */
+const OCR_V='2';/* bump when the files in docs/garage/ocr change — and update OCR_SHA */
+const OCR_SHA={"tesseract.min.js": "10fff78484067759c43028a02a72d76d0b90eb17302bb23b58a9ec5410bc928b", "worker.min.js": "38645599043239c0eb6db08a6504a92dcdc292200535f3e9339cd77c4443b842", "tesseract-core-lstm.wasm.js": "775a35df6f2ae100e02609443e6bd5cafcd07983dd6175454ca4a432a7730687", "tesseract-core-simd-lstm.wasm.js": "9d7c43fb206dc9f48475228b46bf35f888fa9e6259da2e67d5a75c77049f2dc7", "zxing.min.js": "d7cc8f69dd70bdcf3ac00c9ae572bf2acb9f4132ba379c72df842e4db918652d"};/* SHA-256 of each reader file: a changed file is refused */
 let OCRDB=null;
 async function ocrDb(){if(OCRDB)return OCRDB;const r=indexedDB.open('shopflo-ocr',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('f');}catch(e){}};OCRDB=await idbReq(r);return OCRDB;}
 /* one file: from the device if kept, else download and keep it */
 async function ocrFile(name,type){const db=await ocrDb();const k=OCR_V+':'+name;
   let b=await idbReq(db.transaction('f','readonly').objectStore('f').get(k));
-  if(!b){const r=await fetch(OCR_BASE()+name);if(!r.ok)throw new Error('download '+name+' '+r.status);b=new Blob([await r.arrayBuffer()],{type});
+  if(!b){const r=await fetch(OCR_BASE()+name);if(!r.ok)throw new Error('download '+name+' '+r.status);const ab=await r.arrayBuffer();if(OCR_SHA[name]){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',ab))].map(x=>x.toString(16).padStart(2,'0')).join('');if(h!==OCR_SHA[name])throw new Error('reader file changed: '+name);}b=new Blob([ab],{type});
     await new Promise((ok,no)=>{const tx=db.transaction('f','readwrite');tx.objectStore('f').put(b,k);tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});}
   return URL.createObjectURL(b);}
 const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('script'));document.head.appendChild(s);});
@@ -60,7 +61,16 @@ function vinCands(reading,exact){const out=new Map();const add=(c,sc)=>{if(vinLe
 function vinFind(txt,exact){const R=String(txt||'').split('\f');const tot=new Map(),seen=new Map();
   R.forEach(r=>vinCands(r,exact).forEach((sc,c)=>{seen.set(c,(seen.get(c)||0)+1);if(!tot.has(c)||tot.get(c)<sc)tot.set(c,sc);}));
   const L=[...tot.entries()].map(([c,sc])=>[c,sc+(seen.get(c)-1)*4]).sort((a,b)=>b[1]-a[1]);const best=L.length?L[0][1]:0;
-  return L.filter(x=>x[1]>=best-4).map(x=>x[0]).slice(0,3);}
+  /* a number that passes the check digit AND starts with a known maker beats a number read twice that fails them */
+  const strong=c=>vinCheck(c)&&!!vinMake(c);const K=L.filter(x=>x[1]>=best-4||strong(x[0]));K.sort((a,b)=>(strong(b[0])-strong(a[0]))||(b[1]-a[1]));
+  return K.map(x=>x[0]).slice(0,3);}
+/* turn the prepared picture a few degrees: a tilted photo reads much better straightened */
+function ocrTurn(c,deg){const r=deg*Math.PI/180,s=Math.abs(Math.sin(r)),k=Math.abs(Math.cos(r));const o=document.createElement('canvas');o.width=Math.round(c.width*k+c.height*s);o.height=Math.round(c.width*s+c.height*k);
+  const g=o.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,o.width,o.height);g.translate(o.width/2,o.height/2);g.rotate(r);g.drawImage(c,-c.width/2,-c.height/2);return o;}
+/* read; if no number passes the check digit, try the picture turned a little each way (stops at the first good one) */
+async function ocrDeep(src,crop,step){const c=ocrPrep(src,crop);let raw=await ocrRead(c,step);let L=vinFind(raw);
+  const sure=()=>L.length&&vinCheck(L[0])&&raw.split('\f').filter(r=>vinFind(r).includes(L[0])).length>=2;
+  for(const d of [-4,4,-8,8]){if(sure())break;raw+='\f'+await ocrRead(ocrTurn(c,d),step);L=vinFind(raw);}return {L,raw};}
 /* make a picture easier to read: grey, stronger contrast, about 1600 px wide */
 function ocrPrep(src,crop){const sw=crop?crop.w:(src.videoWidth||src.naturalWidth||src.width),sh=crop?crop.h:(src.videoHeight||src.naturalHeight||src.height);
   const k=Math.min(3,2400/sw);const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
@@ -115,7 +125,7 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const confirm0=v=>{st(T_('A VIN has 17 letters and numbers. This one has {n}.'.replace('{n}',v.length)));return v.length>=11;};
     const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};
     const band=c=>({x:0,y:Math.round(c.height*.3),w:c.width,h:Math.round(c.height*.4)});/* the frame on screen */
-    const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{const raw=await ocrRead(ocrPrep(src,crop),st);let L=vinFind(raw);if(!L.length&&crop){const raw2=await ocrRead(ocrPrep(src),st);L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
+    const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{let {L,raw}=await ocrDeep(src,crop,st);if(!L.length&&crop){const raw2=(await ocrDeep(src,null,st)).raw;L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
       catch(e){st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
     /* 📸: take the picture at once (the camera stops and the picture stays on screen), then read it — no need to keep aiming */
     let frozen=false;const shot=el.querySelector('#vsocr');

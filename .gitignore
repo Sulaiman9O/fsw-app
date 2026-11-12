@@ -13,3 +13,4 @@ fresh/tests/logs_*
 fresh/tests/*.out
 fresh/tests/fmap_report_*.json
 fresh/tests/trem_sticker.png
+fresh/tests/tvinimg_report.json

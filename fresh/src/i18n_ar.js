@@ -187,3 +187,5 @@ Object.assign(AR_DICT,{'Photo deleted':'انحذفت الصورة','Delete?':'ح
 Object.assign(AR_DICT,{'Most likely':'الأرجح'});
 Object.assign(AR_DICT,{'Looking up the car…':'نبحث عن السيارة…','from the VIN database':'من قاعدة بيانات أرقام الشاصي','from your cars with the same VIN start':'من سياراتك اللي شاصيها يبدأ بنفس الرقم','from the VIN start only — choose the model':'من أول الرقم بس — اختر الطراز','filled in':'تعبّت','Use this car':'استخدم هذي البيانات'});
 Object.assign(AR_DICT,{'Something else (type name and price)':'شي ثاني (اكتب الاسم والسعر)','Something else':'شي ثاني','Name (e.g. used oil sale)':'الاسم (مثال: بيع زيت مستعمل)','Service / other':'خدمة / شي ثاني','Type the price':'اكتب السعر','Type a name':'اكتب الاسم'});
+
+Object.assign(AR_DICT,{'Ask the manager to change services':'اطلب من المدير تعديل الخدمات','New version':'إصدار جديد','is ready':'جاهز'});

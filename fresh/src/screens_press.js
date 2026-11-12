@@ -93,7 +93,7 @@ function attachPress(m){
   m.querySelectorAll('[data-pe]').forEach(b=>longPress(b,()=>{if(!S.sel)partRowMenu(b.dataset.pe);}));
   m.querySelectorAll('[data-go^="custd:"]').forEach(b=>longPress(b,()=>custRowMenu(b.dataset.go.split(':')[1])));
   m.querySelectorAll('[data-se]').forEach(b=>longPress(b,()=>{if(S.sel)return;const sv=byId('services',b.dataset.se);if(!sv)return;actionSheet(esc(sv.name),esc(sv.cat)+' · '+f3(sv.p[0]),[
-    {ic:'✏️',s:'Edit',t:'Edit',fn:()=>svcSheet(sv)},
+    {ic:'✏️',s:'Edit',t:'Edit',hide:!perm('svcEdit'),fn:()=>svcSheet(sv)},
     {ic:'☑️',s:'Select',t:'Select several',d:'Move, hide or change prices together',hide:!perm('svcEdit'),fn:()=>selStart('svc',sv.id)},
     {ic:sv.hidden?'👁':'🙈',s:sv.hidden?'Show':'Hide',t:sv.hidden?'Show':'Hide',hide:!perm('svcEdit'),fn:()=>{sv.hidden=!sv.hidden;save();render();}}]);}));
   try{selApply(m);}catch(e){}}

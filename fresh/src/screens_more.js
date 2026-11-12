@@ -112,7 +112,7 @@ SCREENS.svc=m=>{const fc=S.p.g||'';const own=perm('svcEdit');const hidV=!!S.p.hi
     {ic:'📁',t:'Groups',s:'Groups',fn:()=>go('list',{id:'scat'})},
     {ic:'🚙',t:'Car sizes',s:'Sizes',fn:()=>go('list',{id:'size'})},
     {ic:'🙈',t:'Hidden services',s:String(hid.length),hide:!hid.length,fn:()=>go('svc',{hid:1})}]);};
-function svcSheet(s0,cat){const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||{cat:cat||(DB.scats[0]||{}).name||'Other',p:[0],tag:''}));
+function svcSheet(s0,cat){if(!perm('svcEdit')){toast(T_('Ask the manager to change services'));return;}const isNew=!s0;const s=JSON.parse(JSON.stringify(s0||{cat:cat||(DB.scats[0]||{}).name||'Other',p:[0],tag:''}));
   s.out=s.out||{who:'',mode:'pass',amt:0};s.parts=s.parts||[];let outOn=!!s.out.who;
   const partners=(DB.mlists.find(L=>/partner|workshop/i.test(L.name))||{items:[]}).items.map(i=>i.name);
   const pr=k=>s.p[k]!=null?s.p[k]:s.p[s.p.length-1];const bySz=DB.sizes.length>1&&new Set(DB.sizes.map((z,k)=>f3(pr(k)))).size>1;
