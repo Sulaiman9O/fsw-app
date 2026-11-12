@@ -1,0 +1,101 @@
+/* ---------- VIN SCANNER: read the chassis number (VIN) with the camera — its barcode, or the printed number (text reading).
+   Everything runs on the device: the reading files (about 7 MB) download once from the app's site and are kept in the
+   browser database, so after the first time it works without internet. Nothing is sent anywhere. ---------- */
+const OCR_BASE=()=>window.__OCR_BASE||(/github\.io$/.test(location.hostname)?'ocr/':'https://sulaiman9o.github.io/fsw-app/garage/ocr/');
+const OCR_V='1';/* bump when the files in docs/garage/ocr change */
+let OCRDB=null;
+async function ocrDb(){if(OCRDB)return OCRDB;const r=indexedDB.open('shopflo-ocr',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('f');}catch(e){}};OCRDB=await idbReq(r);return OCRDB;}
+/* one file: from the device if kept, else download and keep it */
+async function ocrFile(name,type){const db=await ocrDb();const k=OCR_V+':'+name;
+  let b=await idbReq(db.transaction('f','readonly').objectStore('f').get(k));
+  if(!b){const r=await fetch(OCR_BASE()+name);if(!r.ok)throw new Error('download '+name+' '+r.status);b=new Blob([await r.arrayBuffer()],{type});
+    await new Promise((ok,no)=>{const tx=db.transaction('f','readwrite');tx.objectStore('f').put(b,k);tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});}
+  return URL.createObjectURL(b);}
+const loadScript=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('script'));document.head.appendChild(s);});
+const wasmSimd=()=>{try{return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));}catch(e){return false;}};
+let OCRW=null;
+async function ocrWorker(step){if(OCRW)return OCRW;
+  step&&step(T_('Getting the reader ready…'));
+  if(!window.Tesseract)await loadScript(await ocrFile('tesseract.min.js','text/javascript'));
+  const w=await ocrFile('worker.min.js','text/javascript');const core=await ocrFile(wasmSimd()?'tesseract-core-simd-lstm.wasm.js':'tesseract-core-lstm.wasm.js','text/javascript');
+  /* the language file is kept by the reader itself (its own browser database) after the first download */
+  OCRW=await Tesseract.createWorker('eng',1,{workerPath:w,corePath:core+'#.js',workerBlobURL:false,langPath:OCR_BASE()+'lang',gzip:true,
+    logger:m=>{if(step&&m&&m.status&&/loading|initializ/i.test(m.status))step(T_('Getting the reader ready…')+(m.progress?' '+Math.round(m.progress*100)+'%':''));}});
+  await OCRW.setParameters({tessedit_char_whitelist:'ABCDEFGHJKLMNPRSTUVWXYZ0123456789',preserve_interword_spaces:'0'});
+  return OCRW;}
+/* ---- VIN rules ---- */
+const VIN_RX=/^[A-HJ-NPR-Z0-9]{17}$/;
+function vinCheck(v){const T='0123456789.ABCDEFGH..JKLMN.P.R..STUVWXYZ';const W=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];let s=0;
+  for(let i=0;i<17;i++){const c=v[i];const n=/\d/.test(c)?+c:(T.indexOf(c)%10);s+=n*W[i];}const d=s%11;return v[8]===(d===10?'X':String(d));}
+const WMI={JT:'Toyota',MR0:'Toyota',MR2:'Toyota',MHF:'Toyota',AHT:'Toyota','4T':'Toyota','5T':'Toyota','2T1':'Toyota','2T3':'Toyota',JTH:'Lexus',JTJ:'Lexus','2T2':'Lexus','58A':'Lexus',
+  JN:'Nissan','1N':'Nissan','3N':'Nissan','5N1':'Nissan',MNT:'Nissan',KMH:'Hyundai',KM8:'Hyundai','5NP':'Hyundai',KNA:'Kia',KND:'Kia','5XY':'Kia',JHM:'Honda','1HG':'Honda','2HG':'Honda','5FN':'Honda',
+  JM1:'Mazda',JM3:'Mazda',JMZ:'Mazda',JF1:'Subaru',JF2:'Subaru',JA3:'Mitsubishi',JA4:'Mitsubishi',JMB:'Mitsubishi',MMB:'Mitsubishi',MMC:'Mitsubishi',WDB:'Mercedes-Benz',WDD:'Mercedes-Benz',W1K:'Mercedes-Benz',W1N:'Mercedes-Benz',
+  WBA:'BMW',WBS:'BMW',WVW:'Volkswagen',WV1:'Volkswagen',WV2:'Volkswagen',WAU:'Audi',SAL:'Land Rover',SAJ:'Jaguar','1FA':'Ford','1FM':'Ford','1FT':'Ford','3FA':'Ford','1GC':'Chevrolet','1G1':'Chevrolet','1GN':'Chevrolet','1GK':'GMC','1GT':'GMC','3GC':'Chevrolet',
+  '1C4':'Jeep','1J4':'Jeep','1C6':'Ram','2C3':'Dodge',LSJ:'MG',LVV:'Chery',LGW:'Haval',LB3:'Geely',LGX:'BYD',LC0:'BYD',LS5:'Changan',LJD:'Jetour',LNB:'BAIC',MAJ:'Ford',MA3:'Suzuki',JS1:'Suzuki',JS2:'Suzuki',TSM:'Suzuki'};
+function vinMake(v){for(const n of [3,2])if(WMI[v.slice(0,n)])return WMI[v.slice(0,n)];return '';}
+function vinYear(v){const c=v[9];const L='ABCDEFGHJKLMNPRSTVWXY123456789';const i=L.indexOf(c);if(i<0)return 0;const max=new Date().getFullYear()+1;return [1980+i,2010+i].filter(y=>y<=max).pop()||0;}
+/* the VINs inside some read text: 17 allowed letters in a row (O→0, I→1, Q→0 first), best ones first */
+function vinFind(txt,exact){const out=new Map();
+  String(txt||'').toUpperCase().split(/\n/).forEach(line=>{let s=line.replace(/[^A-Z0-9]/g,'');if(!exact)s=s.replace(/[OQ]/g,'0').replace(/I/g,'1');
+    if(exact&&s.length===18&&s[0]==='I')s=s.slice(1);/* the US import mark before a barcode VIN */
+    for(let i=0;i+17<=s.length;i++){const c=s.slice(i,i+17);if(!VIN_RX.test(c))continue;
+      const sc=(vinCheck(c)?4:0)+(vinMake(c)?3:0)+(s.length===17?2:0)+(/\d{5}$/.test(c)?1:0);if(!out.has(c)||out.get(c)<sc)out.set(c,sc);}});
+  const L=[...out.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);const good=L.filter(vinCheck);return (good.length?good:L).slice(0,3);}
+/* make a picture easier to read: grey, stronger contrast, about 1600 px wide */
+function ocrPrep(src,crop){const sw=crop?crop.w:(src.videoWidth||src.naturalWidth||src.width),sh=crop?crop.h:(src.videoHeight||src.naturalHeight||src.height);
+  const k=Math.min(2.5,1600/sw);const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
+  g.drawImage(src,crop?crop.x:0,crop?crop.y:0,sw,sh,0,0,c.width,c.height);const im=g.getImageData(0,0,c.width,c.height),d=im.data;let lo=255,hi=0;
+  for(let i=0;i<d.length;i+=4){const y=d[i]*.299+d[i+1]*.587+d[i+2]*.114;d[i]=y;if(y<lo)lo=y;if(y>hi)hi=y;}const r=Math.max(1,hi-lo);
+  for(let i=0;i<d.length;i+=4){const y=(d[i]-lo)*255/r;d[i]=d[i+1]=d[i+2]=y;}g.putImageData(im,0,0);return c;}
+async function ocrRead(canvas,step){const w=await ocrWorker(step);step&&step(T_('Reading…'));const r=await w.recognize(canvas);return (r&&r.data&&r.data.text)||'';}
+/* ---- barcodes: the phone's own reader when it has one, else ZXing ---- */
+let BCD=null,ZX=null;
+async function barcodeReader(){if(BCD||ZX)return true;
+  try{if('BarcodeDetector' in window){const f=await BarcodeDetector.getSupportedFormats();const want=['code_39','code_128','data_matrix','qr_code','pdf417'].filter(x=>f.includes(x));if(want.length){BCD=new BarcodeDetector({formats:want});return true;}}}catch(e){}
+  try{if(!window.ZXing)await loadScript(await ocrFile('zxing.min.js','text/javascript'));const Z=window.ZXing;const h=new Map();
+    h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.CODE_39,Z.BarcodeFormat.CODE_128,Z.BarcodeFormat.DATA_MATRIX,Z.BarcodeFormat.QR_CODE,Z.BarcodeFormat.PDF_417]);h.set(Z.DecodeHintType.TRY_HARDER,true);
+    ZX={Z,r:new Z.MultiFormatReader()};ZX.r.setHints(h);return true;}catch(e){return false;}}
+async function barcodeRead(canvas){if(BCD){try{const r=await BCD.detect(canvas);return r.map(x=>x.rawValue);}catch(e){return [];}}
+  if(ZX){try{const Z=ZX.Z;const src=new Z.HTMLCanvasElementLuminanceSource(canvas);const r=ZX.r.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(src)));return r?[r.getText()]:[];}catch(e){return [];}}return [];}
+/* ---- the scanner sheet ---- */
+function vinScan(onPick){let stream=null,stop=false,busy=false;
+  const end=()=>{stop=true;try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}};
+  openSheet(`<h3>📷 ${T_('Chassis number (VIN)')}</h3>
+    <div class="vsv"><video id="vsvid" playsinline muted autoplay></video><div class="vsbox"></div></div>
+    <p class="hint" id="vsst">${T_('Point the camera at the VIN barcode or the printed number, inside the frame.')}</p>
+    <div class="two"><button class="btn" id="vsocr">📸 ${T_('Read the number')}</button><button class="btn ghost" id="vspic">🖼 ${T_('From a photo')}</button></div>
+    <div id="vsres"></div>`,el=>{
+    const st=t=>{const e=el.querySelector('#vsst');if(e)e.textContent=t;};const vid=el.querySelector('#vsvid');
+    const show=(L,raw)=>{const box=el.querySelector('#vsres');if(!box)return;
+      if(!L.length){box.innerHTML=`<p class="hint">${T_('No VIN found. Hold the camera closer, keep it straight, and try again — or type it.')}</p>${raw?`<details class="pmore"><summary>${T_('What was read')}</summary><pre class="vsraw">${esc(raw)}</pre></details>`:''}`;return;}
+      box.innerHTML=`<label class="lbl">${T_('Found — check it, then tap to use')}</label>`+L.map(v=>{const mk=vinMake(v),y=vinYear(v);return `<div class="vsc"><input class="field" value="${v}" maxlength="17" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"><button class="btn okb sm">${T_('Use')}</button><small>${[mk,y?('~'+y):'',vinCheck(v)?'✓ '+T_('number checks out'):''].filter(Boolean).join(' · ')}</small></div>`;}).join('');
+      box.querySelectorAll('.vsc').forEach(r=>r.querySelector('button').onclick=()=>{const v=r.querySelector('input').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length!==17&&!confirm0(v))return;end();closeSheet();onPick(v);});};
+    const confirm0=v=>{st(T_('A VIN has 17 letters and numbers. This one has {n}.'.replace('{n}',v.length)));return v.length>=11;};
+    const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};
+    const band=c=>({x:0,y:Math.round(c.height*.3),w:c.width,h:Math.round(c.height*.4)});/* the frame on screen */
+    const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{const raw=await ocrRead(ocrPrep(src,crop),st);let L=vinFind(raw);if(!L.length&&crop){const raw2=await ocrRead(ocrPrep(src),st);L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
+      catch(e){st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
+    el.querySelector('#vsocr').onclick=()=>{if(vid.videoWidth){const c=grab();ocrFrom(c,band(c));}else st(T_('No camera here. Use «From a photo».'));};
+    el.querySelector('#vspic').onclick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;const im=new Image();im.onload=async()=>{
+        const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);await barcodeReader();const B=(await barcodeRead(c)).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));return;}ocrFrom(c);};im.src=URL.createObjectURL(x);};f.click();};
+    /* live camera: keep looking for a barcode */
+    (async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false});if(stop){end();return;}vid.srcObject=stream;await vid.play().catch(()=>{});}
+      catch(e){st(T_('No camera here. Use «From a photo».'));el.querySelector('.vsv').hidden=true;return;}
+      const ok=await barcodeReader();const loop=async()=>{if(stop||!document.body.contains(vid))return end();
+        if(!busy&&ok&&vid.videoWidth){const B=(await barcodeRead(grab())).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));try{navigator.vibrate&&navigator.vibrate(30);}catch(e){}return;}}
+        setTimeout(loop,350);};loop();})();
+    const x=el.querySelector('[data-close]');if(x){const c0=x.onclick;x.onclick=()=>{end();c0&&c0();};}
+    const sh=$('#sheet');if(sh){const o=sh.onclick;sh.onclick=e=>{if(e.target===sh)end();o&&o(e);};}});}
+/* a 📷 button next to every VIN field (new car in, edit car) */
+function vinAttach(root){(root||document).querySelectorAll('#nvin,#vv').forEach(inp=>{if(inp._vs)return;inp._vs=1;const w=document.createElement('div');w.className='vinw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+  const b=document.createElement('button');b.type='button';b.className='vinb';b.title=T_('Scan the VIN');b.textContent='📷';w.appendChild(b);
+  b.onclick=()=>{
+    if(inp.id==='vv'){/* inside the car sheet: keep what was typed, scan, then open the car sheet again with the VIN */
+      const C=S.vinCtx||{};const g=id=>{const e=document.querySelector('#sheet '+id);return e?e.value:'';};
+      const dd=Object.assign({},C.dr||C.v||{},{make:g('#vm'),model:g('#vmo'),year:g('#vy'),engine:g('#veng'),plate:g('#vp'),km:num(g('#vk')),vin:g('#vv'),size:g('#vsz')===''?null:+g('#vsz')});
+      vinScan(vin=>{dd.vin=vin;if(!dd.make)dd.make=vinMake(vin);vehSheet(C.cust,C.v||null,dd);});return;}
+    vinScan(v=>{const N=S.p&&S.p.n;if(N){const M={nphone:'phone',nname:'name',nplate:'plate',nkm:'km',nmake:'make',nmodel:'model',nyear:'year',nkm2:'km'};Object.keys(M).forEach(id=>{const e=$('#'+id);if(e)N[M[id]]=e.value;});
+        N.vin=v;if(!N.make){const mk=vinMake(v);if(mk)N.make=mk;}render();}else{const e=$('#nvin');if(e)e.value=v;}toast(T_('VIN added')+' · '+v);});};});}
+(function(){if(typeof vehSheet==='function'){const VS=vehSheet;window.vehSheet=vehSheet=function(cust,v,dr){S.vinCtx={cust,v,dr};return VS(cust,v,dr);};}
+  const R=render;window.render=render=function(){const r=R.apply(this,arguments);try{vinAttach($('#main'));}catch(e){}return r;};
+  const O=openSheet;window.openSheet=openSheet=function(h,bind){return O(h,el=>{bind&&bind(el);try{vinAttach(el);}catch(e){}});};})();

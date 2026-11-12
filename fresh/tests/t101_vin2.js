@@ -1,0 +1,15 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1366,height:800},colorScheme:'dark'});await ctx.addInitScript(()=>{window.__OCR_BASE='http://localhost:8812/ocr/';});
+ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());
+ const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};
+ await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const vin=fs.readFileSync('vin.txt','utf8');
+ await p.evaluate(()=>{const c={id:'c1',name:'Ali',phone:'99999999'};DB.customers.push(c);DB.vehicles.push({id:'v1',cust:'c1',make:'',model:'',year:'',plate:'1 A',km:5000});save();go('custd',{id:'c1'});document.querySelectorAll('#tour').forEach(x=>x.remove());});await p.waitForTimeout(400);
+ await p.click('[data-ve2="v1"]');await p.waitForTimeout(300);await p.fill('#vp','777 BB');
+ await p.click('.vinb');await p.waitForTimeout(300);const fc=p.waitForEvent('filechooser');await p.click('#vspic');(await fc).setFiles('vin_text.jpg');
+ await p.waitForSelector('.vsc input',{timeout:90000});console.log(await p.evaluate(()=>[...document.querySelectorAll('.vsc input')].map(i=>i.value)));await p.screenshot({path:'v2.png'});
+ await p.locator('.vsc .btn').first().click();await p.waitForTimeout(400);
+ const r=await p.evaluate(()=>({vv:$('#vv')&&$('#vv').value,vp:$('#vp')&&$('#vp').value,vm:$('#vm')&&$('#vm').value}));console.log(r);ok(r.vv===vin&&r.vp==='777 BB'&&r.vm==='Toyota','car sheet back with VIN, typed plate kept, make filled');
+ await p.click('#vok');await p.waitForTimeout(300);ok(await p.evaluate(v=>{const x=byId('vehicles','v1');return x.vin===v&&x.plate==='777 BB'&&x.make==='Toyota';},vin),'saved');
+ console.log('errors',errs);await b.close();})();
