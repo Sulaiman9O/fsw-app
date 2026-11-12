@@ -27,27 +27,51 @@ async function ocrWorker(step){if(OCRW)return OCRW;
 const VIN_RX=/^[A-HJ-NPR-Z0-9]{17}$/;
 function vinCheck(v){const T='0123456789.ABCDEFGH..JKLMN.P.R..STUVWXYZ';const W=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];let s=0;
   for(let i=0;i<17;i++){const c=v[i];const n=/\d/.test(c)?+c:(T.indexOf(c)%10);s+=n*W[i];}const d=s%11;return v[8]===(d===10?'X':String(d));}
-const WMI={JT:'Toyota',MR0:'Toyota',MR2:'Toyota',MHF:'Toyota',AHT:'Toyota','4T':'Toyota','5T':'Toyota','2T1':'Toyota','2T3':'Toyota',JTH:'Lexus',JTJ:'Lexus','2T2':'Lexus','58A':'Lexus',
+const WMI={KL:'Chevrolet',KPT:'SsangYong',KMF:'Hyundai',JT:'Toyota',MR0:'Toyota',MR2:'Toyota',MHF:'Toyota',AHT:'Toyota','4T':'Toyota','5T':'Toyota','2T1':'Toyota','2T3':'Toyota',JTH:'Lexus',JTJ:'Lexus','2T2':'Lexus','58A':'Lexus',
   JN:'Nissan','1N':'Nissan','3N':'Nissan','5N1':'Nissan',MNT:'Nissan',KMH:'Hyundai',KM8:'Hyundai','5NP':'Hyundai',KNA:'Kia',KND:'Kia','5XY':'Kia',JHM:'Honda','1HG':'Honda','2HG':'Honda','5FN':'Honda',
   JM1:'Mazda',JM3:'Mazda',JMZ:'Mazda',JF1:'Subaru',JF2:'Subaru',JA3:'Mitsubishi',JA4:'Mitsubishi',JMB:'Mitsubishi',MMB:'Mitsubishi',MMC:'Mitsubishi',WDB:'Mercedes-Benz',WDD:'Mercedes-Benz',W1K:'Mercedes-Benz',W1N:'Mercedes-Benz',
   WBA:'BMW',WBS:'BMW',WVW:'Volkswagen',WV1:'Volkswagen',WV2:'Volkswagen',WAU:'Audi',SAL:'Land Rover',SAJ:'Jaguar','1FA':'Ford','1FM':'Ford','1FT':'Ford','3FA':'Ford','1GC':'Chevrolet','1G1':'Chevrolet','1GN':'Chevrolet','1GK':'GMC','1GT':'GMC','3GC':'Chevrolet',
   '1C4':'Jeep','1J4':'Jeep','1C6':'Ram','2C3':'Dodge',LSJ:'MG',LVV:'Chery',LGW:'Haval',LB3:'Geely',LGX:'BYD',LC0:'BYD',LS5:'Changan',LJD:'Jetour',LNB:'BAIC',MAJ:'Ford',MA3:'Suzuki',JS1:'Suzuki',JS2:'Suzuki',TSM:'Suzuki'};
 function vinMake(v){for(const n of [3,2])if(WMI[v.slice(0,n)])return WMI[v.slice(0,n)];return '';}
 function vinYear(v){const c=v[9];const L='ABCDEFGHJKLMNPRSTVWXY123456789';const i=L.indexOf(c);if(i<0)return 0;const max=new Date().getFullYear()+1;return [1980+i,2010+i].filter(y=>y<=max).pop()||0;}
-/* the VINs inside some read text: 17 allowed letters in a row (O→0, I→1, Q→0 first), best ones first */
-function vinFind(txt,exact){const out=new Map();
-  String(txt||'').toUpperCase().split(/\n/).forEach(line=>{let s=line.replace(/[^A-Z0-9]/g,'');if(!exact)s=s.replace(/[OQ]/g,'0').replace(/I/g,'1');
+/* the VINs inside some read text. The text holds several readings of the same picture (split by \f).
+   Reading mistakes are repaired: up to 2 extra letters, and up to 2 look-alike letters (S↔5, B↔8/6, E→6, Z↔2…) when that
+   makes the VIN's own check number right. A VIN that comes out of more than one reading is trusted more. Best ones first. */
+const VIN_LOOK={'0':'D8','1':'7L','2':'Z','3':'8','4':'A','5':'S','6':'GBE','7':'T1','8':'B36','9':'G','A':'4','B':'86','C':'G','D':'0','E':'6F','F':'E','G':'6C','L':'1','S':'5','T':'7','Z':'2'};
+const VIN_LOOK2={'5':'S','S':'5','B':'86','8':'B','E':'6','6':'GB','Z':'2','2':'Z','G':'6','D':'0','0':'D','A':'4','4':'A'};
+const VIN_YR='ABCDEFGHJKLMNPRSTVWXY123456789';
+const vinLetters=c=>(c.match(/[A-Z]/g)||[]).length;
+function vinScore(c,ed){return (vinCheck(c)?6:0)+(vinMake(c)?3:0)+(VIN_YR.includes(c[9])?1:0)+(vinLetters(c)>=3?1:0)-ed*1.5;}
+function vinCands(reading,exact){const out=new Map();const add=(c,sc)=>{if(vinLetters(c)<2)return;if(!out.has(c)||out.get(c)<sc)out.set(c,sc);};
+  String(reading||'').toUpperCase().split(/\n/).forEach(line=>{
+    let s=line.replace(/[^A-Z0-9]/g,'');if(!exact)s=s.replace(/[OQ]/g,'0').replace(/I/g,'1');
     if(exact&&s.length===18&&s[0]==='I')s=s.slice(1);/* the US import mark before a barcode VIN */
-    for(let i=0;i+17<=s.length;i++){const c=s.slice(i,i+17);if(!VIN_RX.test(c))continue;
-      const sc=(vinCheck(c)?4:0)+(vinMake(c)?3:0)+(s.length===17?2:0)+(/\d{5}$/.test(c)?1:0);if(!out.has(c)||out.get(c)<sc)out.set(c,sc);}});
-  const L=[...out.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);const good=L.filter(vinCheck);return (good.length?good:L).slice(0,3);}
+    for(let i=0;i+17<=s.length;i++){const c=s.slice(i,i+17);if(VIN_RX.test(c))add(c,vinScore(c,0)+(s.length===17?2:0));}
+    if(exact)return;
+    const toks=line.toUpperCase().replace(/[OQ]/g,'0').replace(/I/g,'1').split(/[^A-Z0-9]+/).filter(t=>t.length>=15);const pieces=new Set(toks);if(s.length>=15&&s.length<=24)pieces.add(s);
+    pieces.forEach(t=>{if(vinLetters(t)<2)return;
+      for(let L=17;L<=Math.min(19,t.length);L++)for(let i=0;i+L<=t.length;i++){const w=t.slice(i,i+L);const dels=L-17;
+        const tries=dels===0?[w]:dels===1?[...Array(L).keys()].map(a=>w.slice(0,a)+w.slice(a+1)):[...Array(L).keys()].flatMap(a=>[...Array(L).keys()].filter(b=>b>a).map(b=>w.slice(0,a)+w.slice(a+1,b)+w.slice(b+1)));
+        tries.forEach(c=>{if(!VIN_RX.test(c))return;if(vinCheck(c)){add(c,vinScore(c,dels));return;}
+          for(let k=0;k<17;k++){const alt=VIN_LOOK[c[k]];if(!alt)continue;for(const a of alt){const c2=c.slice(0,k)+a+c.slice(k+1);if(!VIN_RX.test(c2))continue;if(vinCheck(c2)){add(c2,vinScore(c2,dels+1));continue;}
+            if(dels>1||!VIN_LOOK2[c[k]]||!VIN_LOOK2[c[k]].includes(a))continue;
+            for(let m=k+1;m<17;m++){const a2=VIN_LOOK2[c2[m]];if(!a2)continue;for(const b of a2){const c3=c2.slice(0,m)+b+c2.slice(m+1);if(VIN_RX.test(c3)&&vinCheck(c3))add(c3,vinScore(c3,dels+2));}}}}});}});});
+  return out;}
+function vinFind(txt,exact){const R=String(txt||'').split('\f');const tot=new Map(),seen=new Map();
+  R.forEach(r=>vinCands(r,exact).forEach((sc,c)=>{seen.set(c,(seen.get(c)||0)+1);if(!tot.has(c)||tot.get(c)<sc)tot.set(c,sc);}));
+  const L=[...tot.entries()].map(([c,sc])=>[c,sc+(seen.get(c)-1)*4]).sort((a,b)=>b[1]-a[1]);const best=L.length?L[0][1]:0;
+  return L.filter(x=>x[1]>=best-4).map(x=>x[0]).slice(0,3);}
 /* make a picture easier to read: grey, stronger contrast, about 1600 px wide */
 function ocrPrep(src,crop){const sw=crop?crop.w:(src.videoWidth||src.naturalWidth||src.width),sh=crop?crop.h:(src.videoHeight||src.naturalHeight||src.height);
-  const k=Math.min(2.5,1600/sw);const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
+  const k=Math.min(3,2400/sw);const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
   g.drawImage(src,crop?crop.x:0,crop?crop.y:0,sw,sh,0,0,c.width,c.height);const im=g.getImageData(0,0,c.width,c.height),d=im.data;let lo=255,hi=0;
   for(let i=0;i<d.length;i+=4){const y=d[i]*.299+d[i+1]*.587+d[i+2]*.114;d[i]=y;if(y<lo)lo=y;if(y>hi)hi=y;}const r=Math.max(1,hi-lo);
   for(let i=0;i<d.length;i+=4){const y=(d[i]-lo)*255/r;d[i]=d[i+1]=d[i+2]=y;}g.putImageData(im,0,0);return c;}
-async function ocrRead(canvas,step){const w=await ocrWorker(step);step&&step(T_('Reading…'));const r=await w.recognize(canvas);return (r&&r.data&&r.data.text)||'';}
+async function ocrRead(canvas,step){const w=await ocrWorker(step);step&&step(T_('Reading…'));const r=await w.recognize(canvas);let t=(r&&r.data&&r.data.text)||'';
+  /* a second reading in black and white catches what the first one misses */
+  try{const b=document.createElement('canvas');b.width=canvas.width;b.height=canvas.height;const g=b.getContext('2d');g.drawImage(canvas,0,0);const d=g.getImageData(0,0,b.width,b.height),a=d.data;let sum=0;for(let i=0;i<a.length;i+=4)sum+=a[i];const th=sum/(a.length/4)*.8;
+    for(let i=0;i<a.length;i+=4){const y=a[i]<th?0:255;a[i]=a[i+1]=a[i+2]=y;}g.putImageData(d,0,0);const r2=await w.recognize(b);t+='\f'+((r2&&r2.data&&r2.data.text)||'');}catch(e){}
+  return t;}
 /* ---- barcodes: the phone's own reader when it has one, else ZXing ---- */
 let BCD=null,ZX=null;
 async function barcodeReader(){if(BCD||ZX)return true;
@@ -84,7 +108,7 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const st=t=>{const e=el.querySelector('#vsst');if(e)e.textContent=t;};const vid=el.querySelector('#vsvid');
     const show=(L,raw)=>{const box=el.querySelector('#vsres');if(!box)return;
       if(!L.length){box.innerHTML=`<p class="hint">${T_('No VIN found. Hold the camera closer, keep it straight, and try again — or type it.')}</p>${raw?`<details class="pmore"><summary>${T_('What was read')}</summary><pre class="vsraw">${esc(raw)}</pre></details>`:''}`;return;}
-      box.innerHTML=`<label class="lbl">${T_('Found — check it, then tap to use')}</label>`+L.map(v=>{const mk=vinMake(v),y=vinYear(v);return `<div class="vsc"><input class="field" value="${v}" maxlength="17" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"><button class="btn okb sm">${T_('Use')}</button><small>${[mk,y?('~'+y):'',vinCheck(v)?'✓ '+T_('number checks out'):''].filter(Boolean).join(' · ')}</small></div>`;}).join('');
+      box.innerHTML=`<label class="lbl">${T_('Found — check it, then tap to use')}</label>`+L.map((v,ix)=>{const mk=vinMake(v),y=vinYear(v);return `<div class="vsc"><input class="field" value="${v}" maxlength="17" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"><button class="btn okb sm">${T_('Use')}</button><small>${[L.length>1&&!ix?'⭐ '+T_('Most likely'):'',mk,y?('~'+y):'',vinCheck(v)?'✓ '+T_('number checks out'):''].filter(Boolean).join(' · ')}</small></div>`;}).join('');
       box.querySelectorAll('.vsc').forEach(r=>r.querySelector('button').onclick=()=>{const v=r.querySelector('input').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length!==17&&!confirm0(v))return;end();closeSheet();onPick(v);});};
     const confirm0=v=>{st(T_('A VIN has 17 letters and numbers. This one has {n}.'.replace('{n}',v.length)));return v.length>=11;};
     const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};

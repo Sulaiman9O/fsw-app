@@ -184,3 +184,4 @@ Object.assign(AR_DICT,{'Getting the reader ready…':'نجهّز القارئ…
 Object.assign(AR_DICT,{'This lens could not open':'ما انفتحت هالعدسة'});
 Object.assign(AR_DICT,{'Another photo':'صورة ثانية','Photo taken — reading it now. You can put the phone down.':'انلقطت الصورة — نقرأها الحين. تقدر تنزّل الجوال.'});
 Object.assign(AR_DICT,{'Photo deleted':'انحذفت الصورة','Delete?':'حذف؟','Tap a picture to see it big. ✕ twice deletes it.':'اضغط الصورة تكبر. ✕ مرتين تحذفها.'});
+Object.assign(AR_DICT,{'Most likely':'الأرجح'});
