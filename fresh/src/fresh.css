@@ -527,3 +527,10 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 }
 @media(min-width:1600px){body[data-r=more] #main>.list,body[data-r=settings] #main>.list{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(min-width:1100px){.dkB .grp{grid-template-columns:repeat(6,minmax(0,1fr))!important}.dkB .grp>*{grid-column:span 2!important}.dkB .grp>:nth-child(n+4):nth-last-child(-n+2){grid-column:span 3!important}}
+/* desktop: any plain list with 4+ rows uses 2 columns (3 on very wide screens); form pages keep a readable width */
+@media(min-width:1100px){
+  #main>.list:has(>:nth-child(4)),.dkA>.list:has(>:nth-child(4)):not(body[data-r=home] *):not(body[data-r=customers] *){grid-template-columns:repeat(2,minmax(0,1fr))}
+  body[data-r=settings] #main,body[data-r=close] #main,body[data-r=part] #main,body[data-r=po] #main,body[data-r=setup] #main{max-width:960px}
+  body[data-r=settings] #main>.list,body[data-r=close] #main>.list{grid-template-columns:1fr}
+}
+@media(min-width:1700px){#main>.list:has(>:nth-child(6)):not(.jb-list){grid-template-columns:repeat(3,minmax(0,1fr))}body[data-r=settings] #main>.list,body[data-r=close] #main>.list{grid-template-columns:1fr}}
