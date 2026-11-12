@@ -1,0 +1,18 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const W=+process.argv[2]||400;const b=await chromium.launch();const p=await b.newPage({viewport:{width:W,height:868},colorScheme:'dark'});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();save();window.toast=()=>{};},[cat,cu]);
+ const cid=await p.evaluate(()=>{const j=DB.jobs.find(x=>!isInvoiced(x)&&vehOf(x)&&vehOf(x).make);window._j=j.id;return j.cust;});
+ await p.evaluate(c=>{go('custd',{id:c});document.querySelectorAll('#tour').forEach(x=>x.remove());},cid);await p.waitForTimeout(400);
+ const fc=p.waitForEvent('filechooser');await p.click('[data-vpa]');const ch=await fc;await ch.setFiles(['car1.jpg','car2.jpg']);await p.waitForTimeout(1200);
+ const n=await p.evaluate(()=>document.querySelectorAll('[data-vph]').length);ok(n>=2,'2 photos on the car card: '+n);
+ const sz=await p.evaluate(()=>DB.photos.filter(x=>x.veh).map(x=>Math.round(x.img.length/1024)));console.log('KB',sz);
+ await p.screenshot({path:'cp1_'+W+'.png'});
+ await p.locator('[data-vph]').nth(1).click();await p.waitForTimeout(300);await p.click('#vpmain');await p.waitForTimeout(400);
+ ok(await p.evaluate(()=>{const v=DB.vehicles.find(v=>v.ph&&v.ph.length);return photoOf(v.ph[0]).img.length>0&&v.ph.length===2;}),'main switched');
+ await p.evaluate(()=>go('job',{id:window._j}));await p.waitForTimeout(400);await p.evaluate(()=>window.scrollTo(0,0));await p.screenshot({path:'cp2_'+W+'.png'});
+ ok(!!(await p.$('.vth img')),'job header shows the car picture');
+ await p.click('.vth');await p.waitForTimeout(300);await p.screenshot({path:'cp3_'+W+'.png'});
+ console.log('errors',errs);await b.close();})();
