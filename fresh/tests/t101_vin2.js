@@ -9,7 +9,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.click('[data-ve2="v1"]');await p.waitForTimeout(300);await p.fill('#vp','777 BB');
  await p.click('.vinb');await p.waitForTimeout(300);const fc=p.waitForEvent('filechooser');await p.click('#vspic');(await fc).setFiles('vin_text.jpg');
  await p.waitForSelector('.vsc input',{timeout:90000});console.log(await p.evaluate(()=>[...document.querySelectorAll('.vsc input')].map(i=>i.value)));await p.screenshot({path:'v2.png'});
- await p.locator('.vsc .btn').first().click();await p.waitForTimeout(400);
+ await p.locator('.vsc .btn').first().click();await p.waitForTimeout(1500);
  const r=await p.evaluate(()=>({vv:$('#vv')&&$('#vv').value,vp:$('#vp')&&$('#vp').value,vm:$('#vm')&&$('#vm').value}));console.log(r);ok(r.vv===vin&&r.vp==='777 BB'&&r.vm==='Toyota','car sheet back with VIN, typed plate kept, make filled');
  await p.click('#vok');await p.waitForTimeout(300);ok(await p.evaluate(v=>{const x=byId('vehicles','v1');return x.vin===v&&x.plate==='777 BB'&&x.make==='Toyota';},vin),'saved');
  console.log('errors',errs);await b.close();})();

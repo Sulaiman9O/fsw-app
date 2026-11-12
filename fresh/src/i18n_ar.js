@@ -185,3 +185,4 @@ Object.assign(AR_DICT,{'This lens could not open':'ما انفتحت هالعد�
 Object.assign(AR_DICT,{'Another photo':'صورة ثانية','Photo taken — reading it now. You can put the phone down.':'انلقطت الصورة — نقرأها الحين. تقدر تنزّل الجوال.'});
 Object.assign(AR_DICT,{'Photo deleted':'انحذفت الصورة','Delete?':'حذف؟','Tap a picture to see it big. ✕ twice deletes it.':'اضغط الصورة تكبر. ✕ مرتين تحذفها.'});
 Object.assign(AR_DICT,{'Most likely':'الأرجح'});
+Object.assign(AR_DICT,{'Looking up the car…':'نبحث عن السيارة…','from the VIN database':'من قاعدة بيانات أرقام الشاصي','from your cars with the same VIN start':'من سياراتك اللي شاصيها يبدأ بنفس الرقم','from the VIN start only — choose the model':'من أول الرقم بس — اختر الطراز','filled in':'تعبّت','Use this car':'استخدم هذي البيانات'});

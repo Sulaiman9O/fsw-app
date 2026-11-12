@@ -109,6 +109,8 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const show=(L,raw)=>{const box=el.querySelector('#vsres');if(!box)return;
       if(!L.length){box.innerHTML=`<p class="hint">${T_('No VIN found. Hold the camera closer, keep it straight, and try again — or type it.')}</p>${raw?`<details class="pmore"><summary>${T_('What was read')}</summary><pre class="vsraw">${esc(raw)}</pre></details>`:''}`;return;}
       box.innerHTML=`<label class="lbl">${T_('Found — check it, then tap to use')}</label>`+L.map((v,ix)=>{const mk=vinMake(v),y=vinYear(v);return `<div class="vsc"><input class="field" value="${v}" maxlength="17" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"><button class="btn okb sm">${T_('Use')}</button><small>${[L.length>1&&!ix?'⭐ '+T_('Most likely'):'',mk,y?('~'+y):'',vinCheck(v)?'✓ '+T_('number checks out'):''].filter(Boolean).join(' · ')}</small></div>`;}).join('');
+      /* which car each one is (online or from your own cars) — helps pick the right one */
+      box.querySelectorAll('.vsc').forEach(r=>{const v=r.querySelector('input').value;if(typeof vinDecode!=='function')return;vinDecode(v).then(o=>{if(!o||!document.body.contains(r))return;const sm=r.querySelector('small');if(sm&&(o.model||o.src.includes('online')))sm.innerHTML='🚗 <b>'+esc(vinLabel(o))+'</b> · '+sm.innerHTML;}).catch(()=>{});});
       box.querySelectorAll('.vsc').forEach(r=>r.querySelector('button').onclick=()=>{const v=r.querySelector('input').value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length!==17&&!confirm0(v))return;end();closeSheet();onPick(v);});};
     const confirm0=v=>{st(T_('A VIN has 17 letters and numbers. This one has {n}.'.replace('{n}',v.length)));return v.length>=11;};
     const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};
@@ -137,16 +139,33 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     setTimeout(()=>{if(!stop||frozen)ocrWorker().catch(()=>{});},600);
     const x=el.querySelector('[data-close]');if(x){const c0=x.onclick;x.onclick=()=>{end();c0&&c0();};}
     const sh=$('#sheet');if(sh){const o=sh.onclick;sh.onclick=e=>{if(e.target===sh)end();o&&o(e);};}});}
-/* a 📷 button next to every VIN field (new car in, edit car) */
-function vinAttach(root){(root||document).querySelectorAll('#nvin,#vv').forEach(inp=>{if(inp._vs)return;inp._vs=1;const w=document.createElement('div');w.className='vinw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
-  const b=document.createElement('button');b.type='button';b.className='vinb';b.title=T_('Scan the VIN');b.textContent='📷';w.appendChild(b);
-  b.onclick=()=>{
-    if(inp.id==='vv'){/* inside the car sheet: keep what was typed, scan, then open the car sheet again with the VIN */
-      const C=S.vinCtx||{};const g=id=>{const e=document.querySelector('#sheet '+id);return e?e.value:'';};
-      const dd=Object.assign({},C.dr||C.v||{},{make:g('#vm'),model:g('#vmo'),year:g('#vy'),engine:g('#veng'),plate:g('#vp'),km:num(g('#vk')),vin:g('#vv'),size:g('#vsz')===''?null:+g('#vsz')});
-      vinScan(vin=>{dd.vin=vin;if(!dd.make)dd.make=vinMake(vin);vehSheet(C.cust,C.v||null,dd);});return;}
-    vinScan(v=>{const N=S.p&&S.p.n;if(N){const M={nphone:'phone',nname:'name',nplate:'plate',nkm:'km',nmake:'make',nmodel:'model',nyear:'year',nkm2:'km'};Object.keys(M).forEach(id=>{const e=$('#'+id);if(e)N[M[id]]=e.value;});
-        N.vin=v;if(!N.make){const mk=vinMake(v);if(mk)N.make=mk;}render();}else{const e=$('#nvin');if(e)e.value=v;}toast(T_('VIN added')+' · '+v);});};});}
+/* a 📷 button next to every VIN field (new car in, edit car); a full VIN — scanned or typed — fills make, model, year and engine */
+const nKeep=()=>{const N=S.p&&S.p.n;if(!N)return null;const M={nphone:'phone',nname:'name',nplate:'plate',nkm:'km',nmake:'make',nmodel:'model',nyear:'year',nkm2:'km',nvin:'vin'};Object.keys(M).forEach(id=>{const e=$('#'+id);if(e)N[M[id]]=e.value;});return N;};
+const vvDraft=()=>{const C=S.vinCtx||{};const g=id=>{const e=document.querySelector('#sheet '+id);return e?e.value:'';};
+  return Object.assign({},C.dr||C.v||{},{make:g('#vm'),model:g('#vmo'),year:g('#vy'),engine:g('#veng'),plate:g('#vp'),km:num(g('#vk')),vin:g('#vv').toUpperCase().trim(),size:g('#vsz')===''?null:+g('#vsz')});};
+let VIN_BUSY='';
+async function vinUse(where,vin,draft){vin=String(vin||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(VIN_BUSY===where+vin)return;VIN_BUSY=where+vin;
+  try{if(where==='nvin'){const N=nKeep();if(!N)return;N.vin=vin;N.vinInfo={vin,wait:1};render();const o=await vinDecode(vin,N.vehId);const N2=S.p&&S.p.n;if(N2!==N)return;
+      if(!o){N.vinInfo=null;render();return;}const ch=vinFill(N,o,false);N.vinInfo=Object.assign(o,{ch});render();}
+    else{const C=S.vinCtx||{};const dd=draft||vvDraft();dd.vin=vin;S.vinNote={vin,wait:1};vehSheet(C.cust,C.v||null,dd);const o=await vinDecode(vin,C.v&&C.v.id);
+      if(!document.querySelector('#sheet #vv'))return;const d2=vvDraft();if(d2.vin!==vin)return;if(!o){S.vinNote=null;vehSheet(C.cust,C.v||null,d2);return;}const ch=vinFill(d2,o,false);S.vinNote=Object.assign(o,{ch});vehSheet(C.cust,C.v||null,d2);}}
+  finally{VIN_BUSY='';}}
+/* the line under the VIN: what was found, where from, and a button when it differs from what is already chosen */
+function vinNoteHtml(o,d){if(o.wait)return `<div class="vinnote wait">⏳ ${T_('Looking up the car…')}</div>`;
+  const diff=['make','model','year'].filter(k=>{const v=k==='year'?(o.year?String(o.year):''):o[k];return v&&d[k]&&String(d[k]).toLowerCase()!==String(v).toLowerCase();});
+  const src=o.src.includes('online')?T_('from the VIN database'):o.src.includes('local')?T_('from your cars with the same VIN start'):T_('from the VIN start only — choose the model');
+  return `<div class="vinnote${diff.length?' diff':''}"><b>🚗 ${esc(vinLabel(o))}</b><small>${esc(src)}${o.extra?' · '+esc(o.extra):''}${o.ch&&o.ch.length?' · ✓ '+T_('filled in'):''}</small>${diff.length?`<button class="btn sm" data-vinforce>${T_('Use this car')}</button>`:''}</div>`;}
+function vinAttach(root){(root||document).querySelectorAll('#nvin,#vv').forEach(inp=>{
+  if(!inp._vs){inp._vs=1;const w=document.createElement('div');w.className='vinw';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    const b=document.createElement('button');b.type='button';b.className='vinb';b.title=T_('Scan the VIN');b.textContent='📷';w.appendChild(b);
+    b.onclick=()=>{if(inp.id==='vv'){const dd=vvDraft();vinScan(vin=>vinUse('vv',vin,dd));return;}nKeep();vinScan(v=>{vinUse('nvin',v);toast(T_('VIN added')+' · '+v);});};
+    const typed=()=>{const v=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length===17&&VIN_RX.test(v))vinUse(inp.id,v);};inp.addEventListener('change',typed);inp.addEventListener('input',()=>{if(inp.value.replace(/\s/g,'').length===17)typed();});}
+  /* the note */
+  const w=inp.closest('.vinw');const old=w&&w.nextElementSibling&&w.nextElementSibling.classList.contains('vinnote')?w.nextElementSibling:null;if(old)old.remove();
+  const val=inp.value.toUpperCase().trim();let o=null,d=null;
+  if(inp.id==='nvin'){const N=S.p&&S.p.n;o=N&&N.vinInfo;d=N;}else{o=S.vinNote;d=vvDraft();}
+  if(!o||o.vin!==val||!w)return;w.insertAdjacentHTML('afterend',vinNoteHtml(o,d||{}));const f=w.nextElementSibling.querySelector('[data-vinforce]');
+  if(f)f.onclick=()=>{if(inp.id==='nvin'){const N=nKeep();vinFill(N,o,true);N.engine=o.engine||'';o.ch=['make'];render();}else{const C=S.vinCtx||{};const dd=vvDraft();vinFill(dd,o,true);dd.engine=o.engine||'';o.ch=['make'];vehSheet(C.cust,C.v||null,dd);}};});}
 (function(){if(typeof vehSheet==='function'){const VS=vehSheet;window.vehSheet=vehSheet=function(cust,v,dr){S.vinCtx={cust,v,dr};return VS(cust,v,dr);};}
   const R=render;window.render=render=function(){const r=R.apply(this,arguments);try{vinAttach($('#main'));}catch(e){}return r;};
   const O=openSheet;window.openSheet=openSheet=function(h,bind){return O(h,el=>{bind&&bind(el);try{vinAttach(el);}catch(e){}});};})();
