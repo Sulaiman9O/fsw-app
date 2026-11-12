@@ -508,3 +508,4 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .iqv{display:flex;gap:8px;align-items:center}.iqv select{flex:1;min-width:0;margin:0}.iqv b{white-space:nowrap;font-size:.9rem}.iqd{font-size:.8rem;color:var(--muted)}
 .iqt{display:flex;justify-content:space-between;font-weight:800;padding:6px 2px}
 .ii.lp-flash{box-shadow:0 0 0 3px var(--acc,#2563eb);transition:box-shadow .3s}
+.pad .key.kb-hit{transform:scale(.94);filter:brightness(1.15)}

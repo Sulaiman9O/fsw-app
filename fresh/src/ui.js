@@ -124,3 +124,8 @@ function renderLogin(){
     if(pinBuf.length===4){if(PINLOCK.until>Date.now()){pinBuf='';renderLogin();$('#err').textContent=T_('Too many wrong PINs. Wait '+Math.ceil((PINLOCK.until-Date.now())/1000)+' seconds.');return;}const u=DB.users.find(x=>x.id===pick);const h=await hashPin(pinBuf);pinBuf='';if(u&&u.pin===h){PINLOCK.n=0;S.user=u;audit('login','Logged in');save();S.r='home';render();setTimeout(showNewsPrompt,500);return;}{const S0=S.user;S.user={name:(u&&u.name)||'?'};audit('fail','Wrong PIN for '+((u&&u.name)||'?'));S.user=S0;save();PINLOCK.n++;if(PINLOCK.n>=5){PINLOCK.n=0;PINLOCK.until=Date.now()+30000;}}renderLogin();$('#err').textContent='Wrong PIN. Try again.';try{motionShake(document.querySelector('.dots'));}catch(e){}return;}
     renderLogin();});
 }
+/* the number pad (PIN) also takes the computer keyboard: digits (also Arabic ٠-٩), Backspace; ignored while typing in a field */
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
+  const pads=[...document.querySelectorAll('.pad')].filter(p=>p.offsetParent);const pd=pads[pads.length-1];if(!pd)return;
+  let k=e.key;const ai='٠١٢٣٤٥٦٧٨٩'.indexOf(k);if(ai>=0)k=String(ai);if(k==='Backspace'||k==='Delete')k='⌫';
+  const b=[...pd.querySelectorAll('button[data-k]')].find(x=>x.dataset.k===k);if(!b)return;e.preventDefault();b.classList.add('kb-hit');setTimeout(()=>b.classList.remove('kb-hit'),120);b.click();});
