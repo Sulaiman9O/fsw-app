@@ -50,9 +50,33 @@ async function sqlRead(){const rows=r=>((r&&r.values)||[]).filter(x=>x&&!x.ios_c
   const d=blankDB(),by={};rec.forEach(r=>{(by[r.c]=by[r.c]||{})[r.id]=r.v;});let n=0;
   kv.forEach(r=>{n+=(r.v||'').length;if(r.k.startsWith('#order:')){const c=r.k.slice(7);const ids=JSON.parse(r.v||'[]');d[c]=ids.map(id=>by[c]&&by[c][id]).filter(x=>x!=null).map(s=>{n+=s.length;return JSON.parse(s);});}else d[r.k]=JSON.parse(r.v);});
   STORE.bytes=n;return d;}
+/* ---- browser (no device database): IndexedDB instead of the 5 MB browser storage. Same rows as SQLite: 'k:'+key and 'r:'+collection+id ---- */
+let IDB=null;
+const idbReq=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});
+async function idbOpen(){if(!window.indexedDB)throw new Error('no IndexedDB');const r=indexedDB.open('shopflo',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('d');}catch(e){}};IDB=await idbReq(r);
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}}
+async function idbRead(){const st=IDB.transaction('d','readonly').objectStore('d');const [keys,vals]=await Promise.all([idbReq(st.getAllKeys()),idbReq(st.getAll())]);
+  const kv=[],by={};keys.forEach((k,i)=>{k=String(k);if(k.startsWith('k:'))kv.push([k.slice(2),vals[i]]);else if(k.startsWith('r:')){const [c,id]=k.slice(2).split('\u0001');(by[c]=by[c]||{})[id]=vals[i];}});
+  if(!kv.length)return null;const d=blankDB();let n=0;
+  kv.forEach(([k,v])=>{n+=(v||'').length;if(k.startsWith('#order:')){const c=k.slice(7);d[c]=JSON.parse(v||'[]').map(id=>by[c]&&by[c][id]).filter(x=>x!=null).map(x=>{n+=x.length;return JSON.parse(x);});}else d[k]=JSON.parse(v);});
+  STORE.bytes=n;return d;}
+function idbWrite(a,b){return new Promise((ok,no)=>{const tx=IDB.transaction('d','readwrite');const st=tx.objectStore('d');let n=0;
+  b.kv.forEach((v,k)=>{if(!a||a.kv.get(k)!==v){st.put(v,'k:'+k);n++;}});if(a)a.kv.forEach((v,k)=>{if(!b.kv.has(k)){st.delete('k:'+k);n++;}});
+  b.rec.forEach((v,k)=>{if(!a||a.rec.get(k)!==v){st.put(v,'r:'+k);n++;}});if(a)a.rec.forEach((v,k)=>{if(!b.rec.has(k)){st.delete('r:'+k);n++;}});
+  tx.oncomplete=()=>ok(n);tx.onerror=()=>no(tx.error);tx.onabort=()=>no(tx.error);});}
+async function idbInit(flag){try{await idbOpen();const d=await idbRead();
+    if(d){DB=d;STORE.kind='idb';STORE.last=snapshot();try{const m=+localStorage.getItem('ws_moved_at')||0;if(m&&Date.now()-m>7*864e5)localStorage.removeItem(KEY+'_pre_idb');}catch(e){}return;}
+    if(!DB.ws){STORE.kind='idb';STORE.last=null;try{localStorage.setItem('ws_store','idb');}catch(e){}return;}
+    /* first start: move everything from browser storage into IndexedDB, then check it */
+    const snap=snapshot();await idbWrite(null,snap);const back=await idbRead();
+    if(!back||countAll(back)!==countAll(DB)||JSON.stringify(back.ws)!==JSON.stringify(DB.ws))throw new Error('check after moving failed');
+    STORE.kind='idb';STORE.last=snap;
+    try{const old=localStorage.getItem(KEY);localStorage.removeItem(KEY);if(old)try{localStorage.setItem(KEY+'_pre_idb',old);}catch(e){}localStorage.setItem('ws_store','idb');localStorage.setItem('ws_moved_at',String(Date.now()));}catch(e){}
+    audit('settings','Data moved to the browser database (IndexedDB) · '+countAll(DB)+' records');flushNow();
+  }catch(e){if(flag==='idb')STORE.err='Browser database error: '+(e&&e.message||e)+'. Sign in again with the workshop account to bring the data back.';else{STORE.kind='local';STORE.last=null;}}}
 const countAll=d=>REC_KEYS.reduce((a,k)=>a+((d[k]||[]).length),0);
 async function storeInit(){const flag=(()=>{try{return localStorage.getItem('ws_store');}catch(e){return null;}})();
-  if(!SQLP()){if(flag==='sqlite')STORE.err='This copy of the app cannot open the device database. Install the app again from the link.';return;}
+  if(!SQLP()){if(flag==='sqlite')STORE.err='This copy of the app cannot open the device database. Install the app again from the link.';else await idbInit(flag);return;}
   try{await sqlOpen();const d=await sqlRead();
     if(d){DB=d;STORE.kind='sqlite';STORE.last=snapshot();
       try{const m=+localStorage.getItem('ws_moved_at')||0;if(m&&Date.now()-m>7*864e5)localStorage.removeItem(KEY+'_pre_sqlite');}catch(e){}
@@ -67,10 +91,11 @@ async function storeInit(){const flag=(()=>{try{return localStorage.getItem('ws_
 function save(){clearTimeout(STORE.timer);STORE.timer=setTimeout(flushNow,150);}
 function flushNow(){clearTimeout(STORE.timer);
   if(STORE.err)return STORE.q;
+  if(STORE.kind==='idb'){STORE.q=STORE.q.then(async()=>{const snap=snapshot();try{await idbWrite(STORE.last,snap);STORE.last=snap;}catch(e){toast('Could not save in this browser. Check the free space on the computer.');}}).catch(()=>{});return STORE.q;}
   if(STORE.kind!=='sqlite'){try{const s=JSON.stringify(DB);localStorage.setItem(KEY,s);STORE.bytes=s.length;}catch(e){toast('Storage full. Make a locked backup now.');}return STORE.q;}
   STORE.q=STORE.q.then(async()=>{const snap=snapshot();const set=diffSet(STORE.last,snap);if(!set.length)return;
     try{for(let i=0;i<set.length;i+=400)await sq('executeSet',{set:set.slice(i,i+400),transaction:true,isSQL92:true});STORE.last=snap;}
     catch(e){toast('Could not save to the device database. Try again.');}}).catch(()=>{});return STORE.q;}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushNow();});
 window.addEventListener('pagehide',()=>flushNow());
-function storeLabel(){return STORE.kind==='sqlite'?'Device database (SQLite) · '+countAll(DB)+' records'+(STORE.enc?' · 🔒 locked':' · not locked (install the new app file to lock it)'):'Browser storage · '+Math.round((STORE.bytes||JSON.stringify(DB).length)/1024)+' KB of about 5,000 KB';}
+function storeLabel(){if(STORE.kind==='idb')return 'Browser database (IndexedDB) · '+countAll(DB)+' records · '+(Math.round((STORE.bytes||JSON.stringify(DB).length)/1048576*10)/10)+' MB · no 5 MB limit';return STORE.kind==='sqlite'?'Device database (SQLite) · '+countAll(DB)+' records'+(STORE.enc?' · 🔒 locked':' · not locked (install the new app file to lock it)'):'Browser storage · '+Math.round((STORE.bytes||JSON.stringify(DB).length)/1024)+' KB of about 5,000 KB';}
