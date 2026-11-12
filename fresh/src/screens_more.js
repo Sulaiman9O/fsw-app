@@ -97,7 +97,7 @@ SCREENS.svc=m=>{const fc=S.p.g||'';const own=perm('svcEdit');const hidV=!!S.p.hi
   ${hidV?'':`<div class="chips pcatc"><button data-g="" aria-pressed="${!fc}">All <small>${DB.services.length-hid.length}</small></button>${groups.map(g=>`<button data-g="${g.id}" aria-pressed="${fc===g.id}">${g.ic} ${esc(g.name)} <small>${DB.services.filter(s=>s.cat===g.name&&!s.hidden).length}</small></button>`).join('')}</div>
   <div class="chips sortc">${[['use','Most used'],['az','A–Z']].map(([k,t])=>`<button data-so="${k}" aria-pressed="${(S.p.so||'use')===k}">${t}</button>`).join('')}</div>`}
   <div class="list" id="slist"></div><p class="hint" id="snone" hidden>Nothing found.</p>`;
-  const draw=()=>{const q=(S.p.q||'').trim().toLowerCase();const g=DB.scats.find(x=>x.id===S.p.g);
+  const draw=()=>{if(!$('#sq'))return;const q=(S.p.q||'').trim().toLowerCase();const g=DB.scats.find(x=>x.id===S.p.g);
     let L=DB.services.filter(s=>hidV?s.hidden:(!s.hidden&&(!g||s.cat===g.name)));
     if(q){const w=q.split(/\s+/);L=L.filter(s=>{const t=(s.name+' '+(s.ar||'')+' '+T_(s.name)+' '+s.cat).toLowerCase();return w.every(x=>t.includes(x));});}
     if((S.p.so||'use')==='az')L.sort((a,b)=>(ar&&a.ar?a.ar:a.name).localeCompare(ar&&b.ar?b.ar:b.name));else{const u=svcUse();L.sort((a,b)=>(u[b.id]||0)-(u[a.id]||0)||a.name.localeCompare(b.name));}

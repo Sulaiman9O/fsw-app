@@ -57,7 +57,7 @@ SCREENS.stock=m=>{
   if(!DB.parts.length)h+=empty('🛢','No parts yet. Tap <b>＋ Part</b> to add your first one.');
   m.innerHTML=h;
   let drawn=false;
-  const draw=()=>{const qq=(S.p.q||'').trim().toLowerCase();const box=$('#plist');
+  const draw=()=>{const qq=(S.p.q||'').trim().toLowerCase();const box=$('#plist');if(!box)return;/* typed, then left the page before the list redrew */
     let L=DB.parts.filter(p=>(!S.p.cat||p.cat===S.p.cat)&&(!lowV||low.includes(p)));
     if(qq){const w=qq.split(/\s+/);L=L.filter(p=>{const t=(p.name+' '+(p.num||'')+' '+(p.loc||'')+' '+(p.codes||[]).join(' ')+' '+p.cat).toLowerCase();return w.every(x=>t.includes(x));});}
     box.innerHTML=stockSort(L).slice(0,400).map(partRow).join('');$('#pnone').hidden=!!L.length;bindRows(box,drawn);drawn=true;};
