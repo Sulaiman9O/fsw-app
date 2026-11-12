@@ -57,11 +57,26 @@ async function barcodeReader(){if(BCD||ZX)return true;
     ZX={Z,r:new Z.MultiFormatReader()};ZX.r.setHints(h);return true;}catch(e){return false;}}
 async function barcodeRead(canvas){if(BCD){try{const r=await BCD.detect(canvas);return r.map(x=>x.rawValue);}catch(e){return [];}}
   if(ZX){try{const Z=ZX.Z;const src=new Z.HTMLCanvasElementLuminanceSource(canvas);const r=ZX.r.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(src)));return r?[r.getText()]:[];}catch(e){return [];}}return [];}
+/* ---- which lens: phones with several back cameras (main, wide, zoom). The main one is picked (on Android it is listed first,
+   "camera2 0"); 🔄 switches to the next back camera and the choice is remembered on this phone. 🔦 turns the light on. ---- */
+const camSaved=()=>{try{return localStorage.getItem('ws_cam')||'';}catch(e){return '';}};
+async function camBacks(){try{const L=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const back=L.filter(d=>/back|rear|environment|خلف/i.test(d.label));
+  const B=(back.length?back:L).slice().sort((a,b)=>{const n=x=>{const m=x.label.match(/camera2?\s*(\d+)/i)||x.label.match(/(\d+)/);return m?+m[1]:99;};return n(a)-n(b);});return B;}catch(e){return [];}}
+async function camOpen(vid,el,setS){const md=navigator.mediaDevices;const q=id=>({video:Object.assign(id?{deviceId:{exact:id}}:{facingMode:'environment'},{width:{ideal:1920},height:{ideal:1080}}),audio:false});
+  let s=null;const want=camSaved();try{s=await md.getUserMedia(q(want||null));}catch(e){s=await md.getUserMedia(q(null));}
+  let B=await camBacks();const cur=()=>{const t=s.getVideoTracks()[0];return t&&t.getSettings?t.getSettings().deviceId:'';};
+  /* first time: if the phone gave a side lens, move to the main back camera */
+  if(!want&&B.length>1&&B[0].deviceId&&cur()!==B[0].deviceId){try{const s2=await md.getUserMedia(q(B[0].deviceId));s.getTracks().forEach(t=>t.stop());s=s2;}catch(e){}}
+  const tune=()=>{const t=s.getVideoTracks()[0];if(!t)return;try{const c=t.getCapabilities?t.getCapabilities():{};if(c.focusMode&&c.focusMode.includes('continuous'))t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+      const tb=el.querySelector('#vstorch');if(tb){tb.hidden=!c.torch;let on=false;tb.onclick=()=>{on=!on;t.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});tb.classList.toggle('on',on);};}}catch(e){}};
+  const lens=()=>{const lb=el.querySelector('#vslens');if(!lb)return;lb.hidden=B.length<2;const i=Math.max(0,B.findIndex(d=>d.deviceId===cur()));lb.querySelector('span').textContent=(i+1)+'/'+B.length;
+    lb.onclick=async()=>{const nx=B[(i+1)%B.length];try{s.getTracks().forEach(t=>t.stop());s=await md.getUserMedia(q(nx.deviceId));setS(s);vid.srcObject=s;await vid.play().catch(()=>{});try{localStorage.setItem('ws_cam',nx.deviceId);}catch(e){}tune();lens();}catch(e){toast(T_('This lens could not open'));}};};
+  vid.srcObject=s;await vid.play().catch(()=>{});setS(s);tune();lens();return s;}
 /* ---- the scanner sheet ---- */
 function vinScan(onPick){let stream=null,stop=false,busy=false;
   const end=()=>{stop=true;try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}};
   openSheet(`<h3>📷 ${T_('Chassis number (VIN)')}</h3>
-    <div class="vsv"><video id="vsvid" playsinline muted autoplay></video><div class="vsbox"></div></div>
+    <div class="vsv"><video id="vsvid" playsinline muted autoplay></video><div class="vsbox"></div><div class="vscam"><button id="vslens" hidden>🔄 <span></span></button><button id="vstorch" hidden>🔦</button></div></div>
     <p class="hint" id="vsst">${T_('Point the camera at the VIN barcode or the printed number, inside the frame.')}</p>
     <div class="two"><button class="btn" id="vsocr">📸 ${T_('Read the number')}</button><button class="btn ghost" id="vspic">🖼 ${T_('From a photo')}</button></div>
     <div id="vsres"></div>`,el=>{
@@ -79,7 +94,7 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     el.querySelector('#vspic').onclick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;const im=new Image();im.onload=async()=>{
         const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);await barcodeReader();const B=(await barcodeRead(c)).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));return;}ocrFrom(c);};im.src=URL.createObjectURL(x);};f.click();};
     /* live camera: keep looking for a barcode */
-    (async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false});if(stop){end();return;}vid.srcObject=stream;await vid.play().catch(()=>{});}
+    (async()=>{try{stream=await camOpen(vid,el,s=>{stream=s;});if(stop){end();return;}}
       catch(e){st(T_('No camera here. Use «From a photo».'));el.querySelector('.vsv').hidden=true;return;}
       const ok=await barcodeReader();const loop=async()=>{if(stop||!document.body.contains(vid))return end();
         if(!busy&&ok&&vid.videoWidth){const B=(await barcodeRead(grab())).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));try{navigator.vibrate&&navigator.vibrate(30);}catch(e){}return;}}
