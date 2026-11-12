@@ -23,9 +23,9 @@ const suggestPrice=p=>{const m=markOf(p.cat);return m&&+p.cost?Math.round((+p.co
 function bestVendor(p){const vp=p.vprices||{};let b=null;Object.entries(vp).forEach(([v,x])=>{if(byId('vendors',v)&&(!b||x.cost<b.cost))b={v,cost:x.cost,t:x.t};});return b;}
 /* barcode */
 async function scanSheet(onCode){if(!('BarcodeDetector' in window)){toast('This phone has no built-in scanner. Type the number, or use a scanner gun.');return;}
-  let stream,stop=false;openSheet(`<h3>Scan a barcode</h3><div class="scbox"><video id="scv" playsinline muted autoplay poster="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></video><div class="scwait"><i></i><span>Opening the camera…</span></div><div class="scfr"><b></b><b></b><b></b><b></b><em></em></div></div><p class="hint">Hold the barcode inside the frame.</p>`,()=>{});
+  let stream,stop=false;openSheet(`<h3>Scan a barcode</h3><div class="scbox camv">${camView('scv')}<div class="scfr"><b></b><b></b><b></b><b></b><em></em></div></div><p class="hint">Hold the barcode inside the frame.</p>`,()=>{});
   const end=()=>{stop=true;if(stream)stream.getTracks().forEach(t=>t.stop());};const cb=$('#sheet [data-close]');if(cb)cb.addEventListener('click',end);
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vd=$('#scv');vd.srcObject=stream;vd.onplaying=()=>{const b=vd.closest('.scbox');if(b)b.classList.add('live');};await vd.play();
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vd=$('#scv');camLive(vd);vd.srcObject=stream;await vd.play();
     const det=new BarcodeDetector();const loop=async()=>{if(stop||!$('#scv'))return end();try{const r=await det.detect(vd);if(r.length){const c=r[0].rawValue;end();closeSheet();onCode(c);return;}}catch(e){}requestAnimationFrame(loop);};loop();
   }catch(e){end();closeSheet();toast('Camera not allowed. Allow the camera for this app in phone settings.');}}
 function findByCode(c){c=(c||'').trim();return DB.parts.find(p=>p.num&&p.num.trim()===c)||DB.parts.find(p=>(p.codes||[]).includes(c));}

@@ -5,3 +5,4 @@ Serve the built app first, in the same command: `(cd ../www && python3 -m http.s
 - t31/t39/t41/t48: two-device sync with the Firestore mock (fbmock.js); sqlmock.js = encrypted SQLite mock
 - t49–t53: oil-filter "fits" fix, quick-price filter accuracy vs real invoices, filter choice, back navigation
 t50–t52 read the customer/parts JSON exports from /mnt/user-data/outputs (never commit those files).
+- tcam_smooth.js: camera rule — every live camera (VIN, barcode, and any new one) opens on a dark box with a spinner, no grey ▶, then fades in. New camera screens must use camView()/camLive() from ui.js.

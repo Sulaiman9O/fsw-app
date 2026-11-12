@@ -129,3 +129,11 @@ document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return
   const pads=[...document.querySelectorAll('.pad')].filter(p=>p.offsetParent);const pd=pads[pads.length-1];if(!pd)return;
   let k=e.key;const ai='٠١٢٣٤٥٦٧٨٩'.indexOf(k);if(ai>=0)k=String(ai);if(k==='Backspace'||k==='Delete')k='⌫';
   const b=[...pd.querySelectorAll('button[data-k]')].find(x=>x.dataset.k===k);if(!b)return;e.preventDefault();b.classList.add('kb-hit');setTimeout(()=>b.classList.remove('kb-hit'),120);b.click();});
+
+/* CAMERA RULE (2.30.2) — every live camera view in the app uses camView() inside a box with class "camv", and camLive() on its <video>.
+   No grey ▶ poster from the WebView, no black flash: a dark box with a spinner and "Opening the camera…" until the first frame, then a soft fade-in.
+   Any NEW screen that opens the camera must use these two, not a bare <video>. */
+const CAM_POSTER='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+function camView(id){return `<video id="${id}" playsinline muted autoplay poster="${CAM_POSTER}"></video><div class="scwait"><i></i><span>${T_('Opening the camera…')}</span></div>`;}
+function camLive(v){if(!v)return;const on=()=>{const b=v.closest('.camv');if(b)b.classList.add('live');};v.addEventListener('playing',on);if(!v.paused&&v.readyState>2)on();}
+function camWait(v){const b=v&&v.closest('.camv');if(b)b.classList.remove('live');}
