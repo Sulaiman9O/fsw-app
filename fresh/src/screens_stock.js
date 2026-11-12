@@ -12,7 +12,7 @@ const SX=[['smart','✨','Smart services','Oil change, plugs, pads, battery: com
  ['loc','📍','Shelf place','Where the part is kept (shelf A3, drawer 2)']];
 const sx=k=>!((DB.ws&&DB.ws.sxOff)||{})[k];
 const r2=x=>Math.round(x*100)/100;
-function mv(p,q,why,ref){if(!p||!q)return;p.stock=r2((+p.stock||0)+q);(DB.moves=DB.moves||[]).push({t:now(),part:p.id,q:r2(q),why,ref:ref||'',by:S.user?S.user.name:'',bal:p.stock});}
+function mv(p,q,why,ref){if(!p||!q)return;p.stock=r2((+p.stock||0)+q);/* each device keeps its own running total, so two devices moving stock at the same time both count */try{const d=syncDev();p.sd=p.sd||{};p.sd[d]=r2((+p.sd[d]||0)+q);}catch(e){}(DB.moves=DB.moves||[]).push({t:now(),part:p.id,q:r2(q),why,ref:ref||'',by:S.user?S.user.name:'',bal:p.stock});}
 const unitS=p=>p.unit==='L'?'L':p.unit&&p.unit!=='pc'?p.unit:'';
 function lastSold(){const o={};DB.jobs.filter(isInvoiced).forEach(j=>(j.items||[]).forEach(i=>{if(i.k==='part'&&i.ref)o[i.ref]=Math.max(o[i.ref]||0,j.inv.t);}));return o;}
 function fitsCar(p,v){if(!p.fits||!v)return false;const car=((v.make||'')+' '+(v.model||'')+' '+(v.year||'')+' '+(v.engine||'')).toLowerCase();

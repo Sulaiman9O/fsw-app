@@ -6,6 +6,7 @@
 const {chromium}=require('playwright');const fs=require('fs');
 const FROM=process.argv[2]||'2026-08-01',TO=process.argv[3]||'2026-12-31',MAX=+process.argv[4]||99999;
 const SRC=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));const CAT=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));
+if(process.env.ADDON){const A=JSON.parse(fs.readFileSync(process.env.ADDON));SRC.customers.push(...A.customers);SRC.vehicles.push(...A.vehicles);SRC.jobs.push(...A.jobs);}
 const T0=Date.parse(FROM+'T00:00:00+04:00'),T1=Date.parse(TO+'T23:59:59+04:00');
 const r3=x=>Math.round(x*1000)/1000;const dayK=t=>new Date(t+4*3600e3).toISOString().slice(0,10);
 const jobTot=j=>r3((j.items||[]).reduce((a,i)=>a+(+i.q)*(+i.p),0)-(+j.disc||0));const jobPaid=j=>r3((j.pays||[]).reduce((a,p)=>a+(+p.amt||0),0));
