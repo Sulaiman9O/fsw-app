@@ -555,9 +555,15 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 }
 /* car photos */
 .vphs{display:flex;gap:8px;overflow-x:auto;padding:4px 0;align-items:center}
-.vph{flex:none;width:96px;height:72px;border-radius:12px;overflow:hidden;border:1px solid var(--line);padding:0;background:var(--panel2)}.vph.main{width:128px;height:96px;border:2px solid var(--acc,#2F80FF)}.vph img{width:100%;height:100%;object-fit:cover;display:block}
+.vph{flex:none;position:relative;width:96px;height:72px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel2)}.vph.main{width:128px;height:96px;border:2px solid var(--acc,#2F80FF)}
+.vph .vpo{width:100%;height:100%;padding:0;border:0;background:none;display:block}.vph img{width:100%;height:100%;object-fit:cover;display:block}
+.vph .vpx{position:absolute;top:4px;right:4px;min-width:28px;height:28px;border-radius:999px;border:0;background:rgba(0,0,0,.6);color:#fff;font:700 .8rem var(--f-body);padding:0 8px}.vph .vpx.sure{background:#dc2626!important;color:#fff!important}
+.vph .vpm{position:absolute;bottom:4px;left:6px;font-size:.85rem;text-shadow:0 1px 3px #000}
+.vpbig{position:relative;border-radius:14px;overflow:hidden;background:#000}.vpbig img{width:100%;max-height:62vh;object-fit:contain;display:block}
+.vpnav{position:absolute;top:50%;left:8px;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:1.6rem;line-height:1}.vpnav.r{left:auto;right:8px}
+.vpn{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:2px 10px;font:700 .8rem var(--f-body)}
 .vphadd{flex:none;min-height:72px;padding:0 14px;border-radius:12px;border:1.5px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-weight:700;font-size:.85rem}
-.vphs.big{flex-wrap:wrap}.vphs.big .vph{width:calc(50% - 4px);height:auto;aspect-ratio:4/3}
+.vphs.big{flex-wrap:wrap}.vphs.big .vph{width:calc(50% - 4px);height:auto;aspect-ratio:4/3}.vphs.big .vph.main{border-width:2px}
 .card .h .vth{flex:none;width:58px;height:44px;border-radius:10px;overflow:hidden;border:1px solid var(--line);padding:0;background:var(--panel2);position:relative;margin-inline-end:10px;display:grid;place-items:center;font-size:1.1rem;color:var(--muted)}
 .card .h .vth img{width:100%;height:100%;object-fit:cover}.card .h .vth i{position:absolute;bottom:2px;right:3px;font:700 .62rem var(--f-body);background:rgba(0,0,0,.6);color:#fff;border-radius:6px;padding:0 4px;font-style:normal}
 .card .h .vth.none{border-style:dashed}
