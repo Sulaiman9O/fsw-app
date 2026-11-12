@@ -22,3 +22,12 @@ function jobSizeSheet(j,i){const v=vehOf(j);const it=j.items[i];const s=svcOfIte
     if(!lab)return;r.classList.add('jb-lab');const s=svcOfItem(it);if(!s||!svcHasSizes(s)||it.free)return;
     const c=document.createElement('span');c.className='szc';c.dataset.szc=i;c.textContent='🚙 '+T_(DB.sizes[sizeOf(v)]||'')+' ▾';sm.appendChild(c);
     c.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();jobSizeSheet(j,i);});});};})();
+/* the job's km: tap the km under the car to type / fix it (before, the km could only be typed on the counter) */
+function jobKmSheet(j){const v=vehOf(j);openSheet(`<h3>🛣 ${T_('Km now')}</h3><input class="field" id="jkm" inputmode="numeric" autocomplete="off" value="${j.km?kmf(j.km):''}" placeholder="${v&&v.km?kmf(v.km):''}">
+   ${v&&v.km?`<p class="hint">${T_('last km')} <bdi>${kmf(v.km)}</bdi></p>`:''}<button class="btn" id="jkmok">${T_('Save')}</button>`,el=>{const i=el.querySelector('#jkm');setTimeout(()=>{i.focus();i.select();},80);
+    const ok=()=>{const x=Math.round(num(i.value));if(x<=0){toast(T_('Type the km'));return;}
+      if(v&&v.km&&x<+v.km*0.5&&!confirm(T_('That is much less than the last km. Save anyway?')))return;
+      j.km=x;if(v&&x>(+v.km||0))v.km=x;(j.rems||[]).forEach(r=>{delete r.atKm;});logJ(j,'Km → '+x);if(j.stage==='done'&&typeof makeReminders==='function')makeReminders(j);save();closeSheet();render();toast(T_('Saved'));};
+    el.querySelector('#jkmok').onclick=ok;i.onkeydown=e=>{if(e.key==='Enter')ok();};});}
+(function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);const b=m.querySelector('[data-kmj]');if(!j||!b)return;b.onclick=e=>{e.stopPropagation();jobKmSheet(j);};};
+  const st=document.createElement('style');st.textContent='.kmchip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:1px 9px;border-radius:999px;border:1px dashed hsl(214 85% 55% / .7);color:hsl(214 85% 62%);font-weight:800;font-size:.85em}html.m-light .kmchip{color:hsl(214 85% 42%)}';document.head.appendChild(st);})();
