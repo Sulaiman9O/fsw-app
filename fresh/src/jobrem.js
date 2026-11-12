@@ -17,7 +17,7 @@ function planRems(j){if(j.rems)return j.rems;const out=[];const add=r=>{if(!out.
     else if(s.rem&&(s.rem.mo||s.rem.km))add({kind:'other',name:s.ar||s.name,mo:+s.rem.mo||0,km:+s.rem.km||0});});
   return out;}
 const remName=r=>r.kind==='oil'?T_('Engine oil change'):r.kind==='gear'?T_('Gearbox oil'):r.name;
-function remWhen(j,r){const base=j.inv?j.inv.t:now();const d=new Date(base);if(r.mo)d.setMonth(d.getMonth()+r.mo);return {due:r.date||(r.mo?d.getTime():0),km:r.km&&j.km?j.km+r.km:0};}
+function remWhen(j,r){const base=j.inv?j.inv.t:now();const d=new Date(base);if(r.mo)d.setMonth(d.getMonth()+r.mo);return {due:r.date||(r.mo?d.getTime():0),km:+r.atKm||(r.km&&j.km?(+j.km)+(+r.km):0)};}
 /* closing the job makes them (replaces the old oil/gearbox-only rule) */
 makeReminders=window.makeReminders=function(j){const v=vehOf(j);if(!v)return;planRems(j).filter(r=>r.on!==false).forEach(r=>{const w=remWhen(j,r);if(!w.due&&!w.km)return;
   DB.reminders=DB.reminders.filter(x=>!(x.veh===v.id&&x.kind===r.kind&&(r.kind!=='other'||x.name===r.name)&&!x.sent));
@@ -33,7 +33,7 @@ function remSheet(j,k){const L=j.rems=JSON.parse(JSON.stringify(planRems(j)));co
    <button class="btn" id="rmok">${T_('Save')}</button>${isNew?'':`<button class="btn ghost" id="rmoff">${r.on===false?T_('Turn on'):T_('Do not remind')}</button>`}`,el=>{
     el.querySelectorAll('[data-rq]').forEach(b=>b.onclick=()=>{el.querySelector('#rmo').value=b.dataset.rq;});
     el.querySelector('#rmok').onclick=()=>{const n=el.querySelector('#rmn');if(n&&!n.value.trim()){toast(T_('Type what to remind about'));return;}
-      Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:num(el.querySelector('#rkm').value)||0,on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
+      {const nm=num(el.querySelector('#rmo').value)||0,nkm=num(el.querySelector('#rkm').value)||0;if(nkm!==(+r.km||0))delete r.atKm;if(nm!==(+r.mo||0))delete r.date;}Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:num(el.querySelector('#rkm').value)||0,on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
       if(isNew){r.manual=1;L.push(r);}logJ(j,'Reminder: '+remName(r));if(j.stage==='done')makeReminders(j);save();closeSheet();render();};
     const off=el.querySelector('#rmoff');if(off)off.onclick=()=>{r.on=r.on===false;if(j.stage==='done'){DB.reminders=DB.reminders.filter(x=>!(x.job===j.id&&x.kind===r.kind&&(r.kind!=='other'||x.name===r.name)));if(r.on!==false)makeReminders(j);}save();closeSheet();render();};});}
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;
