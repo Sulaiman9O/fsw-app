@@ -1,5 +1,7 @@
 /* ---------- MONEY ---------- */
-function rangeOf(k){const d=new Date();const s=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Muscat'}));s.setHours(0,0,0,0);
+const RANGE_C={};/* the same answer within a second: reports used to ask it once per invoice */
+function rangeOf(k){const n=Date.now(),c=RANGE_C[k];if(c&&n-c[0]<1000)return c[1];const v=rangeOf0(k);RANGE_C[k]=[n,v];return v;}
+function rangeOf0(k){const d=new Date();const s=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Muscat'}));s.setHours(0,0,0,0);
   if(k==='week')s.setDate(s.getDate()-6);if(k==='month')s.setDate(1);if(k==='year')s.setMonth(0,1);return s.getTime()-(new Date().getTimezoneOffset()+240)*60e3*0;}
 function sumRange(from){const inv=DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=from);const T=inv.map(jobTotals);
   const pays=DB.jobs.flatMap(j=>(j.pays||[]).filter(p=>p.t>=from&&!isCreditM(p.m)));const exp=DB.expenses.filter(e=>e.t>=from).reduce((a,e)=>a+e.amt,0);
@@ -37,7 +39,7 @@ SCREENS.close=m=>{const td=sumRange(rangeOf('today'));const cash=td.byM.Cash||0;
 SCREENS.reports=m=>{if(!can.money()){go('home');return;}const k=S.p.k||'month';const R=sumRange(rangeOf(k));
   const svc={},prt={};R.inv.forEach(j=>(j.items||[]).forEach(i=>{const o=i.k==='part'?prt:svc;o[i.d]=o[i.d]||{n:0,a:0};o[i.d].n+=(+i.q||0);o[i.d].a+=(+i.q||0)*(+i.p||0);}));
   const top=o=>Object.entries(o).sort((a,b)=>b[1].a-a[1].a).slice(0,10);
-  const days={};DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=rangeOf(k)).forEach(j=>{const d=new Date(j.inv.t).toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'});days[d]=(days[d]||0)+1;});
+  const days={};const r0=rangeOf(k),WD=new Intl.DateTimeFormat('en-GB',{weekday:'short',timeZone:'Asia/Muscat'});DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=r0).forEach(j=>{const d=WD.format(new Date(j.inv.t));days[d]=(days[d]||0)+1;});
   m.innerHTML=head('Reports')+`<div class="chips">${[['today','Today'],['week','7 days'],['month','This month'],['year','This year']].map(([x,l])=>`<button data-k="${x}" aria-pressed="${k===x}">${l}</button>`).join('')}</div>
   <div class="kpis3"><div class="kpi ok"><b>${f3(R.sales)}</b><span>Sales · ${R.n} invoices</span></div><div class="kpi"><b>${f3(R.paid)}</b><span>Collected</span></div><div class="kpi red"><b>${f3(R.exp)}</b><span>Expenses</span></div></div>
   ${can.cost()?`<div class="kpis3"><div class="kpi"><b>${f3(R.labour)}</b><span>Labour</span></div><div class="kpi"><b>${f3(R.parts-R.cost)}</b><span>Profit on parts</span></div><div class="kpi ${R.profit-R.exp>=0?'ok':'red'}"><b>${f3(R.profit-R.exp)}</b><span>Net after expenses</span></div></div>`:''}

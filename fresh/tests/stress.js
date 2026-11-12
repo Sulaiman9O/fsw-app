@@ -14,6 +14,7 @@ const CAT=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-pa
    const n=Date.now();J.slice(-15).forEach((j,i)=>{j.stage=['new','work','ready'][i%3];delete j.inv;j.pays=[];j.t=n-i*3600e3;});
    const img='data:image/jpeg;base64,'+'/9j/'+'A'.repeat(40000);DB.photos=[];for(let i=0;i<600;i++){DB.photos.push({id:'ph'+i,veh:'v'+i,img,t:n});V[i].ph=['ph'+i];}
    DB.customers=C;DB.vehicles=V;DB.jobs=J;DB.ws.nextJob=NJ+1;DB.ws.nextInv=NJ+1;window.toast=()=>{};return Math.round(performance.now()-t0);},[CAT,SRC,NJ]);
+ if(process.env.CPU){const cdp=await ctx.newCDPSession(p);await cdp.send('Emulation.setCPUThrottlingRate',{rate:+process.env.CPU});}
  const tSave=Date.now();await p.evaluate(()=>{save();return flushNow();});const saveMs=Date.now()-tSave;
  const st=await p.evaluate(()=>storeLabel());
  const times={};for(const r of ['home','work','cust','stock','money','reports','debts','checks','more','counter']){const t=await p.evaluate(r=>{const a=performance.now();go(r);return Math.round(performance.now()-a);},r);times[r]=t;await p.waitForTimeout(150);}
@@ -22,6 +23,6 @@ const CAT=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-pa
  times.custd=await p.evaluate(()=>{const a=performance.now();go('custd',{id:'c5'});return Math.round(performance.now()-a);});
  /* add an item and see how long a save of one change takes */
  const one=await p.evaluate(async()=>{const j=DB.jobs.at(-1);j.items.push({k:'labour',d:'x',q:1,p:1});const a=performance.now();save();await flushNow();return Math.round(performance.now()-a);});
- const tR=Date.now();await p.reload();await p.waitForTimeout(500);await key('1234').catch(()=>{});await p.waitForFunction(()=>window.DB&&DB.jobs&&DB.jobs.length>100,null,{timeout:60000}).catch(()=>{});const reloadMs=Date.now()-tR;
+ const tR=Date.now();await p.reload();await p.waitForFunction(()=>{try{return DB&&DB.jobs&&DB.jobs.length>100&&document.querySelector('.key,.login,#main');}catch(e){return false;}},null,{timeout:60000,polling:50}).catch(()=>{});const reloadMs=Date.now()-tR;
  const after=await p.evaluate(()=>({jobs:DB.jobs.length,photos:(DB.photos||[]).length,kind:STORE.kind,last:DB.jobs.at(-1).items.length}));
- const rep={jobs:NJ,generateMs:gen,firstSaveMs:saveMs,oneChangeSaveMs:one,reloadMs,storage:st,screensMs:times,after,errors:errs};fs.writeFileSync('stress_report.json',JSON.stringify(rep,null,1));console.log(JSON.stringify(rep,null,1));await b.close();})();
+ const rep={jobs:NJ,generateMs:gen,firstSaveMs:saveMs,oneChangeSaveMs:one,reloadMs,storage:st,screensMs:times,after,errors:errs};fs.writeFileSync('stress_report'+(process.env.CPU?'_cpu'+process.env.CPU:'')+'.json',JSON.stringify(rep,null,1));console.log(JSON.stringify(rep,null,1));await b.close();})();

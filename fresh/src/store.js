@@ -88,7 +88,7 @@ async function storeInit(){const flag=(()=>{try{return localStorage.getItem('ws_
     try{const old=localStorage.getItem(KEY);if(old){localStorage.setItem(KEY+'_pre_sqlite',old);localStorage.removeItem(KEY);}localStorage.setItem('ws_store','sqlite');localStorage.setItem('ws_moved_at',String(Date.now()));}catch(e){}
     if(DB.ws){audit('settings','Data moved to the device database (SQLite) · '+countAll(DB)+' records');flushNow();}
   }catch(e){if(flag==='sqlite'){STORE.err='Device database error: '+(e&&e.message||e);}else{STORE.kind='local';STORE.last=null;}}}
-function save(){clearTimeout(STORE.timer);STORE.timer=setTimeout(flushNow,150);}
+function save(){try{JBC=null;}catch(e){}clearTimeout(STORE.timer);STORE.timer=setTimeout(flushNow,150);}
 function flushNow(){clearTimeout(STORE.timer);
   if(STORE.err)return STORE.q;
   if(STORE.kind==='idb'){STORE.q=STORE.q.then(async()=>{const snap=snapshot();try{await idbWrite(STORE.last,snap);STORE.last=snap;}catch(e){toast('Could not save in this browser. Check the free space on the computer.');}}).catch(()=>{});return STORE.q;}

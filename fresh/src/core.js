@@ -65,7 +65,9 @@ const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
 /* what a customer still owes: unpaid invoices, oldest first */
-function custDebt(cid){const t=now();const list=DB.jobs.filter(j=>j.cust===cid&&isInvoiced(j)&&!j.returned).map(j=>({j,due:jobTotals(j).due,days:Math.max(0,Math.floor((t-(j.inv.t||j.t))/864e5))})).filter(x=>x.due>0).sort((a,b)=>(a.j.inv.t||a.j.t)-(b.j.inv.t||b.j.t));
+/* jobs per customer, built once and dropped after this moment or on the next save: lists of all customers no longer scan every job per customer */
+let JBC=null;function jobsOfCust(cid){if(!JBC||JBC.src!==DB.jobs||JBC.n!==DB.jobs.length){JBC={src:DB.jobs,n:DB.jobs.length,m:new Map()};DB.jobs.forEach(j=>{const a=JBC.m.get(j.cust);a?a.push(j):JBC.m.set(j.cust,[j]);});setTimeout(()=>{JBC=null;},0);}return JBC.m.get(cid)||[];}
+function custDebt(cid){const t=now();const list=jobsOfCust(cid).filter(j=>isInvoiced(j)&&!j.returned).map(j=>({j,due:jobTotals(j).due,days:Math.max(0,Math.floor((t-(j.inv.t||j.t))/864e5))})).filter(x=>x.due>0).sort((a,b)=>(a.j.inv.t||a.j.t)-(b.j.inv.t||b.j.t));
   return {due:list.reduce((a,x)=>a+x.due,0),list};}
 /* cost and profit stay hidden at the counter; the owner taps 👁 to see them for 2 minutes */
 const showCost=()=>can.cost()&&!!S.eye&&Date.now()-S.eye<120000;
