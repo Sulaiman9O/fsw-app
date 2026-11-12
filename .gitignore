@@ -9,3 +9,4 @@ fresh/tests/*.json
 fresh/tests/*.html
 !fresh/tests/logo.png
 fresh/tests/*.log
+fresh/tests/logs_*

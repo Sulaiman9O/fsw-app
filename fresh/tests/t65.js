@@ -17,10 +17,10 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.fill(`[data-in="${padI}"]`,'متآكلة من الداخل');await p.locator(`[data-in="${padI}"]`).dispatchEvent('change');
  const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.click(`[data-ipa="${padI}"]`)]);await fc.setFiles('logo.png');await p.waitForTimeout(600);
  ok(await p.evaluate(i=>(byId('jobs',S.p.id).insp.d[i].ph||[]).length===1&&DB.photos.length===1,padI),'photo saved');
- const hasAdd=!!(await p.$(`[data-iadd="${padI}"]`));ok(hasAdd,'linked service button on red pads');
+ const hasAdd=!!(await p.$(`[data-iadd="${padI}"]`));ok(!hasAdd,'no inline service button on red pads (2.29: suggestions come as a quote after Done)');
  if(hasAdd){await p.click(`[data-iadd="${padI}"]`);await p.waitForTimeout(300);ok(await p.evaluate(()=>byId('jobs',S.p.id).items.some(i=>i.fromInsp)),'service added to the job');}
  // yellow wipers with reminder
- const wI=await p.evaluate(()=>byId('jobs',S.p.id).insp.items.findIndex(n=>/wiper/i.test(n)));await p.click(`[data-is="${wI}:warn"]`);await p.waitForTimeout(300);await p.click(`[data-irem="${wI}:3m"]`);await p.waitForTimeout(300);
+ const wI=await p.evaluate(()=>byId('jobs',S.p.id).insp.items.findIndex(n=>/wiper/i.test(n)));await p.click(`[data-is="${wI}:warn"]`);await p.waitForTimeout(300);await p.click(`[data-irem="${wI}"]`);await p.waitForTimeout(300);await p.fill('#irmo','3').catch(()=>{});await p.click('#irok').catch(()=>{});await p.waitForTimeout(300);
  await p.screenshot({path:'i1.png',fullPage:true});
  await p.click('#irep');await p.waitForTimeout(400);await p.screenshot({path:'i2.png',fullPage:true});ok(await p.evaluate(()=>document.querySelector('.irep')!==null),'report page');
  const txt=await p.evaluate(()=>inspReportText(byId('jobs',S.p.id)));console.log(txt.split('\n').slice(0,12).join(' / '));

@@ -18,7 +18,7 @@ const {chromium}=require('playwright');const fs=require('fs');
  ok(await p.evaluate(id=>byId('jobs',id).rems.length===4,jid),'manual reminder added');
  await p.click('[data-rm="0"]');await p.waitForTimeout(300);await p.fill('#rkm','10000');await p.click('#rmok');await p.waitForTimeout(300);
  /* sticker preview */
- await p.click('#jstk');await p.waitForTimeout(400);const sp=await p.evaluate(()=>{const e=document.querySelector('#spv');return e?e.innerText.slice(0,80):'none';});console.log('sticker',sp);ok(sp!=='none'&&sp.length>5,'sticker preview shows');await p.screenshot({path:'r2.png'});await p.evaluate(()=>closeSheet());await p.waitForTimeout(300);
+ await p.click('#jstk');await p.waitForTimeout(400);const sp=await p.evaluate(()=>{const e=document.querySelector('#spv3')||document.querySelector('#spv');return e?e.innerHTML.slice(0,140)+'|'+e.innerHTML.length:'none';});console.log('sticker',sp.slice(0,120));ok(/stkim/.test(sp),'sticker preview shows');await p.screenshot({path:'r2.png'});await p.evaluate(()=>closeSheet());await p.waitForTimeout(300);
  await p.click('#jpay');await p.waitForTimeout(300);await p.click('[data-pm="Cash"]');await p.waitForTimeout(600);
  const R=await p.evaluate(id=>DB.reminders.filter(r=>r.job===id).map(r=>[r.kind,r.name||'',r.dueKm,new Date(r.due).toISOString().slice(0,10)]),jid);console.log(JSON.stringify(R));ok(R.length===4,'4 reminders made on close');
  ok(await p.evaluate(()=>!!document.querySelector('.iv2-next')),'invoice next service');
