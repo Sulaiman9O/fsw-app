@@ -46,7 +46,7 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
   m.innerHTML=head('📋 '+esc(I.name),`<button class="lnk" id="irep">📤 ${T_('Report')}</button>`)+
    `<div class="icar card"><b>${esc(carName(v)||'')}${v&&v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}${lock?'':`<button class="lnk isw" id="isw">🔄 ${T_('Change list')}</button>`}</b><span>${done}/${I.items.length} ${T_('checked')} · <i class="dot bad"></i> ${red} · <i class="dot warn"></i> ${yel}</span><div class="ibar"><i style="width:${Math.round(done/I.items.length*100)}%"></i></div></div>
    ${lock?`<p class="hint">${T_('Invoice made: the inspection can be read, not changed.')}</p>`:''}
-   ${secs.map((s,si)=>{const dn=s.idx.filter(i=>I.r[i]).length;return `<div class="isec"><div class="ish"><b>${esc(T_(s.n))}</b><span>${dn}/${s.idx.length}</span>${lock?'':`<button class="lnk" data-iall="${s.idx.join(',')}">✓ ${T_('All good')}</button>`}</div>${s.idx.map(row).join('')}${lock?'':`<button class="iadd1" data-iai="${si}">＋ ${T_('Add a check')}</button>`}</div>`;}).join('')}
+   ${secs.map((s,si)=>{const dn=s.idx.filter(i=>I.r[i]).length;return `<div class="isec"><div class="ish"><b data-ish="${si}">${esc(T_(s.n))}</b><span>${dn}/${s.idx.length}</span>${lock?'':`<button class="lnk" data-iall="${s.idx.join(',')}">✓ ${T_('All good')}</button>`}</div>${s.idx.map(row).join('')}${lock?'':`<button class="iadd1" data-iai="${si}">＋ ${T_('Add a check')}</button>`}</div>`;}).join('')}
    ${lock?'':`<button class="iadd1 sec" id="iasec">＋ ${T_('Add a section')}</button>`}
    <button class="btn" id="idone">${T_('Done')}</button>`;
   const setS=(i,x)=>{I.r[i]=I.r[i]===x?undefined:x;if(!I.r[i])delete I.r[i];save();S.p.open=undefined;render();const e=$('#ii'+i);if(e&&I.r[i]!=='ok')e.scrollIntoView({block:'nearest'});};
@@ -62,7 +62,7 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
   $$('[data-irem]').forEach(b=>b.onclick=()=>{const [i,k]=b.dataset.irem.split(':');const d=I.d[i]=I.d[i]||{};d.rem=d.rem===k?undefined:k;save();render();});
   $('#irep').onclick=()=>go('inspr',{id:j.id});
   if(!lock){$('#isw').onclick=()=>inspSwitchSheet(j);$$('[data-iai]').forEach(b=>b.onclick=()=>inspAddSheet(j,+b.dataset.iai));$('#iasec').onclick=()=>inspAddSheet(j,-1);
-    $$('[data-io]').forEach(b=>longPress(b,()=>inspItemSheet(j,+b.dataset.io)));}
+    $$('[data-io]').forEach(b=>longPress(b,()=>inspItemSheet(j,+b.dataset.io)));$$('[data-ish]').forEach(b=>longPress(b,()=>inspSecSheet(j,+b.dataset.ish)));}
   $('#idone').onclick=()=>{inspFinish(j);if(lock||!inspQuoteSheet(j))go('job',{id:j.id});};};
 /* ---- change the inspection while working: switch list, add checks or a section, rename/remove a check ---- */
 /* a check is put in at place pos: the answers after it move one place */
@@ -80,12 +80,36 @@ function inspAddSheet(j,si){const I=j.insp;const secs=inspSecFix(I);const tpl=(D
       if(!sn){toast(T_('Write the section name'));return;}if(!names.length){toast(T_('Write at least one check'));return;}
       inspAddTo(I,sn,names,true,j);const sv=el.querySelector('#iasv');if(sv&&sv.checked&&tpl)inspAddTo(tpl,sn,names,false);
       logJ(j,'Inspection: added '+names.join(', '));save();closeSheet();render();toast(T_('Added'));};});}
-function inspItemSheet(j,i){const I=j.insp;
-  openSheet(`<h3>${esc(I.items[i])}</h3><label class="lbl">${T_('Name')}</label><input class="field" id="ien" value="${esc(I.items[i])}"><button class="btn" id="ieok">${T_('Save')}</button>
+/* rebuild the inspection from sections of old places (move / reorder): answers, notes, photos and job lines follow their check */
+function inspApply(j,L){const I=j.insp;const items=[],meta=[],r={},d={},map={};let k=0;
+  L.forEach(x=>x.idx.forEach(o=>{map[o]=k;items.push(I.items[o]);meta.push((I.meta||[])[o]||{m:'',svc:''});if(I.r[o])r[k]=I.r[o];if(I.d&&I.d[o])d[k]=I.d[o];k++;}));
+  (j.items||[]).forEach(x=>{if(x.fromInsp==null)return;const n=map[+x.fromInsp];if(n==null)delete x.fromInsp;else x.fromInsp=String(n);});
+  I.items=items;I.meta=meta;I.r=r;I.d=d;I.sec=L.filter(x=>x.idx.length).map(x=>({n:x.n,c:x.idx.length}));return map;}
+const inspL=I=>inspSecs(I).map(s=>({n:s.n,idx:s.idx.slice()}));
+function inspItemSheet(j,i){const I=j.insp;const L=inspL(I);const si=L.findIndex(x=>x.idx.includes(i));const p=L[si].idx.indexOf(i);
+  const done=(map,msg)=>{if(msg)logJ(j,msg);save();closeSheet();render();const n=map?map[i]:i;setTimeout(()=>{const e=$('#ii'+n);if(e){e.scrollIntoView({block:'center'});e.classList.add('lp-flash');setTimeout(()=>e.classList.remove('lp-flash'),900);}},60);};
+  openSheet(`<h3>${esc(I.items[i])}</h3>
+    <div class="two"><button class="btn ghost" id="ieup" ${p===0&&si===0?'disabled':''}>⬆ ${T_('Move up')}</button><button class="btn ghost" id="iedn" ${p===L[si].idx.length-1&&si===L.length-1?'disabled':''}>⬇ ${T_('Move down')}</button></div>
+    <label class="lbl">${T_('Move to section')}</label><div class="chips">${L.map((x,k)=>`<button data-mv="${k}" aria-pressed="${k===si}">${esc(T_(x.n))}</button>`).join('')}<button data-mv="new">＋ ${T_('New section')}</button></div>
+    <div id="iens" hidden><input class="field" id="iensn" placeholder="${T_('Section name')}"><button class="btn" id="iensok">${T_('Move')}</button></div>
+    <label class="lbl">${T_('Name')}</label><input class="field" id="ien" value="${esc(T_(I.items[i]))}"><button class="btn" id="ieok">${T_('Save')}</button>
     <button class="btn ghost jb-del" id="iedel">🗑 ${T_('Remove from this inspection')}</button>`,el=>{
-    el.querySelector('#ieok').onclick=()=>{const n=el.querySelector('#ien').value.trim();if(n){I.items[i]=n;save();}closeSheet();render();};
-    el.querySelector('#iedel').onclick=()=>{const sec=inspSecFix(I);let k=0;for(const x of sec){if(i<k+x.c){x.c--;break;}k+=x.c;}inspShift(j,i,-1);I.items.splice(i,1);(I.meta||[]).splice(i,1);
-      logJ(j,'Inspection: removed '+el.querySelector('#ien').defaultValue);save();closeSheet();render();};});}
+    const moveTo=(k,name)=>{L[si].idx.splice(p,1);if(k==null){L.push({n:name,idx:[i]});}else L[k].idx.push(i);done(inspApply(j,L),'Inspection: moved '+I.items[i]+' → '+(k==null?name:L[k].n));};
+    el.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{if(b.dataset.mv==='new'){el.querySelector('#iens').hidden=false;el.querySelector('#iensn').focus();return;}const k=+b.dataset.mv;if(k===si){closeSheet();return;}moveTo(k);});
+    el.querySelector('#iensok').onclick=()=>{const n=el.querySelector('#iensn').value.trim();if(!n){toast(T_('Write the section name'));return;}const k=L.findIndex(x=>x.n.toLowerCase()===n.toLowerCase());if(k===si){closeSheet();return;}moveTo(k<0?null:k,n);};
+    el.querySelector('#ieup').onclick=()=>{const a=L[si].idx;if(p>0){[a[p-1],a[p]]=[a[p],a[p-1]];}else{a.splice(p,1);L[si-1].idx.push(i);}done(inspApply(j,L));};
+    el.querySelector('#iedn').onclick=()=>{const a=L[si].idx;if(p<a.length-1){[a[p+1],a[p]]=[a[p],a[p+1]];}else{a.splice(p,1);L[si+1].idx.unshift(i);}done(inspApply(j,L));};
+    el.querySelector('#ieok').onclick=()=>{const n=el.querySelector('#ien').value.trim();if(n&&n!==T_(I.items[i])){I.items[i]=n;save();}closeSheet();render();};
+    el.querySelector('#iedel').onclick=()=>{L[si].idx.splice(p,1);const nm=I.items[i];inspApply(j,L);logJ(j,'Inspection: removed '+nm);save();closeSheet();render();};});}
+/* hold a section title: rename it, move it up or down, or remove it with its checks */
+function inspSecSheet(j,si){const I=j.insp;const L=inspL(I);let sure=0;
+  openSheet(`<h3>${esc(T_(L[si].n))}</h3><div class="two"><button class="btn ghost" id="isup" ${si===0?'disabled':''}>⬆ ${T_('Move up')}</button><button class="btn ghost" id="isdn" ${si===L.length-1?'disabled':''}>⬇ ${T_('Move down')}</button></div>
+    <label class="lbl">${T_('Section name')}</label><input class="field" id="isn" value="${esc(T_(L[si].n))}"><button class="btn" id="isok">${T_('Save')}</button>
+    <button class="btn ghost jb-del" id="isdel">🗑 ${T_('Remove the section and its checks')}</button>`,el=>{
+    const sw=d=>{[L[si],L[si+d]]=[L[si+d],L[si]];inspApply(j,L);save();closeSheet();render();};
+    el.querySelector('#isup').onclick=()=>sw(-1);el.querySelector('#isdn').onclick=()=>sw(1);
+    el.querySelector('#isok').onclick=()=>{const n=el.querySelector('#isn').value.trim();if(n&&n!==T_(L[si].n)){L[si].n=n;inspApply(j,L);save();}closeSheet();render();};
+    el.querySelector('#isdel').onclick=e=>{if(!sure){sure=1;e.currentTarget.textContent='⚠ '+T_('Tap again to remove')+' ('+L[si].idx.length+')';return;}const n=L[si].n;L.splice(si,1);inspApply(j,L);logJ(j,'Inspection: removed section '+n);save();closeSheet();render();};});}
 /* another list: answers of checks with the same name are kept */
 function inspSwitch(j,t){const O=j.insp;const by={};O.items.forEach((n,i)=>{by[n.toLowerCase()]=i;});inspStart(j,t);const N=j.insp;N.at=O.at||N.at;N.by=O.by||N.by;
   const map={};N.items.forEach((n,i)=>{const o=by[n.toLowerCase()];if(o==null)return;map[o]=i;if(O.r[o])N.r[i]=O.r[o];if(O.d&&O.d[o])N.d[i]=O.d[o];});

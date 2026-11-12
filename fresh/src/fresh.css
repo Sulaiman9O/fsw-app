@@ -507,3 +507,4 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .iqc{display:flex;gap:10px;align-items:flex-start;font-weight:700}.iqc input{width:20px;height:20px;margin-top:2px;flex:none}.iqc small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
 .iqv{display:flex;gap:8px;align-items:center}.iqv select{flex:1;min-width:0;margin:0}.iqv b{white-space:nowrap;font-size:.9rem}.iqd{font-size:.8rem;color:var(--muted)}
 .iqt{display:flex;justify-content:space-between;font-weight:800;padding:6px 2px}
+.ii.lp-flash{box-shadow:0 0 0 3px var(--acc,#2563eb);transition:box-shadow .3s}
