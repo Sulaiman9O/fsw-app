@@ -42,7 +42,7 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
      <div class="isb">${['ok','warn','bad'].map(x=>`<button data-is="${i}:${x}" class="s-${x}${s===x?' on':''}" ${lock?'disabled':''} aria-label="${x}">${ST_IC[x]}</button>`).join('')}</div></div>
      ${exp?`<div class="ix"><input class="field" data-in="${i}" placeholder="${T_('Note (what you saw)')}" value="${esc(d.note||'')}" ${lock?'disabled':''}>
       <div class="iph">${(d.ph||[]).map(id=>{const p=photoOf(id);return p?`<button class="iphi" data-ipv="${id}"><img src="${p.img}" alt=""></button>`:'';}).join('')}${lock?'':`<button class="iphadd" data-ipa="${i}">📷 ${T_('Photo')}</button>`}</div>
-      ${s==='warn'?`<div class="chips irem">${[['3m',T_('Remind in 3 months')],['5k',T_('Remind in 5,000 km')]].map(([k,l])=>`<button data-irem="${i}:${k}" aria-pressed="${d.rem===k}">🔔 ${l}</button>`).join('')}</div>`:''}</div>`:''}</div>`;};
+      ${s==='warn'?`<div class="chips irem"><button data-irem="${i}" aria-pressed="${!!d.rem}">🔔 ${d.rem?inspRemTxt(d.rem):T_('Reminder')}</button></div>`:''}</div>`:''}</div>`;};
   m.innerHTML=head('📋 '+esc(I.name),`<button class="lnk" id="irep">📤 ${T_('Report')}</button>`)+
    `<div class="icar card"><b>${esc(carName(v)||'')}${v&&v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}${lock?'':`<button class="lnk isw" id="isw">🔄 ${T_('Change list')}</button>`}</b><span>${done}/${I.items.length} ${T_('checked')} · <i class="dot bad"></i> ${red} · <i class="dot warn"></i> ${yel}</span><div class="ibar"><i style="width:${Math.round(done/I.items.length*100)}%"></i></div></div>
    ${lock?`<p class="hint">${T_('Invoice made: the inspection can be read, not changed.')}</p>`:''}
@@ -59,7 +59,7 @@ SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.in
   $$('[data-ipv]').forEach(b=>b.onclick=()=>{const p=photoOf(b.dataset.ipv);if(!p)return;openSheet(`<img src="${p.img}" style="width:100%;border-radius:14px">${lock?'':`<button class="btn ghost jb-del" id="iphdel">${T_('Delete photo')}</button>`}`,el=>{const x=el.querySelector('#iphdel');if(x)x.onclick=()=>{Object.values(I.d).forEach(d=>{if(d.ph)d.ph=d.ph.filter(y=>y!==p.id);});DB.photos=DB.photos.filter(y=>y!==p);save();closeSheet();render();};});});
   $$('[data-iadd]').forEach(b=>b.onclick=()=>{const i=+b.dataset.iadd;const s=byId('services',I.meta[i].svc);if(!s)return;const it=svcItem(s,v);it.fromInsp=String(i);it.note=T_('From inspection')+': '+I.items[i];j.items=j.items||[];j.items.push(it);if(j.stage!=='estimate'&&j.stage!=='new'){}logJ(j,'Added from inspection · '+s.name);save();toast(T_('Added to the job')+' · '+s.name);render();});
   $$('[data-irm]').forEach(b=>b.onclick=()=>{const i=b.dataset.irm;j.items=j.items.filter(x=>x.fromInsp!==String(i));save();render();});
-  $$('[data-irem]').forEach(b=>b.onclick=()=>{const [i,k]=b.dataset.irem.split(':');const d=I.d[i]=I.d[i]||{};d.rem=d.rem===k?undefined:k;save();render();});
+  $$('[data-irem]').forEach(b=>b.onclick=()=>inspRemSheet(j,+b.dataset.irem));
   $('#irep').onclick=()=>go('inspr',{id:j.id});
   if(!lock){$('#isw').onclick=()=>inspSwitchSheet(j);$$('[data-iai]').forEach(b=>b.onclick=()=>inspAddSheet(j,+b.dataset.iai));$('#iasec').onclick=()=>inspAddSheet(j,-1);
     $$('[data-io]').forEach(b=>longPress(b,()=>inspItemSheet(j,+b.dataset.io)));$$('[data-ish]').forEach(b=>longPress(b,()=>inspSecSheet(j,+b.dataset.ish)));}
@@ -139,8 +139,8 @@ function inspQuoteSheet(j){const I=j.insp,v=vehOf(j);const L=I.items.map((n,i)=>
       if(n)logJ(j,'Added from inspection · '+n);save();closeSheet();toast(T_('Added {n} to the job'.replace('{n}',n)));go('job',{id:j.id});};upd();});return true;}
 /* finishing: log the red items, make reminders for the yellow ones the worker asked for */
 function inspFinish(j){const I=j.insp;if(!I)return;const red=Object.entries(I.r).filter(([,s])=>s==='bad').map(([i])=>I.items[i]);if(red.length&&!I.logged)logJ(j,'Inspection: red '+red.join(', '));I.logged=1;
-  const v=vehOf(j);Object.entries(I.d||{}).forEach(([i,d])=>{if(!d.rem||d.remDone)return;const due=new Date();if(d.rem==='3m')due.setMonth(due.getMonth()+3);else due.setMonth(due.getMonth()+6);
-    DB.reminders.push({id:uid('r'),veh:v.id,cust:j.cust,kind:'other',name:I.items[i],due:due.getTime(),dueKm:d.rem==='5k'&&j.km?j.km+5000:0,job:j.id,sent:0});d.remDone=1;});save();}
+  const v=vehOf(j);Object.entries(I.d||{}).forEach(([i,d])=>{if(!d.rem||d.remDone)return;const R=inspRem(d.rem);const due=new Date();due.setMonth(due.getMonth()+(R.mo||6));
+    DB.reminders.push({id:uid('r'),veh:v.id,cust:j.cust,kind:'other',name:I.items[i],due:due.getTime(),dueKm:R.km&&j.km?(+j.km)+R.km:0,job:j.id,sent:0});d.remDone=1;});save();}
 /* the customer's report: colours, notes, photos and what we recommend with prices */
 function inspReportHtml(j){const I=j.insp,v=vehOf(j),c=custOf(j);const secs=inspSecs(I);const cnt=x=>Object.values(I.r).filter(y=>y===x).length;
   const recs=I.items.map((n,i)=>({n,i,s:I.r[i],sv:I.meta&&I.meta[i]&&I.meta[i].svc&&byId('services',I.meta[i].svc)})).filter(x=>(x.s==='bad'||x.s==='warn')&&x.sv);
@@ -187,3 +187,19 @@ SCREENS.insp=m=>{inspSeed();m.innerHTML=head('Inspection checklists',`<button cl
     openSheet(`<h3>🛠 ${esc(t.name)}</h3><p class="hint">${T_('When an item is red or yellow, this service can be added to the job with one tap.')}</p><div class="list">${t.items.map((n,i)=>{const cur=inspSvc(t,i);return `<div class="row ilk"><div><b>${esc(n)}</b></div><select class="field sm" data-lk="${i}"><option value="-" ${!cur?'selected':''}>—</option>${SV.map(s=>`<option value="${s.id}" ${cur&&cur.id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>`;}).join('')}</div><button class="btn" id="lkok">${T_('Save')}</button>`,el=>{
       el.querySelector('#lkok').onclick=()=>{el.querySelectorAll('[data-lk]').forEach(s=>{const i=+s.dataset.lk;t.meta[i]=t.meta[i]||{m:''};t.meta[i].svc=s.value;});save();closeSheet();render();toast(T_('Saved'));};});};
   $('#iadd').onclick=()=>edit();$$('[data-ie]').forEach(b=>b.onclick=()=>edit(DB.insp.find(x=>x.id===b.dataset.ie)));};
+
+/* a yellow check's reminder: after some months OR after some km — the worker picks the number (old '3m' / '5k' still read) */
+function inspRem(r){if(!r)return {};if(r==='3m')return {mo:3};if(r==='5k')return {km:5000};return r;}
+function inspRemTxt(r){r=inspRem(r);return r.km?T_('In {n} km'.replace('{n}',(+r.km).toLocaleString('en-US'))):T_('In {n} months'.replace('{n}',r.mo));}
+function inspRemSheet(j,i){const I=j.insp;const d=I.d[i]=I.d[i]||{};const cur=inspRem(d.rem);
+  const set=r=>{d.rem=r;delete d.remDone;save();closeSheet();render();};
+  openSheet(`<h3>🔔 ${esc(T_(I.items[i]))}</h3><p class="hint">${T_('Remind the customer after a time or after some km.')}</p>
+    <label class="lbl">${T_('After (months)')}</label><div class="chips">${[1,2,3,6,12].map(n=>`<button data-rmo="${n}" aria-pressed="${cur.mo===n}">${n}</button>`).join('')}</div>
+    <div class="srow"><input class="field" id="irmo" inputmode="numeric" placeholder="${T_('Other number of months')}" value="${cur.mo&&![1,2,3,6,12].includes(cur.mo)?cur.mo:''}"></div>
+    <label class="lbl">${T_('After (km)')}</label><div class="chips">${[1000,3000,5000,10000].map(n=>`<button data-rkm="${n}" aria-pressed="${cur.km===n}">${n.toLocaleString('en-US')}</button>`).join('')}</div>
+    <div class="srow"><input class="field" id="irkm" inputmode="numeric" placeholder="${T_('Other km')}" value="${cur.km&&![1000,3000,5000,10000].includes(cur.km)?cur.km:''}"></div>
+    <button class="btn" id="irok">${T_('Save')}</button>${d.rem?`<button class="btn ghost jb-del" id="irno">${T_('No reminder')}</button>`:''}`,el=>{
+    el.querySelectorAll('[data-rmo]').forEach(b=>b.onclick=()=>set({mo:+b.dataset.rmo}));
+    el.querySelectorAll('[data-rkm]').forEach(b=>b.onclick=()=>set({km:+b.dataset.rkm}));
+    el.querySelector('#irok').onclick=()=>{const mo=num(el.querySelector('#irmo').value),km=num(el.querySelector('#irkm').value);if(km>0)set({km});else if(mo>0)set({mo:Math.round(mo)});else closeSheet();};
+    const no=el.querySelector('#irno');if(no)no.onclick=()=>{delete d.rem;save();closeSheet();render();};});}

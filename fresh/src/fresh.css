@@ -543,3 +543,13 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .invwrap{background:#fff;color:#000;border-radius:12px;padding:16px;overflow:auto}
 @media(min-width:1100px){.dk-invstyle .dkB #ipv{overflow:hidden}.dk-invstyle .dkB #ipv>*{zoom:.8}.dk-inspr .dkA .invwrap{max-width:900px}}
 @media(min-width:1700px){.dk-invstyle .dkB #ipv>*{zoom:1}}
+/* desktop: an open check keeps one line — note, photo and reminder sit beside the name instead of under it */
+@media(min-width:1100px){
+  .ii:has(>.ix){display:flex;align-items:center}
+  .ii>.ih{flex:1 1 auto;min-width:0}
+  .ii:has(>.ix)>.ih{flex:0 0 auto;width:min(44%,560px);order:2}
+  .ii>.ix{order:1;flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:6px 10px}
+  .ii>.ix>.field{flex:1;min-width:140px;margin:0;min-height:42px}
+  .ii>.ix .iph{flex:none;flex-wrap:nowrap}.ii>.ix .iphadd,.ii>.ix .iphi{min-height:42px;height:42px}
+  .ii>.ix .irem{flex:none;flex-wrap:nowrap;margin:0}
+}

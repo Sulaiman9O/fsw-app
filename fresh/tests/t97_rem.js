@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{const W=+process.argv[2]||1536;const b=await chromium.launch();const p=await b.newPage({viewport:{width:W,height:900},colorScheme:'dark'});const errs=[];p.on('pageerror',e=>errs.push(e.message));await p.route('**/raw.githubusercontent.com/**',r=>r.abort());await p.goto('http://localhost:8811/');await p.waitForTimeout(900);
+ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
+ const cat=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-services-parts.json'));const cu=JSON.parse(fs.readFileSync('/mnt/user-data/outputs/shopflo-customers-v2.json'));
+ await p.evaluate(([cat,cu])=>{DB.parts=cat.parts;DB.services=cat.services;DB.jobs=cu.jobs;DB.vehicles=cu.vehicles;DB.customers=cu.customers;DB.ws.lang='ar';S.user.lang='ar';langApply();save();window.toast=()=>{};},[cat,cu]);
+ await p.evaluate(()=>{inspSeed();const j=DB.jobs.find(x=>!isInvoiced(x)&&vehOf(x)&&vehOf(x).make);j.km=100000;inspStart(j,DB.insp[0]);j.insp.r[0]='ok';j.insp.r[1]='ok';j.insp.r[4]='warn';j.insp.d[4]={note:'level good but leaking from chamber'};save();go('inspj',{id:j.id});document.querySelectorAll('#tour').forEach(x=>x.remove());});await p.waitForTimeout(500);
+ await p.screenshot({path:'r1_'+W+'.png'});
+ await p.click('[data-irem="4"]');await p.waitForTimeout(300);await p.screenshot({path:'r2_'+W+'.png'});await p.click('[data-rkm="3000"]');await p.waitForTimeout(300);
+ ok(/3,000/.test(await p.textContent('[data-irem="4"]')),'chip shows km: '+await p.textContent('[data-irem="4"]'));
+ await p.click('[data-irem="4"]');await p.waitForTimeout(300);await p.fill('#irmo','4');await p.fill('#irkm','');await p.click('#irok');await p.waitForTimeout(300);
+ ok(/4/.test(await p.textContent('[data-irem="4"]')),'chip shows months: '+await p.textContent('[data-irem="4"]'));
+ await p.click('[data-irem="4"]');await p.waitForTimeout(300);await p.fill('#irkm','7500');await p.click('#irok');await p.waitForTimeout(300);
+ await p.click('#idone');await p.waitForTimeout(400);
+ const r=await p.evaluate(()=>{const j=byId('jobs',S.p.id);return DB.reminders.filter(x=>x.job===j.id).map(x=>[x.name,x.dueKm]);});console.log(JSON.stringify(r));ok(r.length===1&&r[0][1]===107500,'reminder 7,500 km made');
+ console.log('errors',errs);await b.close();})();

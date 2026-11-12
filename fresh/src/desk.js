@@ -12,7 +12,7 @@ const DESK={
   invstyle:{top:'.nh-head',from:'#ipv'},
   stkset:{top:'.nh-head',from:'#spvS'}};
 /* pages whose repeated blocks sit side by side (a grid of cards) */
-const DESK_GRID={inspj:'.isec'};
+const DESK_GRID={};
 function deskGrid(m){const sel=DESK_GRID[S.r];if(!sel||m.querySelector(':scope>.dkg'))return;const L=[...m.children].filter(e=>e.matches(sel));if(L.length<2)return;
   const g=document.createElement('div');g.className='dkg dkg-'+S.r;m.insertBefore(g,L[0]);L.forEach(e=>g.appendChild(e));}
 function deskLayout(){const m=document.getElementById('main');if(!m)return;document.body.dataset.r=S.r||'';if(window.innerWidth<DESK_W||!S.user)return;
