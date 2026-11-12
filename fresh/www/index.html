@@ -19,7 +19,7 @@
     return S.importKey('spki',b64(PUB),{name:'ECDSA',namedCurve:'P-256'},false,['verify']).then(function(k){return S.verify({name:'ECDSA',hash:'SHA-256'},k,b64(sig),new TextEncoder().encode(v+'\n'+css+'\n'+js));}).catch(function(){return false;});}
   function check(cur){curV=curV||cur;lastChk=Date.now();txt(BASE+'version.json?t='+Date.now()).then(function(t){var rv=JSON.parse(t);if(!(rv.v>cur.v))return;
     return Promise.all([txt(BASE+'app.css?v='+rv.v),txt(BASE+'app.js?v='+rv.v),txt(BASE+'sig.json?v='+rv.v)]).then(function(p){var sg=JSON.parse(p[2]);if(sg.v!==rv.v)return;
-      return verify(rv.v,p[0],p[1],sg.sig).then(function(ok){if(!ok){console.warn('update refused: bad signature');return;}if(set('ws_code',{v:rv.v,name:rv.name,css:p[0],js:p[1]})){curV={v:rv.v};window.dispatchEvent(new CustomEvent('ws-update',{detail:rv}));}});});}).catch(function(){});}
+      return verify(rv.v,p[0],p[1],sg.sig).then(function(ok){if(!ok){console.warn('update refused: bad signature');return;}if(set('ws_code',{v:rv.v,name:String(rv.name||'').replace(/[^\w .\-]/g,'').slice(0,30),css:p[0],js:p[1]})){curV={v:rv.v};window.dispatchEvent(new CustomEvent('ws-update',{detail:rv}));}});});}).catch(function(){});}
   var saved=get('ws_code');
   /* also look again when the app comes back to the front (it may stay open for days) */
   var lastChk=0,curV=null;document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&curV&&Date.now()-lastChk>10*60*1000){lastChk=Date.now();check(curV);}});
