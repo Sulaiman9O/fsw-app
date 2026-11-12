@@ -22,10 +22,11 @@ const isEV=v=>{if(!v)return false;effReset();const ck=v.id+'|'+v.engine+'|'+v.mo
 const dispOf=v=>dispTxt(effEng(v));
 function engCodeX(v){const e=String(effEng(v)).toUpperCase();const t=e.split(/[\s·,/]+/).find(x=>/^[0-9A-Z]{2,}(-[A-Z]{2,4})?$/.test(x)&&/\d/.test(x)&&/[A-Z]/.test(x)&&!/^\d\.\dL$/.test(x)&&!/^\d+CYL$/.test(x)&&!NOT_CODE.test(x));return t||'';}
 /* keys from most exact to most general */
+/* when the engine size is known, 'model + year' (any engine) is left out: a Camry 2020 3.5 V6 took 4.5 L from the 2.5 cars of that year */
 /* same model and year come before the model in general: one model changes filter between generations (Camry 2.5: D1 up to 2017, N2 from 2018).
    'mmdy'/'mmy' are one year; the query also tries the years next to it (y±1, then y±2) before the model in general */
 function rcpKeys(v,ix){if(!v)return [];const mk=lc(v.make).trim(),md=baseModel(v.model),d=dispOf(v),ec=engCodeX(v),y=+v.year||0;const out=[['veh',v.id,1]];
-  if(md&&y>1950){const ys=ix?[[y]]:[[y],[y-1,y,y+1],[y-2,y-1,y,y+1,y+2]];if(d)ys.forEach(Y=>out.push(['mmdy',Y.map(z=>mk+'|'+md+'|'+d+'|'+z),2]));ys.forEach(Y=>out.push(['mmy',Y.map(z=>mk+'|'+md+'|'+z),2]));}
+  if(md&&y>1950){const ys=ix?[[y]]:[[y],[y-1,y,y+1],[y-2,y-1,y,y+1,y+2]];if(d)ys.forEach(Y=>out.push(['mmdy',Y.map(z=>mk+'|'+md+'|'+d+'|'+z),2]));if(!d)ys.forEach(Y=>out.push(['mmy',Y.map(z=>mk+'|'+md+'|'+z),2]));}
   if(md&&d)out.push(['mmd',mk+'|'+md+'|'+d,RCP_MIN]);if(ec)out.push(['eng',ec,RCP_MIN]);if(md&&!d)out.push(['mm',mk+'|'+md,RCP_MIN]);if(d)out.push(['md',mk+'|'+d,RCP_MIN]);return out;}
 const keyLabel=(k,v,id)=>esc(keyLabel0(k,v,id));
 const keyLabel0=(k,v,id)=>k==='veh'?T_('this car'):(k==='mmdy'||k==='mmy')?(v.make+' '+baseModel(v.model).replace(/\b\w/g,c=>c.toUpperCase())+(k==='mmdy'?' '+dispOf(v)+'L':'')+' '+v.year+(Array.isArray(id)&&id.length>1?' ±'+((id.length-1)/2):'')):k==='mmd'?(v.make+' '+baseModel(v.model).replace(/\b\w/g,c=>c.toUpperCase())+' '+dispOf(v)+'L'):k==='eng'?engCodeX(v):k==='mm'?(v.make+' '+v.model):(v.make+' '+dispOf(v)+'L');
@@ -60,6 +61,8 @@ const wMedian=L=>{if(!L.length)return 0;const s=L.slice().sort((a,b)=>a[0]-b[0])
 const SPEC0=[
  ['toyota',/camry|rav4|rav 4|avalon|es ?250/,'2.5',2018,0,['0W-20','0W-16'],4.5],
  ['toyota',/camry|rav4|rav 4|venza/,'2.5',2007,2017,['0W-20','5W-30'],4.4],
+ ['toyota',/camry|avalon|highlander|sienna/,'3.5',2017,0,['0W-20'],5.4],
+ ['lexus',/es/,'3.5',2019,0,['0W-20'],5.4],
  ['toyota',/./,'3.5',2007,0,['0W-20','5W-30'],6.1],
  ['lexus',/./,'3.5',2007,0,['0W-20','5W-30'],6.1],
  ['toyota',/fj|prado|land cruiser|4runner|hilux|fortuner/,'4.0',2003,0,['5W-30','0W-20'],5.2],
