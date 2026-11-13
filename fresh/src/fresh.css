@@ -599,3 +599,5 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 
 /* one long word (URL, name) must not widen every row */
 .list{grid-template-columns:minmax(0,1fr)}.list .row>div,.list .row b,.list .row span{min-width:0;overflow-wrap:anywhere}
+.crow2 .cars i{white-space:normal}
+.h b,.sub,.lnk,.dt b,.jb-r>div,.nh-head b{overflow-wrap:anywhere}

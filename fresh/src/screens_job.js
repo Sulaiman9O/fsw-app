@@ -44,7 +44,7 @@ SCREENS.job=m=>{
   const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
   const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{audit('delete',(j.stage==='estimate'?'Estimate':'Job')+' #'+j.no+' deleted ('+carName(vehOf(j))+')');DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };
-function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{if(window.CapApp)location.href=u;else{const w=window.open(u,'_blank','noopener');if(!w)location.href=u;}}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
+function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{if(window.CapApp)location.href=u;else{const w=window.open(u,'_blank');if(w){try{w.opener=null;}catch(e){}}else location.href=u;}}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
 function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
     items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
@@ -236,7 +236,8 @@ function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pa
     S.sheetBack=()=>{S.freshJ=null;closeSheet();back();return true;};   /* Back again on the question: keep it and leave */
     el.querySelector('#fjkeep').onclick=()=>{S.freshJ=null;closeSheet();back();};
     el.querySelector('#fjdel').onclick=()=>{S.freshJ=null;DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);
-      if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;   /* the number is free again when it was the last one */
+      if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;
+      if(S.freshKm&&S.freshKm.veh===j.veh){const v=byId('vehicles',j.veh);if(v)v.km=S.freshKm.km;}S.freshKm=null;   /* the number is free again when it was the last one */
       audit('delete',(est?'Estimate':'Job')+' #'+j.no+' deleted right after opening');save();closeSheet();
       /* start clean: the counter forgets that car, so a new job begins from an empty search */
       S.ctr={q:'',vid:null,km:''};(S.hist||[]).forEach(h=>{if(h.r==='counter')h.p={};});back();toast(T_('Deleted'));};});

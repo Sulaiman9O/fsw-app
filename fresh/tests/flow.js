@@ -5,7 +5,7 @@ const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
 await p.goto('http://localhost:8811/');await p.waitForTimeout(800);await p.click('#oblang [data-l="ar"]');
 await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('Sulaiman');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
 await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scat');await p.setInputFiles('#cf','/mnt/user-data/outputs/shopflo-services-parts.json');await p.waitForTimeout(600);await p.click('#cfok');await p.waitForTimeout(800);
-await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scust');await p.setInputFiles('#ccf','/mnt/user-data/uploads/Downloads/shopflo-customers-v2.json');await p.waitForTimeout(800);await p.click('#ccok');await p.waitForTimeout(1500);
+await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scust');await p.setInputFiles('#ccf','/mnt/user-data/outputs/shopflo-customers-v2.json');await p.waitForTimeout(800);await p.click('#ccok');await p.waitForTimeout(1500);
 // new job through UI for existing camry by plate
 await p.evaluate(()=>go('newjob'));await p.waitForTimeout(300);
 const plate=await p.evaluate(()=>{const v=DB.vehicles.find(v=>/camry/i.test(v.model)&&v.plate&&/2AR/.test(effEng(v))&&!openJobs().some(j=>j.veh===v.id));return v.plate;});

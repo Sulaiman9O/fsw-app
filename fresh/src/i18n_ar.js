@@ -207,3 +207,4 @@ Object.assign(AR_DICT,{'Keep this job card?':'تحفظ بطاقة العمل؟',
 Object.assign(AR_DICT,{'Keep it':'احفظها','Delete it':'احذفها'});
 Object.assign(AR_DICT,{'Take a payment':'استلام دفعة','The oldest invoices are paid first.':'تنسدد أقدم الفواتير أول.','owes':'عليه','More than the debt':'أكثر من الدين','Save payment':'حفظ الدفعة'});
 Object.assign(AR_DICT,{'To confirm, type DELETE':'للتأكيد اكتب «حذف»','Only the owner can do this':'هذي بس للمالك'});
+Object.assign(AR_DICT,{'That is much more than the last km':'الرقم أكثر بكثير من آخر كيلومتر','Save anyway?':'تحفظه؟'});

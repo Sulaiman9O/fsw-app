@@ -2,7 +2,10 @@
    Type the plate (or phone, or name) → the car's card: last visit, what it usually needs, today's price →
    one tap opens the job with it → "Invoice & pay" at the bottom takes the money and closes the job. ---------- */
 function newJobFor(v,km){const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:v.cust,veh:v.id,km:num(km)||v.km||0,stage:'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),'Job opened · '+S.user.name]],pays:[]};
-  if(num(km)>(+v.km||0))v.km=num(km);DB.jobs.push(j);S.freshJ=j.id;return j;}
+  S.freshKm={veh:v.id,km:v.km};
+  /* a typo like one 0 too many: ask before it goes on the car for good */
+  const kn=num(km),last=+v.km||0;let carKm=kn>last;if(carKm&&last&&(kn>last*3||kn-last>150000)&&!confirm(T_('That is much more than the last km')+' ('+kmf(last)+'). '+T_('Save anyway?')))carKm=false;
+  if(carKm)v.km=kn;else if(kn>last)j.km=kn;DB.jobs.push(j);S.freshJ=j.id;return j;}
 const openJobOf=v=>DB.jobs.filter(j=>j.veh===v.id&&!isInvoiced(j)&&j.stage!=='done'&&j.stage!=='estimate').sort((a,b)=>b.t-a.t)[0]||null;
 /* a price preview without touching the real jobs */
 function ctrPreview(v,fill){const t={id:'_ctr',veh:v.id,cust:v.cust,items:[],log:[],pays:[],disc:0};try{fill(t);}catch(e){return null;}return (t.items||[]).length?t:null;}

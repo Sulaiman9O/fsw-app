@@ -9,5 +9,5 @@ const {chromium}=require('playwright');const M=require('./fbmock.js');
  console.log('before A',await cnt(A),'B',await cnt(B));
  await A.evaluate(()=>render());await A.waitForTimeout(300);await A.locator('#swipe').scrollIntoViewIfNeeded();await A.click('#swipe');await A.waitForTimeout(600);await A.screenshot({path:'X1.png'});
  await A.click('#wdgo',{force:true}).catch(()=>{});await A.waitForTimeout(300);console.log('clicked early, still data?',await A.evaluate(()=>DB.customers.length));
- await A.waitForTimeout(6000);await A.screenshot({path:'X2.png'});await A.click('#wdgo');await A.waitForTimeout(2500);await A.screenshot({path:'X3.png'});
+ await A.fill('#wdty','DELETE');await A.waitForTimeout(6000);await A.screenshot({path:'X2.png'});await A.click('#wdgo');await A.waitForTimeout(2500);await A.screenshot({path:'X3.png'});
  console.log('after A',await cnt(A),'B',await cnt(B),errs);await b.close();})();

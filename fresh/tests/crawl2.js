@@ -5,7 +5,7 @@ const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp
 await p.goto('http://localhost:8811/');await p.waitForTimeout(800);
 await p.fill('#obn','Fast Service World');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('Sulaiman');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
 await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scat');await p.setInputFiles('#cf','/mnt/user-data/outputs/shopflo-services-parts.json');await p.waitForTimeout(600);await p.click('#cfok');await p.waitForTimeout(800);
-await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scust');await p.setInputFiles('#ccf','/mnt/user-data/uploads/Downloads/shopflo-customers-v2.json');await p.waitForTimeout(800);await p.click('#ccok');await p.waitForTimeout(1500);
+await p.evaluate(()=>go('settings'));await p.waitForTimeout(300);await p.click('#scust');await p.setInputFiles('#ccf','/mnt/user-data/outputs/shopflo-customers-v2.json');await p.waitForTimeout(800);await p.click('#ccok');await p.waitForTimeout(1500);
 // make an open job + po + expense for coverage
 await p.evaluate(()=>{const v=DB.vehicles.find(v=>/camry/i.test(v.model));DB.jobs.push({id:'jo1',no:DB.ws.nextJob++,cust:v.cust,veh:v.id,km:100000,stage:'work',items:[],disc:0,t:now(),by:'S',log:[[now(),'x']],pays:[]});save();});
 const routes=await p.evaluate(()=>Object.keys(SCREENS));
