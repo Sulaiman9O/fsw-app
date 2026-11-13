@@ -96,7 +96,7 @@ SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'au
      const make=est=>{closeSheet();const items=[];if(D.svc){const it=svcItem(D.svc,v);it.grp='rxsvc';items.push(it);}if(D.filter)items.push({k:'part',ref:D.filter.id,d:D.filter.name,num:D.filter.num,q:1,u:'',p:+D.filter.price,cost:+D.filter.cost||0,grp:'rxoil',by:S.user.name});
        items.push({k:'part',ref:r.p.id,d:r.p.name,num:r.p.num,q:D.qty,u:'L',p:+r.p.price,cost:+r.p.cost||0,grp:Q.kind==='oil'?'rxoil':'',by:S.user.name});
        if(v.id!=='_q'){const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:v.cust,veh:v.id,km:num(Q.km)||v.km||0,stage:est?'estimate':'new',items,disc:0,t:now(),by:S.user.name,log:[[now(),(est?'Estimate':'Job')+' opened from quick price · '+S.user.name]],pays:[]};if(Q.kind==='oil')j.rx={oil:{mode:'usual',at:now()}};
-         DB.jobs.push(j);save();S.quote=null;go('job',{id:j.id});toast((est?'Estimate':'Job')+' #'+j.no+' opened');}
+         DB.jobs.push(j);save();S.quote=null;S.freshJ=j.id;go('job',{id:j.id});toast((est?'Estimate':'Job')+' #'+j.no+' opened');}
        else{S.pendQuote={items,kind:Q.kind};S.quote=null;go('newjob',{n:{phone:'',name:'',plate:'',make:v.make||'',model:v.model||'',year:v.year||'',km:'',vin:'',engine:v.engine||'',est:!!est,custId:null,vehId:null}});toast(T_('Add the customer and the plate; the prices are kept.'));}};
      const fc=el.querySelector('#qfch');if(fc)fc.onclick=()=>{const pid=r.p.id;closeSheet();setTimeout(()=>qFilterPick(v,D,id=>{Q.fid=id;render();setTimeout(()=>{const t=document.querySelector('[data-qp="'+pid+'"]');if(t)t.click();},40);}),60);};
      el.querySelector('#qok').onclick=()=>make(false);el.querySelector('#qest').onclick=()=>make(true);});});};

@@ -227,3 +227,14 @@ function jobCustSheet(j){const v=vehOf(j),old=custOf(j);
       const ex=custByPhone(ph);if(ex&&!isWalk(ex)&&(!nm||lc(ex.name).trim()===lc(nm)))return use(ex);
       const c={id:uid('c'),name:nm||'Walk-in',phone:ph,t:now()};DB.customers.push(c);use(c);};
     setTimeout(()=>P.focus(),80);});}
+
+/* Back from a job card opened just now (by mistake?): ask once — keep it, or delete it. A job with an invoice or a payment is always kept. */
+function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pays||[]).length){S.freshJ=null;return false;}
+  const est=j.stage==='estimate',n=(j.items||[]).length;
+  openSheet(`<h3>${T_(est?'Keep this estimate?':'Keep this job card?')} #${j.no}</h3><p class="hint">${n?n+' '+T_('items')+' · ':''}${T_('You opened it just now. If it was a mistake, delete it.')}</p>
+   <div class="two"><button class="btn" id="fjkeep">💾 ${T_('Keep')}</button><button class="btn ghost" id="fjdel" style="color:var(--bad)">🗑 ${T_('Delete')}</button></div>`,el=>{
+    el.querySelector('#fjkeep').onclick=()=>{S.freshJ=null;closeSheet();back();};
+    el.querySelector('#fjdel').onclick=()=>{S.freshJ=null;DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);
+      if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;   /* the number is free again when it was the last one */
+      audit('delete',(est?'Estimate':'Job')+' #'+j.no+' deleted right after opening');save();closeSheet();back();toast(T_('Deleted'));};});
+  return true;}
