@@ -236,5 +236,7 @@ function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pa
     el.querySelector('#fjkeep').onclick=()=>{S.freshJ=null;closeSheet();back();};
     el.querySelector('#fjdel').onclick=()=>{S.freshJ=null;DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);
       if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;   /* the number is free again when it was the last one */
-      audit('delete',(est?'Estimate':'Job')+' #'+j.no+' deleted right after opening');save();closeSheet();back();toast(T_('Deleted'));};});
+      audit('delete',(est?'Estimate':'Job')+' #'+j.no+' deleted right after opening');save();closeSheet();
+      /* start clean: the counter forgets that car, so a new job begins from an empty search */
+      S.ctr={q:'',vid:null,km:''};(S.hist||[]).forEach(h=>{if(h.r==='counter')h.p={};});back();toast(T_('Deleted'));};});
   return true;}
