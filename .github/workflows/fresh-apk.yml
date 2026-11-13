@@ -1,4 +1,5 @@
 name: Build Workshop APK (new-workshop test app)
+# Signing: secrets SHOPFLO_KS_B64 + SHOPFLO_KS_PASS (set 2026-11-13).
 on:
   workflow_dispatch:
   push:
