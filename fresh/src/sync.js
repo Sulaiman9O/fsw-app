@@ -22,17 +22,35 @@ function syncPush(){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.timer);SYNC
 function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(async()=>{const a=SYNC.last,b=syncSnap();const ops=[];
     b.kv.forEach((v,k)=>{if(!a||a.kv.get(k)!==v)ops.push(['kv',k,v]);});if(a)a.kv.forEach((v,k)=>{if(!b.kv.has(k))ops.push(['kv',k,null]);});
     b.rec.forEach((v,k)=>{if(!a||a.rec.get(k)!==v)ops.push(['rec',k,v]);});if(a)a.rec.forEach((v,k)=>{if(!b.rec.has(k))ops.push(['rec',k,null]);});
-    if(!ops.length)return;const ts=firebase.firestore.FieldValue.serverTimestamp(),d=syncDev();
+    /* Firestore refuses a document over 1 MiB: keep it here, tell the owner, and still send everything else */
+    const big=[];for(let i=ops.length-1;i>=0;i--){const o=ops[i];if((o[2]?o[2].length:0)+o[1].length>9e5){big.push(o[1].split('\u0001')[0]);ops.splice(i,1);}}
+    SYNC.big=big;if(!ops.length){if(big.length){SYNC.status='err';SYNC.err='Too large to send online: '+big.join(', ');}return;}const ts=firebase.firestore.FieldValue.serverTimestamp(),d=syncDev();
     /* one send holds at most 400 changes and about 4 MB (Firebase refuses a send over 10 MB: hundreds of car pictures at once) */
     const groups=[];let g=[],sz=0;ops.forEach(o=>{const n=(o[2]?o[2].length:0)+o[1].length+64;if(g.length&&(g.length>=400||sz+n>4e6)){groups.push(g);g=[];sz=0;}g.push(o);sz+=n;});if(g.length)groups.push(g);
-    try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();}
-      SYNC.last=b;syncSaveLast();SYNC.sent+=ops.length;SYNC.lastAt=Date.now();SYNC.status='ok';}
-    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}}).catch(()=>{});return SYNC.pushQ;}
+    /* remember only what was really sent, part by part. Replacing the whole "last sent" copy with this device's snapshot would
+       forget changes that came in from other devices while sending, and send their older copy back over newer ones. */
+    if(!SYNC.last)SYNC.last={kv:new Map(),rec:new Map()};let sent=0;
+    try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();
+        G.forEach(([t,k,v])=>{const m=t==='rec'?SYNC.last.rec:SYNC.last.kv;if(v==null)m.delete(k);else m.set(k,v);if(SYNC.base)delete SYNC.base[k];});sent+=G.length;}
+      if(big.length){SYNC.status='err';SYNC.err='Too large to send online: '+big.join(', ');}else SYNC.status='ok';}
+    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
+    if(sent){syncSaveLast();if(SYNC.base)baseSave();SYNC.sent+=sent;SYNC.lastAt=Date.now();}}).catch(()=>{});return SYNC.pushQ;}
 /* ---- online → local ---- */
 /* the same record changed here (not sent yet) and on another device: join the two instead of dropping one.
    Stock: the other device's movements + this device's own (per-device totals). Jobs: payments, items and history from both. */
 const STAGE_N={estimate:0,new:1,work:2,ready:3,done:4};
-function recMerge(c,L,R){const me=syncDev(),key=x=>JSON.stringify(x);
+/* three-way merge: B = the copy both devices last agreed on. A line changed here is one removed + one added, so it is not doubled;
+   a line removed on the other device is not brought back; fields changed here (discount, price, km…) are kept. */
+const J_=x=>JSON.stringify(x);
+function m3list(B,L,R){const cnt=a=>{const m=new Map();(a||[]).forEach(x=>{const k=J_(x);m.set(k,(m.get(k)||0)+1);});return m;};const b=cnt(B),l=cnt(L),rm=new Map(),add=new Map(),out=[];
+  b.forEach((n,k)=>{const d=n-(l.get(k)||0);if(d>0)rm.set(k,d);});l.forEach((n,k)=>{const d=n-(b.get(k)||0);if(d>0)add.set(k,d);});
+  (R||[]).forEach(x=>{const k=J_(x),d=rm.get(k)||0;if(d>0){rm.set(k,d-1);return;}out.push(x);});(L||[]).forEach(x=>{const k=J_(x),d=add.get(k)||0;if(d>0){add.set(k,d-1);out.push(x);}});return out;}
+function m3obj(B,L,R,skip){const o=Object.assign({},R);new Set([...Object.keys(L),...Object.keys(B)]).forEach(f=>{if(skip.includes(f)||J_(L[f])===J_(B[f]))return;
+    if(f==='notes'&&J_(R[f])!==J_(B[f])&&R[f]&&L[f]&&R[f]!==L[f]){o[f]=R[f]+'\n'+L[f];return;}if(L[f]===undefined)delete o[f];else o[f]=L[f];});return o;}
+function recMerge(c,L,R,B){const me=syncDev(),key=x=>JSON.stringify(x);
+  if(B&&c==='jobs'){const o=m3obj(B,L,R,['items','pays','log']);o.items=m3list(B.items,L.items,R.items);o.pays=m3list(B.pays,L.pays,R.pays).sort((a,b)=>(a.t||0)-(b.t||0));
+    const s=new Set((R.log||[]).map(key));o.log=(R.log||[]).concat((L.log||[]).filter(x=>!s.has(key(x)))).sort((a,b)=>((a&&a[0])||0)-((b&&b[0])||0));if((STAGE_N[R.stage]||0)>(STAGE_N[o.stage]||0)&&J_(L.stage)===J_(B.stage))o.stage=R.stage;return o;}
+  if(B&&c==='parts'){const o=m3obj(B,L,R,['stock','sd']);o.sd=Object.assign({},R.sd||{});const ls=(L.sd||{})[me];if(ls!=null)o.sd[me]=ls;o.stock=r2((+R.stock||0)+((+L.stock||0)-(+B.stock||0)));return o;}
   if(c==='parts'){const o=Object.assign({},R);const ls=(L.sd||{})[me]||0,rs=(R.sd||{})[me]||0;o.sd=Object.assign({},R.sd||{});if(ls)o.sd[me]=ls;o.stock=r2((+R.stock||0)+(ls-rs));return o;}
   if(c==='jobs'){const o=Object.assign({},R);const uni=(a,b)=>{const s=new Set((a||[]).map(key));return (a||[]).concat((b||[]).filter(x=>!s.has(key(x))));};
     o.pays=uni(R.pays,L.pays).sort((a,b)=>(a.t||0)-(b.t||0));o.log=uni(R.log,L.log).sort((a,b)=>((a&&a[0])||0)-((b&&b[0])||0));
@@ -40,11 +58,25 @@ function recMerge(c,L,R){const me=syncDev(),key=x=>JSON.stringify(x);
     if(!o.inv&&L.inv)o.inv=L.inv;if((STAGE_N[L.stage]||0)>(STAGE_N[R.stage]||0))o.stage=L.stage;if(L.notes&&L.notes!==R.notes)o.notes=R.notes?R.notes+'\n'+L.notes:L.notes;
     if(add.length||(L.pays||[]).length!==(R.pays||[]).length)o.log=(o.log||[]).concat([[now(),'Joined changes from two devices']]);return o;}
   return null;}
+SYNC.base={};const baseSave=()=>{try{localStorage.setItem('ws_sync_base',JSON.stringify(SYNC.base));}catch(e){}};
+function syncBaseCap(){if(!SYNC.last)return;let ch=0;MERGE_C.forEach(c=>(DB[c]||[]).forEach(x=>{const k=c+'\u0001'+String(x.id||x._k);if(SYNC.base[k]!==undefined)return;const b=SYNC.last.rec.get(k);
+    if(b===undefined||b==='\u0000old'||b==='\u0000gone')return;if(b!==JSON.stringify(x)){SYNC.base[k]=b;ch=1;}}));if(ch)baseSave();}
 function localDirty(t,k){if(!SYNC.last||t!=='rec')return false;const b=SYNC.last.rec.get(k);if(b===undefined)return false;const [c,id]=k.split('\u0001');const x=(DB[c]||[]).find(x=>String(x.id||x._k)===id);if(!x)return false;return b==='\u0000old'||b!==JSON.stringify(x);}
 const MERGE_C=['parts','jobs'];
+/* customers/cars deleted on another device are applied after the whole batch: if a job here still uses one
+   (opened here while the other device deleted the customer), it is kept and sent back instead of leaving the job without a customer */
+function syncHeld(){const H=SYNC.held||[];SYNC.held=[];let back=0;SYNC.force=1;
+  /* only a job made or changed here and not sent yet keeps it (a job the other device already knew is being deleted there too) */
+  const unsent=j=>{const b=SYNC.last&&SYNC.last.rec.get('jobs\u0001'+j.id);return b===undefined||b!==JSON.stringify(j);};
+  try{H.forEach(k=>{const [c,id]=k.split('\u0001');
+    if((c==='customers'&&DB.jobs.some(j=>j.cust===id&&unsent(j)))||(c==='vehicles'&&DB.jobs.some(j=>j.veh===id&&unsent(j)))){if(SYNC.last)SYNC.last.rec.delete(k);back++;}else applyRemote('rec',k,null);});}finally{SYNC.force=0;}
+  if(back)setTimeout(syncPush,0);}
 function applyRemote(t,k,v){
+  if(t==='rec'&&v==null&&!SYNC.force){const c=k.split('\u0001')[0];if(c==='customers'||c==='vehicles'){(SYNC.held=SYNC.held||[]).push(k);return;}}
+  /* deleted here while offline (not sent yet): this device's delete wins */
+  if(SYNC.last&&(t==='rec'?SYNC.last.rec:SYNC.last.kv).get(k)==='\u0000gone')return;
   if(t==='rec'&&v!=null&&MERGE_C.includes(k.split('\u0001')[0])&&localDirty(t,k)){const [c,id]=k.split('\u0001');const arr=DB[c];const i=arr.findIndex(x=>String(x.id||x._k)===id);
-    try{const m=recMerge(c,arr[i],JSON.parse(v));if(m){arr[i]=m;SYNC.last.rec.set(k,v);SYNC.mergeN=(SYNC.mergeN||0)+1;setTimeout(syncPush,0);return;}}catch(e){}}
+    try{const bs=SYNC.base&&SYNC.base[k];const m=recMerge(c,arr[i],JSON.parse(v),bs?JSON.parse(bs):null);if(m){arr[i]=m;SYNC.last.rec.set(k,v);if(SYNC.base){SYNC.base[k]=v;baseSave();}SYNC.mergeN=(SYNC.mergeN||0)+1;setTimeout(syncPush,0);return;}}catch(e){}}
   /* a list this version does not know (made by a newer version): leave it alone. Remembering it here would make this
      device send "deleted" for all of it on its next save. And a newer list sent as a plain value by an older device is ignored. */
   if(t==='rec'&&!REC_KEYS.includes(k.split('\u0001')[0]))return;
@@ -63,8 +95,8 @@ const tsSet=v=>{try{if(v>tsGet())localStorage.setItem('ws_sync_ts',String(v));}c
 function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').onSnapshot(qs=>{qs.forEach(d=>{if(d.id==='reset'){const at=+((d.data()||{}).at)||0;if(at>sinceGet()&&DB.ws)wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));}});},()=>{}));const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
     qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(SYNC.last&&SYNC.last[t]&&SYNC.last[t].get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))return;
-      applyRemote(t,x.k,x.del?null:x.v);n++;});
-    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();_flushNow0();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);}));});}
+      applyRemote(t,x.k,x.del?null:x.v);n++;});syncHeld();
+    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);}));});}
 function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=[];}
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);
@@ -73,7 +105,7 @@ const sinceGet=()=>{try{return +localStorage.getItem('ws_sync_since')||0;}catch(
 const sinceSet=()=>{try{localStorage.setItem('ws_sync_since',String(Date.now()));}catch(e){}};
 async function resetAt(){try{const r=await wsRef().collection('meta').doc('reset').get();return r.exists?(+((r.data()||{}).at)||0):0;}catch(e){return 0;}}
 /* the workshop was deleted from another device: this device's copy belongs to the deleted workshop, so it is removed too */
-async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));}catch(e){}
   try{await FBA.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});closeSheet();render();if(msg)toast(msg);}
 async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;
   try{const ra=await resetAt();
@@ -81,14 +113,14 @@ async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await 
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.reload=0;SYNC.last=syncLoadLast();if(SYNC.reload){try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}await syncCatchUp();await syncPushNow();}
-    localStorage.setItem('ws_sync_seeded','1');
+    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=syncLoadLast();if(SYNC.reload){try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}await syncCatchUp();await syncPushNow();}
+    localStorage.setItem('ws_sync_seeded','1');try{localStorage.setItem('ws_sync_em',SYNC.user.email||'');}catch(e){}
     syncListen();SYNC.status='ok';}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
   try{if(S.r==='settings')render();}catch(e){}}
 /* on start: take what other phones changed while this one was closed BEFORE sending, so old copies do not overwrite newer ones */
 async function syncCatchUp(){const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));const me=syncDev();let n=0;
-  for(const t of ['kv','rec']){const q=await wsRef().collection(t).where('t','>',since).get();const L=SYNC.last&&SYNC.last[t];q.forEach(doc=>{const x=doc.data();if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(L&&L.get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))return;/* changed here while offline: this phone's change is sent */applyRemote(t,x.k,x.del?null:x.v);n++;});}
-  if(n){SYNC.got+=n;const ch=fixDupNumbers();_flushNow0();syncSaveLast();if(ch)syncPush();}}
+  for(const t of ['kv','rec']){const q=await wsRef().collection(t).where('t','>',since).get();const L=SYNC.last&&SYNC.last[t];q.forEach(doc=>{const x=doc.data();if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(L&&((L.get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))||L.get(x.k)==='\u0000gone'))return;/* changed here while offline: this phone's change is sent */applyRemote(t,x.k,x.del?null:x.v);n++;});}syncHeld();
+  if(n){SYNC.got+=n;const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}}
 /* two phones can give the same invoice or job number while apart. The phone that made the later one renumbers its own. */
 function fixDupNumbers(){const me=syncDev();let ch=0;
   const fix=(list,get,setNo,label)=>{const by={};list.forEach(j=>{const k=get(j);if(k)(by[k]=by[k]||[]).push(j);});
@@ -104,17 +136,20 @@ async function syncPull(){const d=blankDB();const kv=await wsRef().collection('k
   kv.forEach(doc=>{const x=doc.data();if(x.del||x.k.startsWith('#order:'))return;d[x.k]=JSON.parse(x.v);});
   kv.forEach(doc=>{const x=doc.data();if(x.del||!x.k.startsWith('#order:'))return;const c=x.k.slice(7),m=by[c]||new Map(),ids=JSON.parse(x.v);d[c]=ids.map(id=>m.get(id)).filter(Boolean);m.forEach((o,id)=>{if(!ids.includes(id))d[c].push(o);});});
   Object.keys(by).forEach(c=>{if(!d[c]||!d[c].length)d[c]=[...by[c].values()];});
-  if(!d.ws)throw new Error('No workshop online yet');DB=d;SYNC.last=syncSnap();syncSaveLast();tsSet(mx);flushNow();S.user=null;render();}
+  if(!d.ws)throw new Error('No workshop online yet');DB=d;SYNC.last=syncSnap();await syncSaveLast();tsSet(mx);flushNow();S.user=null;render();}
 /* remember what was last sent (as short hashes) so changes made offline, even after closing the app, still go online */
 const h32=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);};
-function syncSaveLast(){try{if(!SYNC.last)return;const o={kv:{},rec:{}};SYNC.last.kv.forEach((v,k)=>o.kv[k]=h32(v));SYNC.last.rec.forEach((v,k)=>o.rec[k]=h32(v));localStorage.setItem('ws_sync_last',JSON.stringify(o));}catch(e){}}
+/* the list is taken now and written only after the device database has saved (at least) the same data: if the app is closed
+   before that, the old list still matches the old data, so nothing received is mistaken for a change made here */
+function syncSaveLast(){try{if(!SYNC.last)return;const o={v:2,kv:{},rec:{}};SYNC.last.kv.forEach((v,k)=>o.kv[k]=h32(v));SYNC.last.rec.forEach((v,k)=>o.rec[k]=h32(v));
+    const s=JSON.stringify(o);return Promise.resolve(_flushNow0()).then(()=>{try{localStorage.setItem('ws_sync_last',s);}catch(e){}});}catch(e){}}
 function syncLoadLast(){try{const o=JSON.parse(localStorage.getItem('ws_sync_last')||'null');if(!o)return null;const cur=syncSnap(),kv=new Map(),rec=new Map();
-    Object.keys(o.kv).forEach(k=>{const v=cur.kv.get(k);kv.set(k,v!=null&&h32(v)===o.kv[k]?v:'\u0000old');});let miss=0;Object.keys(o.rec).forEach(k=>{const v=cur.rec.get(k);if(v==null){miss++;return;}rec.set(k,v!=null&&h32(v)===o.rec[k]?v:'\u0000old');});
+    Object.keys(o.kv).forEach(k=>{const v=cur.kv.get(k);kv.set(k,v!=null&&h32(v)===o.kv[k]?v:'\u0000old');});let miss=0;Object.keys(o.rec).forEach(k=>{const v=cur.rec.get(k);if(v==null){if(o.v===2)rec.set(k,'\u0000gone');else miss++;return;}rec.set(k,v!=null&&h32(v)===o.rec[k]?v:'\u0000old');});
     /* a record the last send knew but this device does not have (the app closed before it finished saving what came in):
        never send that as "deleted" - take everything again from online instead */
     if(miss){SYNC.reload=miss;}return {kv,rec};}catch(e){return null;}}
 /* hook: every local save also goes online */
-const _flushNow0=flushNow;flushNow=function(){const r=_flushNow0();try{syncPush();}catch(e){}return r;};
+const _flushNow0=flushNow;flushNow=function(){const r=_flushNow0();try{syncBaseCap();}catch(e){}try{syncPush();}catch(e){}return r;};
 /* ---- settings screen part ---- */
 function syncSection(){
   if(!fbCfg())return `<p class="hint">☁️ Online sync is not set up yet. It needs the workshop's Firebase project.</p>`;
@@ -124,15 +159,16 @@ function syncSection(){
    <div class="two"><button class="btn ghost sm" id="syre">🔄 Sync now</button><button class="btn ghost sm" id="syout">Sign out</button></div>
    <label class="chk"><input type="checkbox" id="symst" ${DB.ws.mainStockOff?'':'checked'}> Daily update from the main system: take the stock too</label>${DB.ws.mainAt?`<p class="hint">Last daily update ${fmtDs(DB.ws.mainAt)}</p>`:''}`;}
 function syncBind(){const i=$('#syin');if(i)i.onclick=async()=>{const em=$('#syem').value.trim(),pw=$('#sypw').value;if(!em||!pw)return;if(!fbInit())return;
-    try{localStorage.setItem('ws_sync','1');['ws_sync_seeded','ws_sync_last','ws_sync_ts'].forEach(k=>localStorage.removeItem(k));sinceSet();await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
+    try{localStorage.setItem('ws_sync','1');const same=localStorage.getItem('ws_sync_em')===em&&localStorage.getItem('ws_sync_seeded')==='1'&&localStorage.getItem('ws_sync_last');
+      if(!same){['ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_base'].forEach(k=>localStorage.removeItem(k));sinceSet();}await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
   const ms=$('#symst');if(ms)ms.onchange=e=>{DB.ws.mainStockOff=!e.target.checked;save();};
   const r=$('#syre');if(r)r.onclick=async()=>{await syncPushNow();toast('Synced');render();};
-  const o=$('#syout');if(o)o.onclick=()=>confirmSheet('Sign out of online sync on this phone? The data stays on the phone.','Sign out',async()=>{localStorage.setItem('ws_sync','0');syncStop();await FBA.signOut();render();});}
+  const o=$('#syout');if(o)o.onclick=()=>confirmSheet('Sign out of online sync on this phone? The data stays on the phone.','Sign out',async()=>{try{await syncPushNow();}catch(e){}localStorage.setItem('ws_sync','0');syncStop();await FBA.signOut();render();});}
 /* delete everything in this workshop's online space, then sign this phone out */
 async function syncWipeCloud(){if(!SYNC.user||!FBS)return 0;syncStop();let n=0;
   for(const c of ['kv','rec']){for(;;){const q=await wsRef().collection(c).limit(400).get();if(q.empty)break;const bt=FBS.batch();q.forEach(d=>bt.delete(d.ref));await bt.commit();n+=q.size;}}
   await wsRef().collection('meta').doc('reset').set({at:Date.now(),t:firebase.firestore.FieldValue.serverTimestamp(),d:syncDev()});
-  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since'].forEach(k=>localStorage.removeItem(k));}catch(e){}
+  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));}catch(e){}
   SYNC.last=null;try{await FBA.signOut();}catch(e){}return n;}
 /* first screen of a new phone/tablet: join an existing workshop by signing in (no local workshop yet) */
 function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;}
