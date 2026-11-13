@@ -19,6 +19,7 @@ SCREENS.job=m=>{
   ${rxBar(j)}${chkBox(j)}
   ${sec('Inspection',j.insp?`${Object.values(j.insp.r||{}).filter(x=>x==='bad').length} red · ${Object.values(j.insp.r||{}).filter(x=>x==='warn').length} yellow`:'')}
   ${j.insp?`<button class="row" id="jinsp"><div><b>${esc(j.insp.name)}</b><span>${Object.keys(j.insp.r||{}).length}/${j.insp.items.length} checked</span></div><span class="v">Open ›</span></button>`:`<button class="btn ghost sm" id="jinsp">＋ Start an inspection</button>`}
+  ${(j.ph||[]).length?`<div class="lbl">📎 ${T_('Pictures')}</div><div class="jph">${(j.ph||[]).map(id=>{const p=photoOf(id);return p?`<button data-jph="${id}"><img src="${p.img}" alt="" loading="lazy">${p.kind==='sig'?`<small>${T_('Customer signature')}</small>`:''}</button>`:'';}).join('')}</div>`:''}
   <label class="field-l">Notes<textarea class="field" id="jnotes" rows="2" placeholder="What the customer said, what we found…">${esc(j.notes||'')}</textarea></label>
   <div class="two">${j.stage==='estimate'?`<button class="btn ghost" id="jsendest">📤 Send estimate</button>`:isInvoiced(j)?`<button class="btn ghost" data-go="inv:${j.id}">🧾 Invoice #${j.inv.no}</button>`:can.invoice()?`<button class="btn ghost" id="jinv">🧾 Make invoice</button>`:`<span></span>`}
    <button class="btn ghost" id="jstk">🏷️ Sticker</button></div>
@@ -35,6 +36,7 @@ SCREENS.job=m=>{
   $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){editInvAsk(j);return;}PRESS=null;itemMenu(j,+b.dataset.it);});
   const ds=$('#jdisc');if(ds)ds.onclick=()=>openSheet(`<h3>Discount</h3><div class="in2"><input class="field" id="dam" inputmode="decimal" placeholder="Amount (${DB.ws.currency})" value="${j.discPct?'':j.disc||''}"><input class="field" id="dpc" inputmode="decimal" placeholder="or %" value="${j.discPct||''}"></div><button class="btn" id="dok">Save</button>`,el=>el.querySelector('#dok').onclick=()=>{const p=num($('#dpc').value),a=num($('#dam').value);j.discPct=p||0;j.disc=p?0:a;audit('discount','Discount on #'+j.no+': '+(p?p+'%':f3(a)));logJ(j,'Discount '+(p?p+'%':f3(a)));save();closeSheet();render();});
   $('#jnotes').onchange=e=>{j.notes=e.target.value;save();};
+  $$('[data-jph]').forEach(b=>b.onclick=()=>{const p=photoOf(b.dataset.jph);if(p)openSheet(`<img src="${p.img}" style="width:100%;border-radius:14px;background:#fff">`);});
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
   const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);

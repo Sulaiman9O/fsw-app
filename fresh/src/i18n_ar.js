@@ -202,3 +202,4 @@ Object.assign(AR_DICT,{'Written off':'مشطوب','Previous system archive':'أ�
  'Now on this device':'الموجود الحين','They will be removed.':'بينمسحون.','That is not a customers file.':'هذا مو ملف عملاء.'});
 
 Object.assign(AR_DICT,{'jobs':'بطاقات','reminders':'تذكيرات'});
+Object.assign(AR_DICT,{'Pictures':'الصور','Customer signature':'توقيع العميل'});
