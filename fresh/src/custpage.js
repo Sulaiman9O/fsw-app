@@ -4,12 +4,14 @@ const CUST_TAGS=['VIP','Company','Fleet','On account','Follow up'];
 /* every WhatsApp sent from the app is kept on the customer's page */
 (function(){const ST=shareText;window.shareText=shareText=function(phone,t){try{if(t){const c=phone&&custByPhone(phone);DB.msglog=DB.msglog||[];DB.msglog.push({id:uid('m'),t:now(),cust:c?c.id:'',ph:String(phone||''),by:S.user&&S.user.name||'',x:String(t).slice(0,400)});if(DB.msglog.length>3000)DB.msglog.splice(0,DB.msglog.length-3000);save();}}catch(e){}return ST(phone,t);};})();
 function custLedger(c){const L=[];DB.jobs.filter(j=>j.cust===c.id&&isInvoiced(j)).forEach(j=>{const T=jobTotals(j);L.push({t:j.inv.t,d:`${T_('Invoice')} #${j.inv.no}${j.returned?' · '+T_('returned'):''}`,a:j.returned?0:T.total,j});
-  (j.pays||[]).filter(p=>!isCreditM(p.m)).forEach(p=>L.push({t:p.t,d:`${T_('Payment')} · ${T_(p.m)}`,a:-(+p.amt||0),j}));});
+  (j.pays||[]).filter(p=>!isCreditM(p.m)).forEach(p=>L.push({t:p.t,d:`${T_('Payment')} · ${T_(p.m)}`,a:-(+p.amt||0),j}));
+  if(!j.returned&&T.wo)L.push({t:(j.wo&&j.wo.t)||j.inv.t,d:`${T_('Written off')} · #${j.inv.no}`,a:-T.wo,j});});
   L.sort((a,b)=>a.t-b.t);let bal=0;L.forEach(r=>{bal=Math.round((bal+r.a)*1000)/1000;r.bal=bal;});return L;}
 function statementText(c){const L=custLedger(c);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return `${DB.ws.name}\nكشف حساب: ${c.name||''}\n\n`+L.map(r=>`${fmtD(r.t)} · ${r.d}: ${r.a<0?'−':''}${f3(Math.abs(r.a))}`).join('\n')+`\n\nالرصيد المستحق: ${f3(L.length?L[L.length-1].bal:0)} ${cur}`;}
 /* one car's invoices: what was done, when, at what km, how much */
-function carJobs(c,vid){return DB.jobs.filter(j=>j.cust===c.id&&j.veh===vid&&isInvoiced(j)&&!j.returned).sort((a,b)=>a.inv.t-b.inv.t);}
+/* the car's whole history, also invoices billed to an earlier owner or another name */
+function carJobs(c,vid){return DB.jobs.filter(j=>j.veh===vid&&isInvoiced(j)&&!j.returned).sort((a,b)=>a.inv.t-b.inv.t);}
 function jobBrief(j){return (j.items||[]).filter(i=>!i.inPkg).map(i=>i.d).filter(Boolean).slice(0,4).join('، ')+((j.items||[]).filter(i=>!i.inPkg).length>4?'…':'');}
 function carHistText(c,v){const L=carJobs(c,v.id);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return `${DB.ws.name}\nسجل السيارة: ${carName(v)}${v.plate?' · '+v.plate:''}\n${c.name||''}\n\n`+L.map(j=>`${fmtD(j.inv.t)} · فاتورة ${j.inv.no}${j.km?' · '+kmf(j.km)+' كم':''}\n${jobBrief(j)}\nالمبلغ: ${f3(jobTotals(j).total)} ${cur}`).join('\n\n')+`\n\nعدد الفواتير: ${L.length} · المجموع: ${f3(L.reduce((a,j)=>a+jobTotals(j).total,0))} ${cur}`;}
@@ -41,8 +43,8 @@ SCREENS.custd=m=>{const c=byId('customers',S.p.id);if(!c){go('cust');return;}con
     let sum='';if(fv){const v=byId('vehicles',fv),L=carJobs(c,fv);sum=`<div class="card vsum"><div class="h"><b><bdi>${esc(carName(v))}</bdi></b><span class="sub">${L.length} ${T_('invoices')} · <bdi>${f3(L.reduce((a,j)=>a+jobTotals(j).total,0))} ${esc(DB.ws.currency)}</bdi></span></div>${L.length?`<div class="two">${c.phone?`<button class="btn wa" id="vhwa">WhatsApp</button>`:'<span></span>'}<button class="btn ghost" id="vhpr">🖨 ${T_('Print')}</button></div>`:''}</div>`;}
     body=chips+sum+`<div class="list">${VV.map(carRow).join('')||empty('🧾','No visits yet.')}</div>`;}
   if(tab==='est')body=`<div class="list">${ests.map(carRow).join('')||empty('📝','No estimates.')}</div>`;
-  if(tab==='stmt'){const L=custLedger(c);body=debtBox(c)+L.length?`<div class="jb-list">${L.slice().reverse().map(r=>`<div class="jb-r"><div>${esc(r.d)}<small><bdi>${fmtD(r.t)}</bdi></small></div><b class="${r.a<0?'pos':''}"><bdi>${r.a<0?'−':''}${f3(Math.abs(r.a))}</bdi><small style="display:block;font-weight:500">${T_('balance')} <bdi>${f3(r.bal)}</bdi></small></b></div>`).join('')}</div>
-     <div class="two">${c.phone?`<button class="btn wa" id="stwa">WhatsApp</button>`:'<span></span>'}<button class="btn ghost" id="stpr">🖨 ${T_('Print')}</button></div>`:empty('📄','No invoices yet.');}
+  if(tab==='stmt'){const L=custLedger(c);body=debtBox(c)+(L.length?`<div class="jb-list">${L.slice().reverse().map(r=>`<div class="jb-r"><div>${esc(r.d)}<small><bdi>${fmtD(r.t)}</bdi></small></div><b class="${r.a<0?'pos':''}"><bdi>${r.a<0?'−':''}${f3(Math.abs(r.a))}</bdi><small style="display:block;font-weight:500">${T_('balance')} <bdi>${f3(r.bal)}</bdi></small></b></div>`).join('')}</div>
+     <div class="two">${c.phone?`<button class="btn wa" id="stwa">WhatsApp</button>`:'<span></span>'}<button class="btn ghost" id="stpr">🖨 ${T_('Print')}</button></div>`:empty('📄','No invoices yet.'));}
   if(tab==='notes')body=`<textarea class="field" id="cnx" rows="2" placeholder="${T_('Write a note… (what the customer asked, a promise, a problem)')}"></textarea><button class="btn" id="cnok">${T_('Add note')}</button>
      ${c.notes?`<div class="card"><span class="sub">${esc(c.notes)}</span></div>`:''}<div class="list">${notes.map(n=>`<div class="row"><div><b style="font-weight:500;white-space:pre-wrap">${esc(n.x)}</b><span><bdi>${fmtD(n.t)} ${hm(n.t)}</bdi> · ${esc(n.by||'')}</span></div></div>`).join('')}</div>`;
   if(tab==='msgs')body=msgs.length?`<div class="list">${msgs.map(x=>`<div class="row"><div><b style="font-weight:500;white-space:pre-wrap">${esc(x.x.length>160?x.x.slice(0,160)+'…':x.x)}</b><span><bdi>${fmtD(x.t)} ${hm(x.t)}</bdi> · ${esc(x.by||'')}</span></div></div>`).join('')}</div>`:empty('💬','Messages sent from the app on WhatsApp show here.');

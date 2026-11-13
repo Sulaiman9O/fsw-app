@@ -1,7 +1,7 @@
 /* ---------- core: storage, helpers ---------- */
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
-const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const f3=n=>(Math.round((+n||0)*1000)/1000).toFixed(3);
 const NF0=new Intl.NumberFormat('en-US');const kmf=n=>NF0.format(+n||0);
 const uid=p=>(p||'x')+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -25,6 +25,7 @@ const KEY='ws_db_v1';
 function blankDB(){return {v:1,brandImg:[],pkgs:[],photos:[],bugs:[],msglog:[],ws:null,users:[],services:[],pcats:DEFAULT_PART_CATS.slice(),ecats:DEFAULT_EXP_CATS.slice(),parts:[],vendors:[],pos:[],customers:[],vehicles:[],jobs:[],reminders:[],expenses:[],closes:[],counts:[],steps:{},canned:[],insp:JSON.parse(JSON.stringify(DEFAULT_INSP)),backups:0,openingCash:0,arc:[]};}
 let DB=(()=>{try{const s=localStorage.getItem(KEY);if(s)return Object.assign(blankDB(),JSON.parse(s));}catch(e){}return blankDB();})();
 const COLORS=['#ee3a39','#2a78d6','#1f8f4e','#f27b21','#8b5cf6','#0ea5a4','#c2410c'];
+const safeCol=c=>/^#[0-9a-f]{3,8}$/i.test(String(c||''))?c:'#888';
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const ROLE={owner:'Owner',manager:'Manager',worker:'Employee'};
 const PERMS=[
@@ -56,9 +57,9 @@ const custOf=j=>byId('customers',j.cust)||{};
 const vehOf=j=>byId('vehicles',j.veh)||{};
 const carName=v=>v?[v.make,v.model,v.year].filter(Boolean).join(' '):'';
 /* job maths */
-function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j.items||[]).forEach(it=>{if(it.pend)return;const q=+it.q||0,a=q*(+it.p||0);if(it.k==='part'){parts+=a;cost+=q*(+it.cost||0);}else labour+=a;
+function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j.items||[]).forEach(it=>{if(it.pend)return;const q=+it.q||0,a=q*(+it.p||0);if(it.k==='part'){parts+=a;if(!it.custPart)cost+=q*(+it.cost||0);}else labour+=a;
     const o=it.out;if(o&&o.who){let x=0;if(o.mode==='pass'){passOut+=a;x=a;}else if(o.mode==='share'){x=Math.max(0,a-q*(+o.amt||0));cost+=x;}else{x=q*(+o.amt||0);cost+=x;}owe+=x;ow[o.who]=(ow[o.who]||0)+x;}});
-  const sub=parts+labour;let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=Math.min(disc,sub);const total=Math.max(0,sub-disc);const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
+  const R3_=x=>Math.round(x*1000)/1000;parts=R3_(parts);labour=R3_(labour);cost=R3_(cost);const sub=R3_(parts+labour);let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=R3_(Math.min(disc,sub));const total=R3_(Math.max(0,sub-disc));const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
   const R3=x=>Math.round(x*1000)/1000;let due=R3(Math.max(0,R3(total)-R3(paid)));if(due<0.001)due=0;   /* money is kept to the baisa: no 0.0005 debts, the same total on every screen */
   /* written off (from the previous system): the rest is not owed any more, and it is not money in */
   const wo=j.wo?Math.min(due,R3(+j.wo.amt||0)):0;if(wo)due=R3(due-wo);

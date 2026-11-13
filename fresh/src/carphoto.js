@@ -3,7 +3,12 @@
 /* a car picture is kept small (about 40 KB): 640 px, JPEG 0.65 */
 function shrinkCar(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.65));};im.onerror=()=>{toast(T_('Could not read this picture'));cb(null);};im.src=r.result;};r.readAsDataURL(file);}
 /* the car's main picture as a small square for lists (job rows, search results); empty when the car has no picture */
-function vehThumb(v,c){const id=v&&(v.ph||[])[0];const p=id&&photoOf(id);return p?`<span class="cth${c?' '+c:''}"><img src="${p.img}" alt="" loading="lazy"></span>`:'';}
+/* lists show hundreds of cars: put a short blob: link in the page, not the 40 KB picture text (fast lists, less memory) */
+const THUMB=new Map();
+function thumbUrl(p){let u=THUMB.get(p.id);if(u&&u.src===p.img)return u.url;
+  try{const i=p.img.indexOf(',');const bin=atob(p.img.slice(i+1));const a=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)a[k]=bin.charCodeAt(k);
+    if(u)URL.revokeObjectURL(u.url);u={src:p.img,url:URL.createObjectURL(new Blob([a],{type:(p.img.slice(5,i).split(';')[0])||'image/jpeg'}))};THUMB.set(p.id,u);return u.url;}catch(e){return '';}}
+function vehThumb(v,c){const id=v&&(v.ph||[])[0];const p=id&&photoOf(id);const u=p&&thumbUrl(p);return u?`<span class="cth${c?' '+c:''}"><img src="${esc(u)}" alt="" loading="lazy"></span>`:'';}
 const vehPhotos=v=>(v&&v.ph||[]).map(id=>photoOf(id)).filter(Boolean);
 function vehAddPhotos(v,done){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;
   f.onchange=()=>{const L=[...(f.files||[])];if(!L.length)return;let n=0;L.forEach(x=>shrinkCar(x,u=>{if(u){DB.photos=DB.photos||[];const id=uid('ph');DB.photos.push({id,veh:v.id,img:u,t:now()});(v.ph=v.ph||[]).push(id);}

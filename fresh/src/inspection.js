@@ -36,8 +36,8 @@ const photoOf=id=>(DB.photos||[]).find(x=>x.id===id);
 SCREENS.inspj=m=>{const j=byId('jobs',S.p.id);if(!j){go('work');return;}if(!j.insp){go('job',{id:j.id});return;}const I=j.insp;I.d=I.d||{};I.meta=I.meta||I.items.map(()=>({m:'',svc:''}));
   const lock=isInvoiced(j);const prev=inspPrev(j);const secs=inspSecs(I);const done=Object.keys(I.r).length,red=Object.values(I.r).filter(x=>x==='bad').length,yel=Object.values(I.r).filter(x=>x==='warn').length;
   const open=S.p.open;const v=vehOf(j);
-  const row=i=>{const s=I.r[i]||'',d=I.d[i]||{},mt=I.meta[i]||{},M=MEAS[mt.m],sv=mt.svc&&byId('services',mt.svc),pv=prev[I.items[i].toLowerCase()];const exp=(s==='warn'||s==='bad'||open===i);
-    return `<div class="ii ${s}" id="ii${i}"><div class="ih"><button class="in" data-io="${i}"><b>${esc(I.items[i])}</b>${pv&&pv.s!=='ok'?`<small class="pv ${pv.s}">${T_('Last visit')}: ${pv.s==='bad'?T_('red'):T_('yellow')}${pv.v!=null&&pv.v!==''?' · '+pv.v+(M?' '+M.u:''):''} · ${fmtD(pv.t)}</small>`:''}</button>
+  const RS={ok:1,warn:1,bad:1};const row=i=>{const s=RS[I.r[i]]?I.r[i]:'',d=I.d[i]||{},mt=I.meta[i]||{},M=MEAS[mt.m],sv=mt.svc&&byId('services',mt.svc),pv=prev[I.items[i].toLowerCase()];const exp=(s==='warn'||s==='bad'||open===i);
+    return `<div class="ii ${s}" id="ii${i}"><div class="ih"><button class="in" data-io="${i}"><b>${esc(I.items[i])}</b>${pv&&pv.s!=='ok'?`<small class="pv ${RS[pv.s]?pv.s:''}">${T_('Last visit')}: ${pv.s==='bad'?T_('red'):T_('yellow')}${pv.v!=null&&pv.v!==''?' · '+pv.v+(M?' '+M.u:''):''} · ${fmtD(pv.t)}</small>`:''}</button>
      ${M?`<input class="iv" data-iv="${i}" inputmode="decimal" placeholder="${M.u}" value="${d.v??''}" ${lock?'disabled':''}>`:''}
      <div class="isb">${['ok','warn','bad'].map(x=>`<button data-is="${i}:${x}" class="s-${x}${s===x?' on':''}" ${lock?'disabled':''} aria-label="${x}">${ST_IC[x]}</button>`).join('')}</div></div>
      ${exp?`<div class="ix"><input class="field" data-in="${i}" placeholder="${T_('Note (what you saw)')}" value="${esc(d.note||'')}" ${lock?'disabled':''}>

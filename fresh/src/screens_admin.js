@@ -1,8 +1,9 @@
 /* ---------- MONEY ---------- */
 const RANGE_C={};/* the same answer within a second: reports used to ask it once per invoice */
 function rangeOf(k){const n=Date.now(),c=RANGE_C[k];if(c&&n-c[0]<1000)return c[1];const v=rangeOf0(k);RANGE_C[k]=[n,v];return v;}
-function rangeOf0(k){const d=new Date();const s=new Date(d.toLocaleString('en-US',{timeZone:'Asia/Muscat'}));s.setHours(0,0,0,0);
-  if(k==='week')s.setDate(s.getDate()-6);if(k==='month')s.setDate(1);if(k==='year')s.setMonth(0,1);return s.getTime()-(new Date().getTimezoneOffset()+240)*60e3*0;}
+/* midnight in Oman (UTC+4, no daylight saving), whatever the device's own time zone */
+function rangeOf0(k){let [y,m,d]=today().split('-').map(Number);m--;
+  if(k==='week')d-=6;if(k==='month')d=1;if(k==='year'){m=0;d=1;}return Date.UTC(y,m,d)-4*3600e3;}
 function sumRange(from){const inv=DB.jobs.filter(j=>isInvoiced(j)&&j.inv.t>=from);const T=inv.map(jobTotals);
   const pays=DB.jobs.flatMap(j=>(j.pays||[]).filter(p=>p.t>=from&&!isCreditM(p.m)));const exp=DB.expenses.filter(e=>e.t>=from).reduce((a,e)=>a+e.amt,0);
   return {n:inv.length,sales:T.reduce((a,t)=>a+t.sales,0),passOut:T.reduce((a,t)=>a+t.passOut,0),profit:T.reduce((a,t)=>a+t.profit,0),cost:T.reduce((a,t)=>a+t.cost,0),labour:T.reduce((a,t)=>a+t.labour,0),parts:T.reduce((a,t)=>a+t.parts,0),paid:pays.reduce((a,p)=>a+p.amt,0),byM:pays.reduce((o,p)=>(o[p.m]=(o[p.m]||0)+p.amt,o),{}),exp,inv};}
@@ -131,7 +132,7 @@ SCREENS.users=m=>{if(!can.settings()){go('more');return;}
   const nCust=u=>u.role!=='owner'&&u.perm?Object.keys(u.perm).length:0;
   m.innerHTML=head('Users',`<button class="lnk" id="uadd">＋ Add</button>`)+`
   <div class="card note"><b>Who can do what</b><span class="sub"><b>Owner</b>: everything.<br><b>Manager</b> and <b>Employee</b> start with a set of permissions. Tap a person to turn each one on or off.</span></div>
-  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${u.color}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}${nCust(u)?' · custom permissions':''}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
+  <div class="list">${DB.users.map(u=>`<button class="row" data-ue="${u.id}"><div style="display:flex;gap:12px;align-items:center"><span class="av" style="background:${safeCol(u.color)}">${initials(u.name)}</span><div><b>${esc(u.name)}</b><span>${ROLE[u.role]}${nCust(u)?' · custom permissions':''}</span></div></div><span class="v">Edit</span></button>`).join('')}</div>`;
   const edit=u=>{const isNew=!u;u=u||{role:'worker'};let role=u.role;let pm=Object.assign({},u.perm||{});
     openSheet(`<h3>${isNew?'New user':'Edit '+esc(u.name)}</h3><input class="field" id="un" placeholder="Name" value="${esc(u.name||'')}">
      <div class="chips" id="uro"></div>

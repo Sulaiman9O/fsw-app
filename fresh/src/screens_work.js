@@ -28,12 +28,12 @@ SCREENS.home=m=>{
 SCREENS.search=m=>{
   m.innerHTML=head('Search')+`<input class="field" id="sq" placeholder="Plate, phone, name, VIN or job #" value="${esc(S.q)}" autocomplete="off"><div id="sres"></div>`;
   const inp=$('#sq');const run=()=>{const q=inp.value.trim().toLowerCase();S.q=inp.value;const box=$('#sres');if(!q){box.innerHTML='';return;}
-    const vs=DB.vehicles.filter(v=>[v.plate,v.vin,carName(v)].some(x=>(x||'').toLowerCase().includes(q)));
-    const cs=DB.customers.filter(c=>[c.name,c.phone].some(x=>(x||'').toLowerCase().includes(q)));
+    const vs=DB.vehicles.filter(v=>[v.plate,v.vin,carName(v)].some(x=>(x||'').toLowerCase().includes(q))).slice(0,60);
+    const cs=DB.customers.filter(c=>[c.name,c.phone].some(x=>(x||'').toLowerCase().includes(q))).slice(0,60);
     const js=DB.jobs.filter(j=>String(j.no)===q.replace('#','')||(j.inv&&String(j.inv.no)===q.replace('#','')));
     box.innerHTML=(js.length?sec('Jobs')+`<div class="list">${js.map(carRow).join('')}</div>`:'')+(cs.length?sec('Customers')+`<div class="list">${cs.map(custRow).join('')}</div>`:'')+(vs.length?sec('Cars')+`<div class="list">${vs.map(v=>{const c=byId('customers',v.cust)||{};return `<button class="row" data-go="custd:${v.cust}">${typeof vehThumb==='function'?vehThumb(v):''}<div><b>${esc(carName(v))} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'')}${v.km?' · '+kmf(v.km)+' km':''}</span></div><span class="v">›</span></button>`;}).join('')}</div>`:'')||empty('🔍','Nothing found.');
     box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,{id});});};
-  inp.oninput=run;run();setTimeout(()=>inp.focus(),50);
+  let tm=0;inp.oninput=()=>{clearTimeout(tm);tm=setTimeout(run,140);};run();setTimeout(()=>inp.focus(),50);
 };
 /* ---------- WORK ---------- */
 SCREENS.work=m=>{
@@ -42,8 +42,8 @@ SCREENS.work=m=>{
   m.innerHTML=head('Work')+`<div class="pipe">${[['new','New'],['work','Working'],['ready','Ready'],['today','Done today']].map(([k,l])=>`<button data-f="${k}" class="${f===k?'on':''}"><b>${cnt(k)}</b><span>${l}</span></button>`).join('')}</div>
   <div class="chips">${[['open','Open'],['estimate','Estimates'],['done','Done'],['all','All']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
   <button class="btn okb" data-go="newjob">＋ New car in</button>
-  ${list.length?`<div class="list">${list.map(carRow).join('')}</div>`:empty('🔧','Nothing here.')}`;
-  m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.p.f=b.dataset.f;render();});
+  ${list.length?`<div class="list">${list.slice(0,S.p.n||80).map(carRow).join('')}</div>${list.length>(S.p.n||80)?`<button class="btn ghost" id="wmore">${T_('Show more')} (${list.length-(S.p.n||80)})</button>`:''}`:empty('🔧','Nothing here.')}`;
+  m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.p.f=b.dataset.f;S.p.n=0;render();});const wm=$('#wmore');if(wm)wm.onclick=()=>{S.p.n=(S.p.n||80)+200;render();};
 };
 /* ---------- NEW JOB (customer → car → job) ---------- */
 /* same phone = same person: 968 / 00968 / spaces don't matter */

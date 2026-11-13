@@ -87,7 +87,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
   const mvs=(DB.moves||[]).filter(x=>x.part===p.id).sort((a,b)=>b.t-a.t);
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(w.name||'')}">
    <div class="in2"><div class="srow"><input class="field" id="pnum" placeholder="Part number / barcode" value="${esc(w.num||'')}">${sx('scan')?'<button class="scanb" id="pnsc">📷</button>':''}</div><select class="field" id="pcat">${DB.pcats.map(c=>`<option ${w.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
-   <div class="chips">${DB.units.map(k=>[k,unitName(k)]).map(([k,l])=>`<button data-u="${k}" aria-pressed="${w.unit===k}">${l}</button>`).join('')}</div>
+   <div class="chips">${DB.units.map(k=>[k,unitName(k)]).map(([k,l])=>`<button data-u="${esc(k)}" aria-pressed="${w.unit===k}">${esc(l)}</button>`).join('')}</div>
    <div id="pgr"></div>
    <div class="in2"><label class="field-l">Selling price<input class="field" id="ppr" inputmode="decimal" value="${w.price?f3(w.price):''}"></label>${can.cost()?`<label class="field-l">Cost (owner only)<input class="field" id="pco" inputmode="decimal" value="${w.cost?f3(w.cost):''}"></label>`:'<span></span>'}</div>
    ${sx('markup')&&can.cost()?'<div id="psug"></div>':''}

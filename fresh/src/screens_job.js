@@ -164,7 +164,7 @@ function makeInvoice(j){
   confirmSheet(`Make invoice for ${f3(T.total)} ${DB.ws.currency}?<br><small class="hint">Parts from stock will be taken out of the stock.</small>`,'Make invoice',()=>{issueInvoice(j);save();go('inv',{id:j.id});});
 }
 function issueInvoice(j){const T=jobTotals(j);
-    delete j.returned;const re=j.invEdit;j.inv={no:re?re.no:DB.ws.nextInv++,t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};if(re){j.inv.edited=(+re.edited||0)+1;delete j.invEdit;}audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&!it.custPart){if(!it.ref){const p0=partOfItem(it);if(p0)it.ref=p0.id;}const p=it.ref&&byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
+    delete j.returned;const re=j.invEdit;j.inv={no:re?re.no:DB.ws.nextInv++,t:re&&re.t?re.t:now(),by:S.user.name,dev:(typeof syncDev==='function'?syncDev():'')};if(re){j.inv.edited=(+re.edited||0)+1;delete j.invEdit;}audit('invoice','Invoice #'+j.inv.no+' · '+f3(T.total)+' · '+carName(vehOf(j)));(j.items||[]).forEach(it=>{if(it.k==='part'&&!it.custPart&&!it.outside){if(!it.ref){const p0=partOfItem(it);if(p0)it.ref=p0.id;}const p=it.ref&&byId('parts',it.ref);if(p)mv(p,-(+it.q||0),'Invoice #'+j.inv.no,j.id);}});
     if(j.stage==='new'||j.stage==='work')j.stage='ready';if(j.stage==='done'){try{makeReminders(j);}catch(e){}}logJ(j,'Invoice #'+j.inv.no);}
 /* paid in full, or left as a debt: the car has left, so the job is done and its reminders are made (no extra "Delivered" tap) */
 function closeJob(j){if(j.stage==='done')return;j.stage='done';logJ(j,STAGE.done[0]);try{makeReminders(j);}catch(e){}}

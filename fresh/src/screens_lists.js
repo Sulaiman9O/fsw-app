@@ -47,7 +47,7 @@ function listOf(id){if(LISTS[id])return LISTS[id];const L=DB.mlists.find(x=>x.id
     del:id=>{L.items=L.items.filter(x=>x.id!==id);},move:(i,d)=>{const a=L.items,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];},note:1};}
 const MENU=[['setup','✅','Setup · 100 steps'],['svc','🛠','Services'],['stock','🛢','Stock'],['vendors','🚚','Suppliers & orders'],['canned','📦','Canned jobs'],['insp','📋','Inspection checklists'],['count','🔢','Daily count'],['money','💰','Money'],['exp','🧾','Expenses'],['close','🔒','Daily close'],['reports','📊','Reports']];
 SCREENS.lists=m=>{if(!can.settings()){go('more');return;}ensureLists();
-  const it=(r,ic,t,s)=>`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t}</b><span>${s}</span></div><span class="v">›</span></button>`;
+  const it=(r,ic,t,s)=>`<button class="mitem" data-go="${r}"><span class="ic">${ic}</span><div><b>${t}</b><span>${esc(s)}</span></div><span class="v">›</span></button>`;
   m.innerHTML=head('Lists',`<button class="lnk" id="lnew">＋ New list</button>`)+`<p class="hint">Add, rename, delete and reorder anything in these lists.</p>
   ${sec('Services')}<div class="list">${it('list:scat','🗂','Service groups',DB.scats.length+' groups')}${it('svc','🛠','Services',DB.services.length+' services · prices')}${it('canned','📦','Canned jobs',DB.canned.length+' sets')}${it('insp','📋','Inspection checklists',DB.insp.length+' checklists')}</div>
   ${sec('Stock & cars')}<div class="list">${it('list:size','🚙','Car sizes',DB.sizes.join(', '))}${it('list:pcat','🏷','Part categories',DB.pcats.length+' categories')}${it('list:unit','📏','Part units',DB.units.map(unitName).join(', '))}${it('list:make','🚗','Car makes',DB.makes.length+' makes')}</div>

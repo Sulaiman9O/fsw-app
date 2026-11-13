@@ -46,8 +46,8 @@ function render(){
   const T={quote:'Quick price',checks:'Invoice checks',debts:'Debts',home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages',audit:'Activity log',news:'What\'s new',slow:'Slow parts',stockval:'Stock value',stocktools:'Stock tools'};
   const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
-   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${S.user.color}">${initials(S.user.name)}</span></div></header>
-   <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${S.user.color}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
+   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${safeCol(S.user.color)}">${initials(S.user.name)}</span></div></header>
+   <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${safeCol(S.user.color)}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
    <main id="main"></main>
    <nav class="bottom"><div class="in">${nb}</div></nav></div>`;
   $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
@@ -75,7 +75,7 @@ const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span
 function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
   el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)closeSheet();};
   el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;S.sheetBack=null;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
-function closeSheet(){const el=$('#sheet');if(el){try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
+function closeSheet(){const el=$('#sheet');if(el){try{el.querySelectorAll('video').forEach(v=>{const s=v.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop());});}catch(e){}try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 
 /* ---------- onboarding (first run) ---------- */
@@ -119,7 +119,7 @@ function renderLogin(){
   const us=DB.users;if(us.length===1&&!pick)pick=us[0].id;
   $('#root').innerHTML=`<div class="login"><div class="in"><div class="brandline" data-notr>${window.SF_LOGO||"ShopFlo"}</div>${DB.ws.logo?`<img class="logo" src="${DB.ws.logo}" alt="">`:`<div class="ob-hero"><span class="wsmark big">${esc(initials(DB.ws.name))}</span><h2 style="font:400 1.5rem var(--f-brand)">${esc(DB.ws.name)}</h2></div>`}
    <h2>Who is working today?</h2>
-   <div class="people">${us.map(u=>`<button class="person${pick===u.id?' sel':''}" data-u="${u.id}"><span class="av" style="${pick===u.id?'':'background:'+u.color}">${initials(u.name)}</span>${esc(u.name)}<small>${ROLE[u.role]}</small></button>`).join('')}</div>
+   <div class="people">${us.map(u=>`<button class="person${pick===u.id?' sel':''}" data-u="${u.id}"><span class="av" style="${pick===u.id?'':'background:'+safeCol(u.color)}">${initials(u.name)}</span>${esc(u.name)}<small>${ROLE[u.role]}</small></button>`).join('')}</div>
    ${pick?dots(pinBuf.length)+pad():'<p>Tap your name</p>'}<div class="err" id="err"></div></div></div>`;
   $$('.person').forEach(b=>b.onclick=()=>{pick=b.dataset.u;pinBuf='';renderLogin();});
   bindPad(async k=>{if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;
