@@ -23,7 +23,9 @@ function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(
     b.kv.forEach((v,k)=>{if(!a||a.kv.get(k)!==v)ops.push(['kv',k,v]);});if(a)a.kv.forEach((v,k)=>{if(!b.kv.has(k))ops.push(['kv',k,null]);});
     b.rec.forEach((v,k)=>{if(!a||a.rec.get(k)!==v)ops.push(['rec',k,v]);});if(a)a.rec.forEach((v,k)=>{if(!b.rec.has(k))ops.push(['rec',k,null]);});
     if(!ops.length)return;const ts=firebase.firestore.FieldValue.serverTimestamp(),d=syncDev();
-    try{for(let i=0;i<ops.length;i+=400){const bt=FBS.batch();ops.slice(i,i+400).forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();}
+    /* one send holds at most 400 changes and about 4 MB (Firebase refuses a send over 10 MB: hundreds of car pictures at once) */
+    const groups=[];let g=[],sz=0;ops.forEach(o=>{const n=(o[2]?o[2].length:0)+o[1].length+64;if(g.length&&(g.length>=400||sz+n>4e6)){groups.push(g);g=[];sz=0;}g.push(o);sz+=n;});if(g.length)groups.push(g);
+    try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();}
       SYNC.last=b;syncSaveLast();SYNC.sent+=ops.length;SYNC.lastAt=Date.now();SYNC.status='ok';}
     catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}}).catch(()=>{});return SYNC.pushQ;}
 /* ---- online → local ---- */

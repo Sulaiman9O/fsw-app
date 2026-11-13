@@ -192,3 +192,13 @@ Object.assign(AR_DICT,{'Ask the manager to change services':'اطلب من ال�
 Object.assign(AR_DICT,{'Discount':'خصم','Change discount':'تعديل الخصم','Amount':'المبلغ','or %':'أو %'});
 
 Object.assign(AR_DICT,{'Invoices for this car':'فواتير هذي السيارة','All cars':'كل السيارات','invoices':'فواتير'});
+
+Object.assign(AR_DICT,{'Written off':'مشطوب','Previous system archive':'أرشيف النظام السابق','records':'سجل','Everything from the previous system that has no page of its own here. Read only.':'كل شي من النظام السابق ما له صفحة خاصة هنا. للقراءة بس.',
+ 'Purchases':'المشتريات','Old parts list':'قائمة القطع القديمة','Old services list':'قائمة الخدمات القديمة','Old packages':'الباقات القديمة','Staff':'الموظفين','Reviews':'التقييمات','Account credit':'رصيد العملاء',
+ 'Payments without invoice':'دفعات بدون فاتورة','Appointments':'المواعيد','Online bookings':'حجوزات أونلاين','Quick notes':'ملاحظات سريعة','Part groups':'مجموعات القطع','Time tracking':'تسجيل الوقت','Other activity':'نشاطات أخرى',
+ 'Nothing in the archive.':'الأرشيف فاضي.','Nothing found':'ما لقيت شي','more · search to find them':'غيرهم · ابحث عشان تلقاهم','Reading the file…':'أقرأ الملف…',
+ 'Import customers and history':'استيراد العملاء والسجل','Choose the customers file. It replaces all customers, cars, job cards, invoices and reminders on this device. Services, parts, users and settings stay.':'اختر ملف العملاء. يستبدل كل العملاء والسيارات وبطاقات العمل والفواتير والتذكيرات. الخدمات والقطع والمستخدمين والإعدادات تبقى.',
+ 'Import':'استيراد','estimates and inspections':'عروض أسعار وفحوصات','car pictures':'صورة سيارة','messages':'رسالة','suppliers':'مورد','checklists':'قائمة فحص','archive records':'سجل في الأرشيف','pictures':'صورة',
+ 'Now on this device':'الموجود الحين','They will be removed.':'بينمسحون.','That is not a customers file.':'هذا مو ملف عملاء.'});
+
+Object.assign(AR_DICT,{'jobs':'بطاقات','reminders':'تذكيرات'});

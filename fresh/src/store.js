@@ -2,14 +2,15 @@
    Data stays in the same DB object in memory. save() only marks it changed; a short moment later the
    changed records are written. In SQLite each customer, car, job, part… is its own row, so a save
    writes only what changed, and there is no 5 MB limit. */
-const REC_KEYS=['customers','vehicles','jobs','parts','vendors','pos','reminders','expenses','closes','counts','users','services','canned','insp','moves','audit','outPaid','mlists','scats','brandImg','pkgs','photos','bugs','msglog'];
+const REC_KEYS=['customers','vehicles','jobs','parts','vendors','pos','reminders','expenses','closes','counts','users','services','canned','insp','moves','audit','outPaid','mlists','scats','brandImg','pkgs','photos','bugs','msglog','arc'];
 const STORE={kind:'local',last:null,timer:0,q:Promise.resolve(),err:'',bytes:0};
 const SQLP=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.CapacitorSQLite;
 const SQLDB='workshop';
 const sq=(fn,o)=>SQLP()[fn](Object.assign({database:SQLDB,readonly:false},o||{}));
+const SNAP_FIX=new Set(['photos','arc']),SNAPC=new WeakMap();
 function snapshot(){const kv=new Map(),rec=new Map();
   Object.keys(DB).forEach(k=>{const v=DB[k];
-    if(REC_KEYS.includes(k)&&Array.isArray(v)){const seen=new Set();const ids=v.map((x,i)=>{if(!x||typeof x!=='object')x={_v:x};if(!x.id&&!x._k)x._k=uid('k');let id=String(x.id||x._k);if(seen.has(id))id+='#'+i;seen.add(id);rec.set(k+'\u0001'+id,JSON.stringify(x));return id;});
+    if(REC_KEYS.includes(k)&&Array.isArray(v)){const seen=new Set();const ids=v.map((x,i)=>{if(!x||typeof x!=='object')x={_v:x};if(!x.id&&!x._k)x._k=uid('k');let id=String(x.id||x._k);if(seen.has(id))id+='#'+i;seen.add(id);let js;if(SNAP_FIX.has(k)){js=SNAPC.get(x);if(js===undefined){js=JSON.stringify(x);SNAPC.set(x,js);}}else js=JSON.stringify(x);rec.set(k+'\u0001'+id,js);return id;});
       kv.set('#order:'+k,JSON.stringify(ids));}
     else kv.set(k,JSON.stringify(v===undefined?null:v));});
   return {kv,rec};}

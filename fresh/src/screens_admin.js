@@ -166,6 +166,7 @@ SCREENS.more=m=>{const [d,t]=stepsProgress();const it=(r,ic,t2,s,show=true)=>sho
   ${it('vendors','🚚','Suppliers & orders',DB.vendors.length+' suppliers')}
   ${it('canned','📦','Canned jobs',DB.canned.length+' sets')}
   ${it('insp','📋','Inspection checklists',DB.insp.length+' checklists')}
+  ${it('arc','🗄',T_('Previous system archive'),(DB.arc||[]).length+' '+T_('records'),can.settings()&&(DB.arc||[]).length>0)}
   ${it('count','🔢','Daily count','5 items a day')}
   ${it('money','💰','Money','Due, today, collect',can.money())}
   ${it('exp','🧾','Expenses','Rent, salaries, supplies',can.money())}
