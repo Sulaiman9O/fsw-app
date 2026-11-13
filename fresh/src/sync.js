@@ -81,7 +81,7 @@ async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await 
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.last=syncLoadLast();await syncCatchUp();await syncPushNow();}
+    else{SYNC.reload=0;SYNC.last=syncLoadLast();if(SYNC.reload){try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}await syncCatchUp();await syncPushNow();}
     localStorage.setItem('ws_sync_seeded','1');
     syncListen();SYNC.status='ok';}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
   try{if(S.r==='settings')render();}catch(e){}}
@@ -109,7 +109,10 @@ async function syncPull(){const d=blankDB();const kv=await wsRef().collection('k
 const h32=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(36);};
 function syncSaveLast(){try{if(!SYNC.last)return;const o={kv:{},rec:{}};SYNC.last.kv.forEach((v,k)=>o.kv[k]=h32(v));SYNC.last.rec.forEach((v,k)=>o.rec[k]=h32(v));localStorage.setItem('ws_sync_last',JSON.stringify(o));}catch(e){}}
 function syncLoadLast(){try{const o=JSON.parse(localStorage.getItem('ws_sync_last')||'null');if(!o)return null;const cur=syncSnap(),kv=new Map(),rec=new Map();
-    Object.keys(o.kv).forEach(k=>{const v=cur.kv.get(k);kv.set(k,v!=null&&h32(v)===o.kv[k]?v:'\u0000old');});Object.keys(o.rec).forEach(k=>{const v=cur.rec.get(k);rec.set(k,v!=null&&h32(v)===o.rec[k]?v:'\u0000old');});return {kv,rec};}catch(e){return null;}}
+    Object.keys(o.kv).forEach(k=>{const v=cur.kv.get(k);kv.set(k,v!=null&&h32(v)===o.kv[k]?v:'\u0000old');});let miss=0;Object.keys(o.rec).forEach(k=>{const v=cur.rec.get(k);if(v==null){miss++;return;}rec.set(k,v!=null&&h32(v)===o.rec[k]?v:'\u0000old');});
+    /* a record the last send knew but this device does not have (the app closed before it finished saving what came in):
+       never send that as "deleted" - take everything again from online instead */
+    if(miss){SYNC.reload=miss;}return {kv,rec};}catch(e){return null;}}
 /* hook: every local save also goes online */
 const _flushNow0=flushNow;flushNow=function(){const r=_flushNow0();try{syncPush();}catch(e){}return r;};
 /* ---- settings screen part ---- */
