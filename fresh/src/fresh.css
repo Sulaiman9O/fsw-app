@@ -395,7 +395,8 @@ div.grp>.g:last-child:nth-child(odd){grid-column:span 2}
 @media(min-width:760px){.mtiles{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
 /* packages */
 .jb-r.pkh{border-color:color-mix(in srgb,var(--ok) 40%,var(--line));background:color-mix(in srgb,var(--ok) 7%,var(--panel))}
-.jb-r.pkm{margin-inline-start:16px;width:calc(100% - 16px);max-width:calc(100% - 16px);box-sizing:border-box;opacity:.92}.pkin{font-size:.7rem;color:var(--ok);font-weight:600}
+/* package lines: full width, grouped under the package with a thin green guide line instead of a gap */
+.jb-list .jb-r.it.pkm{width:100%;box-sizing:border-box;padding-left:30px;background:linear-gradient(to right,transparent 15px,color-mix(in srgb,var(--ok) 55%,transparent) 15px,color-mix(in srgb,var(--ok) 55%,transparent) 17px,transparent 17px) no-repeat,color-mix(in srgb,var(--ok) 3%,var(--panel))}.pkin{font-size:.7rem;color:var(--ok);font-weight:600}
 .pkr .v{font-weight:700}.pkadd{margin:8px 0 12px}
 .pkrep{width:100%;border-collapse:collapse;font-size:.82rem}.pkrep th,.pkrep td{padding:6px 4px;text-align:start;border-bottom:1px solid var(--line)}.pkrep th{color:var(--muted);font-weight:600}
 .jb-r.pkm>b{min-width:max-content;flex:none}.pkin{white-space:nowrap}
