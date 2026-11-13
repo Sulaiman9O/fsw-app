@@ -56,12 +56,18 @@ jobs:
           sed -i "s/versionName \"[^\"]*\"/versionName \"0.1.${{ github.run_number }}\"/" android/app/build.gradle
       - name: Build
         run: npx cap sync android && cd android && ./gradlew assembleRelease --no-daemon
-      - name: Sign
+      - name: Sign (new key 2026-11 — key and password live only in the repo secrets SHOPFLO_KS_B64 / SHOPFLO_KS_PASS)
+        env:
+          KS_PASS: ${{ secrets.SHOPFLO_KS_PASS }}
+          KS_B64: ${{ secrets.SHOPFLO_KS_B64 }}
         run: |
+          if [ -z "$KS_PASS" ] || [ -z "$KS_B64" ]; then echo "::error::Secrets SHOPFLO_KS_B64 / SHOPFLO_KS_PASS are not set — refusing to sign"; exit 1; fi
+          echo "$KS_B64" | base64 -d > $RUNNER_TEMP/shopflo.p12
           BT=$ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
           $BT/zipalign -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
-          $BT/apksigner sign --ks ../keystore/fsw.keystore --ks-key-alias fsw --ks-pass pass:fswapp2026 --key-pass pass:fswapp2026 --out shopflo-test.apk aligned.apk
-          $BT/apksigner verify shopflo-test.apk
+          $BT/apksigner sign --ks $RUNNER_TEMP/shopflo.p12 --ks-type PKCS12 --ks-key-alias shopflo --ks-pass env:KS_PASS --key-pass env:KS_PASS --out shopflo-test.apk aligned.apk
+          $BT/apksigner verify --print-certs shopflo-test.apk | grep -i "SHA-256"
+          $BT/apksigner verify --print-certs shopflo-test.apk | grep -qi "96703dcf51cbce82f5f9334ef3845009824673" 
       - name: Release (does not touch the main app's latest)
         uses: softprops/action-gh-release@v2
         with:

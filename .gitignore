@@ -16,3 +16,4 @@ fresh/tests/trem_sticker.png
 fresh/tests/tvinimg_report.json
 fresh/tests/stress_report*.json
 fresh/tests/monkey_report_*.json
+.tmpks/
