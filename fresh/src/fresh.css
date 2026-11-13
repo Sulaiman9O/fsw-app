@@ -596,3 +596,6 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .ccar .btn.vhis{width:100%;margin-top:8px}
 
 .jph{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px}.jph button{flex:none;border:0;padding:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--dim)}.jph img{height:84px;max-width:140px;object-fit:cover;border-radius:12px;background:#fff}
+
+/* one long word (URL, name) must not widen every row */
+.list{grid-template-columns:minmax(0,1fr)}.list .row>div,.list .row b,.list .row span{min-width:0;overflow-wrap:anywhere}

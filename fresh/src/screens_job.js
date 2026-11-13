@@ -5,9 +5,9 @@ SCREENS.job=m=>{
   const j=byId('jobs',S.p.id);if(!j){go('work');return;}
   const v=vehOf(j),c=custOf(j),T=jobTotals(j),[sl,sc]=STAGE[j.stage];const nx=NEXT[j.stage];
   const stages=['new','work','ready','done'];const si=stages.indexOf(j.stage);
-  m.innerHTML=head((j.stage==='estimate'?'Estimate':'Job')+' #'+j.no,`<span class="tag" style="background:${sc};color:#000">${sl}</span>`)+`
+  m.innerHTML=head((j.stage==='estimate'?'Estimate':'Job')+' <bdi dir="ltr">#'+j.no+'</bdi>',`<span class="tag" style="background:${sc};color:#000">${sl}</span>`)+`
   <div class="card"><div class="h"><b>${esc(carName(v)||'Car')} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><button class="lnk" data-go="custd:${c.id}">${esc(c.name||'')} ›</button></div>
-   <span class="sub">${v.engine?'⚙️ '+esc(v.engine)+'<br>':''}${c.phone?esc(c.phone)+' · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> km':T_('Add km')} ✎</button> · opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
+   <span class="sub">${v.engine?'⚙️ '+esc(v.engine)+'<br>':''}${c.phone?'<bdi dir="ltr">'+esc(c.phone)+'</bdi> · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> km':T_('Add km')} ✎</button> · opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
   ${j.stage!=='estimate'?`<div class="jb-steps">${stages.map((s,i)=>`<div class="${i<=si?'on':''}" style="--sc:${STAGE[s][1]}"><i></i><span>${STAGE[s][0]}</span></div>`).join('')}</div>`:''}
   ${nx?`<button class="btn okb" id="jnext">${nx[1]}</button>`:''}
   ${sec('Services & parts',`${(j.items||[]).length} items`)}
@@ -170,7 +170,7 @@ function issueInvoice(j){const T=jobTotals(j);
 function closeJob(j){if(j.stage==='done')return;j.stage='done';logJ(j,STAGE.done[0]);try{makeReminders(j);}catch(e){}}
 SCREENS.inv=m=>{
   const j=byId('jobs',S.p.id);if(!j||!j.inv){go('work');return;}const T=jobTotals(j),c=custOf(j);
-  m.innerHTML=head('Invoice #'+j.inv.no,j.returned?'<span class="tag t-bad">Returned</span>':T.due<=0.0005?'<span class="tag t-ok">Paid</span>':`<span class="tag t-warn">Due ${f3(T.due)}</span>`)+`
+  m.innerHTML=head('Invoice <bdi dir="ltr">#'+j.inv.no+'</bdi>',j.returned?'<span class="tag t-bad">Returned</span>':T.wo&&T.due<=0.0005?'<span class="tag t-warn">'+T_('Written off')+'</span>':T.due<=0.0005?'<span class="tag t-ok">Paid</span>':`<span class="tag t-warn">Due ${f3(T.due)}</span>`)+`
   <div class="inv-pv">${invoiceHtml(j)}</div>
   ${!j.returned&&T.due>0.0005&&(can.invoice()||can.money())?`${sec('Take payment',`due ${f3(T.due)}`)}<div class="chips big">${DB.ws.pay.map(p=>`<button data-pay="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
   ${(j.pays||[]).length?sec('Payments')+`<div class="jb-list">${j.pays.map(p=>`<div class="jb-r"><div>${esc(p.m)}<small>${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by)}</small></div><b>${f3(p.amt)}</b></div>`).join('')}</div>`:''}
@@ -232,7 +232,7 @@ function jobCustSheet(j){const v=vehOf(j),old=custOf(j);
 function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pays||[]).length){S.freshJ=null;return false;}
   const est=j.stage==='estimate',n=(j.items||[]).length;
   openSheet(`<h3>${T_(est?'Keep this estimate?':'Keep this job card?')} #${j.no}</h3><p class="hint">${n?n+' '+T_('items')+' · ':''}${T_('You opened it just now. If it was a mistake, delete it.')}</p>
-   <div class="two"><button class="btn" id="fjkeep">💾 ${T_('Keep')}</button><button class="btn ghost" id="fjdel" style="color:var(--bad)">🗑 ${T_('Delete')}</button></div>`,el=>{
+   <div class="two"><button class="btn" id="fjkeep">💾 ${T_('Keep it')}</button><button class="btn ghost" id="fjdel" style="color:var(--bad)">🗑 ${T_('Delete it')}</button></div>`,el=>{
     el.querySelector('#fjkeep').onclick=()=>{S.freshJ=null;closeSheet();back();};
     el.querySelector('#fjdel').onclick=()=>{S.freshJ=null;DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);
       if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;   /* the number is free again when it was the last one */
