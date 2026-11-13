@@ -45,6 +45,10 @@ const MERGE_C=['parts','jobs'];
 function applyRemote(t,k,v){
   if(t==='rec'&&v!=null&&MERGE_C.includes(k.split('\u0001')[0])&&localDirty(t,k)){const [c,id]=k.split('\u0001');const arr=DB[c];const i=arr.findIndex(x=>String(x.id||x._k)===id);
     try{const m=recMerge(c,arr[i],JSON.parse(v));if(m){arr[i]=m;SYNC.last.rec.set(k,v);SYNC.mergeN=(SYNC.mergeN||0)+1;setTimeout(syncPush,0);return;}}catch(e){}}
+  /* a list this version does not know (made by a newer version): leave it alone. Remembering it here would make this
+     device send "deleted" for all of it on its next save. And a newer list sent as a plain value by an older device is ignored. */
+  if(t==='rec'&&!REC_KEYS.includes(k.split('\u0001')[0]))return;
+  if(t==='kv'&&(REC_KEYS.includes(k)||(k.startsWith('#order:')&&!REC_KEYS.includes(k.slice(7)))))return;
   if(SYNC.last){const m=t==='rec'?SYNC.last.rec:SYNC.last.kv;if(v==null)m.delete(k);else m.set(k,v);}
   if(t==='rec'){const [c,id]=k.split('\u0001');if(!REC_KEYS.includes(c))return;const arr=DB[c]=DB[c]||[];const i=arr.findIndex(x=>String(x.id||x._k)===id);
     if(v==null){if(i>=0)arr.splice(i,1);}else{const o=JSON.parse(v);if(i>=0)arr[i]=o;else arr.push(o);}}
