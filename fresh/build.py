@@ -32,5 +32,8 @@ if key.exists():
     (ROOT/'docs/garage/sig.json').write_text(json.dumps({'v':v,'sig':base64.b64encode(raw).decode()}))
     print('signed')
 else:
-    print('WARNING: no signing key at',key,'- phones with the new loader will NOT take this update')
+    # an unsigned update is refused by the phones while the web runs it: never publish one by mistake
+    import subprocess,sys
+    subprocess.run(['git','-C',str(ROOT),'checkout','--','docs/garage'],check=False)
+    sys.exit('STOP: no signing key at '+str(key)+' - docs/garage put back as it was; nothing to publish')
 print('built',name,v,len(js))

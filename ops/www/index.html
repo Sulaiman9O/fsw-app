@@ -416,16 +416,16 @@ const DEMO={
     {id:'t2',title:'Collect 2 old invoices from Al Riyami (OMR 86)',area:'money',priority:'med',age:1,done:false},
     {id:'t3',title:'Count DOT-4 and G11 coolant',area:'stock',priority:'low',age:0,done:true,by:'Ramesh 09:40'},
     {id:'t4',title:'Fix duplicate vehicle: Camry 2015 has 2 records',area:'data',priority:'low',age:2,done:false,src:'ai'},
-    {id:'t5',title:'Reply to Alsharqiya University about invoice #313',area:'money',priority:'high',age:9,done:false},
+    {id:'t5',title:'Reply to Customer A about invoice #313',area:'money',priority:'high',age:9,done:false},
     {id:'t6',title:'Order 29 mm Brother rolls for the sticker printer',area:'general',priority:'low',age:4,done:false}
   ],
   reminders:[
-    {key:'r1',client:'Yahya Alyazeedi',car:'Toyota RAV4 2010',due:-3,kind:'ready'},
-    {key:'r2',client:'Mohammad Almakly',car:'Nissan Sunny 2019',due:4,kind:'ready'},
-    {key:'r3',client:'Idres Juma',car:'Toyota Corolla 2016',due:-12,kind:'check'},
-    {key:'r4',client:'Athra Alyazeedi',car:'Mitsubishi Pajero 2014',due:-1,kind:'ready'},
-    {key:'r5',client:'Sultan Almalky',car:'Toyota Land Cruiser 2012',due:2,kind:'flag',flag:'Km on the card looks wrong'},
-    {key:'r6',client:'Ibrahim Al Maskari',car:'Hyundai Sonata 2017',due:-20,kind:'ready'}
+    {key:'r1',client:'Customer H',car:'Toyota RAV4 2010',due:-3,kind:'ready'},
+    {key:'r2',client:'Customer F',car:'Nissan Sunny 2019',due:4,kind:'ready'},
+    {key:'r3',client:'Customer E',car:'Toyota Corolla 2016',due:-12,kind:'check'},
+    {key:'r4',client:'Customer C',car:'Mitsubishi Pajero 2014',due:-1,kind:'ready'},
+    {key:'r5',client:'Customer G',car:'Toyota Land Cruiser 2012',due:2,kind:'flag',flag:'Km on the card looks wrong'},
+    {key:'r6',client:'Customer D',car:'Hyundai Sonata 2017',due:-20,kind:'ready'}
   ],
   stock:[
     {n:'Nissan Oil Filter 15208 31U0B',q:34,wk:1.9,days:124},{n:'Toyota Oil Filter 90915-YZZD4',q:17,wk:4.1,days:29},
@@ -439,9 +439,9 @@ const DEMO={
     {vendor:'Honda dealer',items:[{n:'Honda 0W-20 4L',q:6,p:11.2}]}
   ],
   money:{due:929.14,over30:3,open:[
-    {no:313,client:'Alsharqiya University',car:'Camry 2018',amt:142.5,age:41},{no:389,client:'Yasser Alyazeedi',car:'Hilux 2015',amt:86,age:23},
-    {no:351,client:'Sultan Almalky',car:'Land Cruiser 2012',amt:64.25,age:9},{no:864,client:'Anas Alyazeedi',car:'Avalon 2019',amt:21.5,age:4},{no:860,client:'Yahya Alyazeedi',car:'RAV4 2010',amt:14.54,age:5}
-  ],debtors:[['Alyazeedi family',486.2],['Alsharqiya University',142.5],['Al Riyami',86]]},
+    {no:313,client:'Customer A',car:'Camry 2018',amt:142.5,age:41},{no:389,client:'Customer I',car:'Hilux 2015',amt:86,age:23},
+    {no:351,client:'Customer G',car:'Land Cruiser 2012',amt:64.25,age:9},{no:864,client:'Customer B',car:'Avalon 2019',amt:21.5,age:4},{no:860,client:'Customer H',car:'RAV4 2010',amt:14.54,age:5}
+  ],debtors:[['Alyazeedi family',486.2],['Customer A',142.5],['Al Riyami',86]]},
   perf:{weeks:[320,410,380,455,390,470,430,520,480,445,510,412],days:[['Sat',9,98.5,41],['Sun',11,131.2,55],['Mon',7,64.8,27],['Tue',8,71.3,29],['Wed',6,46.5,17]],top:[['Engine oil change',31],['Brake service',6],['Transmission fluid',3],['Coolant',3],['Battery',2]]},
   count:[{n:'Mannol DOT-4 490g',en:'Brake fluid, small bottles'},{n:'Toyota Oil Filter 90915-YZZN2',en:'Small Toyota filter'},{n:'Mannol G11 Coolant 5L',en:'Green coolant'},{n:'Nissan Oil Filter 15208 31U0B',en:'Nissan filter'},{n:'Zic 5W-30 X7 drum',en:'Big drum, read the gauge'}]
 };
@@ -562,7 +562,7 @@ function pAI(p){
     <div class="bubs">${hist.map(h=>`<div class="bub${h.me?' me':''}">${esc(h.t)}</div>`).join('')}</div>
     <form id="opsAsk"><input id="opsAskI" placeholder="${T("Ask about today's data…")}" autocomplete="off"><button type="submit">${ar(T('Ask'))}</button></form>
     <p class="hint">${ar(T('The real version answers from the night report. It needs an AI key (small cost per question).'))}</p></div>`;
-  const ask=q=>{const h=store.get('opsai',[]);h.push({me:1,t:q});const a=/top|first|today|أهم|اليوم/i.test(q)?'1) Order G11 coolant and Toyota 0W-20 (both under 2 weeks).\n2) Collect invoice #313 from Alsharqiya University (41 days).\n3) Send 4 oil reminders that are ready.':/owe|debt|فلوس/i.test(q)?'Alyazeedi family OMR 486.200 (52%), Alsharqiya University 142.500, Al Riyami 86.000.':/order|mannol|مانول|طلب/i.test(q)?'السلام عليكم، نرجو توفير: G11 ×8، DOT-4 ×10، 0W-16 5L ×4. ورشة عالم الخدمات السريعة':'Demo answer. The live version reads the night report and answers from it.';h.push({t:a});store.set('opsai',h.slice(-8));render();};
+  const ask=q=>{const h=store.get('opsai',[]);h.push({me:1,t:q});const a=/top|first|today|أهم|اليوم/i.test(q)?'1) Order G11 coolant and Toyota 0W-20 (both under 2 weeks).\n2) Collect invoice #313 from Customer A (41 days).\n3) Send 4 oil reminders that are ready.':/owe|debt|فلوس/i.test(q)?'Alyazeedi family OMR 486.200 (52%), Customer A 142.500, Al Riyami 86.000.':/order|mannol|مانول|طلب/i.test(q)?'السلام عليكم، نرجو توفير: G11 ×8، DOT-4 ×10، 0W-16 5L ×4. ورشة عالم الخدمات السريعة':'Demo answer. The live version reads the night report and answers from it.';h.push({t:a});store.set('opsai',h.slice(-8));render();};
   p.querySelectorAll('[data-ask]').forEach(s=>s.onclick=()=>ask(s.dataset.ask));
   $('#opsAsk').onsubmit=e=>{e.preventDefault();const v=$('#opsAskI').value.trim();if(v)ask(v);};
 }
