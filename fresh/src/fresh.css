@@ -589,3 +589,8 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .camv.live video{opacity:1}
 .camv.live .scwait{opacity:0;pointer-events:none}
 .vsv .scwait{z-index:1}
+
+/* customer page: invoices of one car */
+.chips.vflt{flex-wrap:nowrap;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}.chips.vflt button{flex:none}
+.card.vsum{margin-bottom:10px}.card.vsum .two{margin-top:10px}
+.ccar .btn.vhis{width:100%;margin-top:8px}

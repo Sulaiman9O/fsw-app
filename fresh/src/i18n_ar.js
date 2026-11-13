@@ -190,3 +190,5 @@ Object.assign(AR_DICT,{'Something else (type name and price)':'شي ثاني (ا
 
 Object.assign(AR_DICT,{'Ask the manager to change services':'اطلب من المدير تعديل الخدمات','New version':'إصدار جديد','is ready':'جاهز'});
 Object.assign(AR_DICT,{'Discount':'خصم','Change discount':'تعديل الخصم','Amount':'المبلغ','or %':'أو %'});
+
+Object.assign(AR_DICT,{'Invoices for this car':'فواتير هذي السيارة','All cars':'كل السيارات','invoices':'فواتير'});
