@@ -205,3 +205,4 @@ Object.assign(AR_DICT,{'jobs':'بطاقات','reminders':'تذكيرات'});
 Object.assign(AR_DICT,{'Pictures':'الصور','Customer signature':'توقيع العميل'});
 Object.assign(AR_DICT,{'Keep this job card?':'تحفظ بطاقة العمل؟','Keep this estimate?':'تحفظ عرض السعر؟','You opened it just now. If it was a mistake, delete it.':'فتحتها الحين. إذا فتحتها بالغلط، احذفها.','Keep':'احفظها','Deleted':'انحذفت','items':'بنود'});
 Object.assign(AR_DICT,{'Keep it':'احفظها','Delete it':'احذفها'});
+Object.assign(AR_DICT,{'Take a payment':'استلام دفعة','The oldest invoices are paid first.':'تنسدد أقدم الفواتير أول.','owes':'عليه','More than the debt':'أكثر من الدين','Save payment':'حفظ الدفعة'});

@@ -30,7 +30,7 @@ function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',pa
   if(S.r==='job'&&S.freshJ&&S.freshJ===S.p.id&&typeof freshJobAsk==='function'&&freshJobAsk())return true;
   if(S.r==='quote'&&S.quote&&(S.quote.vid||S.quote.car)&&typeof quoteBack==='function'){quoteBack();return true;}
   if(S.r==='pkgwiz'&&S.pw&&S.pw.step>0){try{if(window.pwKeep)window.pwKeep();}catch(e){}S.pw.step--;render();return true;}
-  if(S.r==='stock'&&S.p.low){go('stock');return true;}if(S.r==='svc'&&S.p.hid){go('svc');return true;}
+  if(S.r==='stock'&&S.p.low){go('stock');return true;}if(S.r==='arc'&&S.p.k){go('arc');return true;}if(S.r==='svc'&&S.p.hid){go('svc');return true;}
   if(S.r==='quote')S.quote=null;
   const H=S.hist||[];while(H.length){const h=H.pop();if(h.r!==S.r&&routeOk(h.r)&&(h.r!=='job'||!h.p||!h.p.id||byId('jobs',h.p.id))){GO_BACK=true;try{go(h.r,h.p);}finally{GO_BACK=false;}return true;}}
   if(S.r==='inv'){go('job',{id:S.p.id});return true;}

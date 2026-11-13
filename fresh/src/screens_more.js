@@ -194,8 +194,18 @@ function debtText(c){const d=custDebt(c.id),cur=DB.ws.currency==='OMR'?'ر.ع':D
 function debtBox(c){const d=custDebt(c.id);if(!d.list.length)return '';
   return `<div class="debtbox"><div class="dh"><b>⚠️ ${T_('Owes '+f3(d.due)+' OMR')}</b>${c.payRem?`<span>${T_('Reminded')} ${fmtD(c.payRem)}</span>`:''}</div>
    ${d.list.map(x=>`<button class="row" data-go="inv:${x.j.id}"><div><b>#${x.j.inv.no} · ${f3(x.due)}</b><span>${fmtD(x.j.inv.t||x.j.t)} · ${T_(x.days+' days')}${vehOf(x.j).make?' · '+esc(carName(vehOf(x.j))):''}</span></div><span class="v">${T_('Record payment')} ›</span></button>`).join('')}
-   ${c.phone?`<button class="btn wa sm" id="dbrem">💳 ${T_('Payment reminder')}</button>`:''}</div>`;}
-function debtBind(c){const b=$('#dbrem');if(b)b.onclick=()=>{shareText(c.phone,debtText(c));c.payRem=now();audit('money','Payment reminder · '+(c.name||''));save();render();};}
+   <div class="two">${can.invoice()||can.money()?`<button class="btn sm" id="dbpay">💵 ${T_('Take a payment')}</button>`:'<span></span>'}${c.phone?`<button class="btn wa sm" id="dbrem">💳 ${T_('Payment reminder')}</button>`:'<span></span>'}</div></div>`;}
+function debtBind(c){const b=$('#dbrem');if(b)b.onclick=()=>{shareText(c.phone,debtText(c));c.payRem=now();audit('money','Payment reminder · '+(c.name||''));save();render();};
+  const p=$('#dbpay');if(p)p.onclick=()=>debtPaySheet(c);}
+/* one payment for the whole debt (or part of it): goes to the oldest invoices first */
+function debtPaySheet(c){const d=custDebt(c.id);if(!d.list.length)return;const pm=(DB.ws.pay||['Cash','Card','Transfer']).filter(m=>!isCreditM(m));let m=pm[0];
+  openSheet(`<h3>💵 ${T_('Take a payment')}</h3><p class="hint">${esc(c.name||'')} · ${T_('owes')} <bdi>${f3(d.due)}</bdi> · ${d.list.length} ${T_('invoices')}. ${T_('The oldest invoices are paid first.')}</p>
+   <input class="field" id="dpa" inputmode="decimal" value="${f3(d.due)}"><div class="chips" id="dpm">${pm.map(x=>`<button data-m="${esc(x)}" aria-pressed="${x===m}">${esc(T_(x))}</button>`).join('')}</div><button class="btn" id="dpok">${T_('Save payment')}</button>`,el=>{
+    el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{m=b.dataset.m;el.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+    el.querySelector('#dpok').onclick=()=>{let a=Math.round(num($('#dpa').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}if(a>d.due+0.0005){toast(T_('More than the debt'));return;}
+      const t=now(),by=S.user.name,done=[];for(const x of custDebt(c.id).list){if(a<=0.0005)break;const amt=Math.round(Math.min(a,x.due)*1000)/1000;x.j.pays.push({m,amt,t,by});a=Math.round((a-amt)*1000)/1000;
+        logJ(x.j,'Payment '+f3(amt)+' · '+m);if(jobTotals(x.j).due<=0.0005)closeJob(x.j);done.push('#'+x.j.inv.no+' '+f3(amt));}
+      audit('pay','Debt payment · '+(c.name||'')+' · '+done.join(', '));save();closeSheet();render();toast(T_('Saved')+' · '+done.length+' '+T_('invoices'));};});}
 function debtNote(cid){if(!can.money())return '';const d=custDebt(cid);if(!d.list.length)return '';const o=d.list[0];
   return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}</div>`;}
 SCREENS.debts=m=>{if(!can.money()){go('home');return;}

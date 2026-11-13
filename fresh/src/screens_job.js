@@ -44,7 +44,7 @@ SCREENS.job=m=>{
   const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
   const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{audit('delete',(j.stage==='estimate'?'Estimate':'Job')+' #'+j.no+' deleted ('+carName(vehOf(j))+')');DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };
-function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{location.href=u;}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
+function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{if(window.CapApp)location.href=u;else{const w=window.open(u,'_blank','noopener');if(!w)location.href=u;}}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
 function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
     items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
@@ -229,10 +229,11 @@ function jobCustSheet(j){const v=vehOf(j),old=custOf(j);
     setTimeout(()=>P.focus(),80);});}
 
 /* Back from a job card opened just now (by mistake?): ask once — keep it, or delete it. A job with an invoice or a payment is always kept. */
-function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pays||[]).length){S.freshJ=null;return false;}
+function freshJobAsk(){const j=byId('jobs',S.freshJ);if(!j||isInvoiced(j)||(j.pays||[]).length||(j.stage!=='new'&&j.stage!=='estimate')){S.freshJ=null;return false;}
   const est=j.stage==='estimate',n=(j.items||[]).length;
   openSheet(`<h3>${T_(est?'Keep this estimate?':'Keep this job card?')} #${j.no}</h3><p class="hint">${n?n+' '+T_('items')+' · ':''}${T_('You opened it just now. If it was a mistake, delete it.')}</p>
    <div class="two"><button class="btn" id="fjkeep">💾 ${T_('Keep it')}</button><button class="btn ghost" id="fjdel" style="color:var(--bad)">🗑 ${T_('Delete it')}</button></div>`,el=>{
+    S.sheetBack=()=>{S.freshJ=null;closeSheet();back();return true;};   /* Back again on the question: keep it and leave */
     el.querySelector('#fjkeep').onclick=()=>{S.freshJ=null;closeSheet();back();};
     el.querySelector('#fjdel').onclick=()=>{S.freshJ=null;DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);
       if(+j.no===(+DB.ws.nextJob||0)-1)DB.ws.nextJob=+j.no;   /* the number is free again when it was the last one */
