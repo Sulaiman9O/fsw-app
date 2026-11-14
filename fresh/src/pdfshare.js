@@ -39,12 +39,12 @@ const b64of=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCo
 /* ---------- the invoice as a LINK: the picture of the invoice is kept online under a long random name (inv/{id}, readable only by
    someone who has the link, nobody can list them), and the customer's chat opens with the invoice line + the link: one tap on Send.
    The link opens a page with the invoice and «Download PDF». Free (a few hundred KB each). ---------- */
-const INV_VIEW='https://sulaiman9o.github.io/fsw-app/i/';
+const INV_VIEW='https://fastserviceworld.web.app/f/';   /* Firebase Hosting site of the workshop (hosting/ in the repo) */
 const rid=n=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',b=new Uint8Array(n);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('');};
 async function invUploadLink(j){let J;for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(invoiceHtml(j,true),invDocCss(),210,sc,q);if(J.b64.length<900000)break;}
   if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
   await FBS.collection('inv').doc(id).set({img:J.b64,w:J.w,h:J.h,no:String(j.inv.no),ws:DB.ws.name||'',ph:DB.ws.phone||'',job:j.id,t:firebase.firestore.FieldValue.serverTimestamp()});
-  return INV_VIEW+'?k='+id;}
+  return INV_VIEW+id;}
 /* invoice links last one month: once a day, any device signed in deletes the older ones (the invoice itself stays in the app) */
 async function invLinksGC(){try{if(!invLinkOk())return;const day=new Date().toISOString().slice(0,10);if(localStorage.getItem('ws_inv_gc')===day)return;localStorage.setItem('ws_inv_gc',day);
   const cut=firebase.firestore.Timestamp.fromMillis(Date.now()-30*864e5);const qs=await FBS.collection('inv').where('t','<',cut).limit(200).get();let n=0;qs.forEach(d=>{d.ref.delete();n++;});if(n)trail('pdf','old invoice links deleted: '+n);}catch(e){trail('pdf','link cleanup: '+(e&&e.message||e));}}
