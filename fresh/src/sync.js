@@ -96,7 +96,12 @@ function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
     qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(SYNC.last&&SYNC.last[t]&&SYNC.last[t].get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))return;
       applyRemote(t,x.k,x.del?null:x.v);n++;});syncHeld();
-    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);}));});}
+    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);syncRelisten(5000);}));});}
+/* a listener that broke (no network, the tablet slept) used to stay broken until the app was closed: changes from other devices stopped coming.
+   Now it starts again by itself, and every time the app comes back to the screen or the internet comes back. */
+function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){SYNC.hidAt=Date.now();return;}if(Date.now()-(SYNC.hidAt||0)>20000)syncRelisten(200);});
+addEventListener('online',()=>syncRelisten(500));
 function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=[];}
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);

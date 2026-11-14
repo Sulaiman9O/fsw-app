@@ -11,6 +11,10 @@ const {chromium}=require('playwright');const M=require('./fbmock.js');
  /* 1. live */
  const jid=await A.evaluate(()=>{const j=DB.jobs.find(j=>!isInvoiced(j)&&j.stage!=='estimate');j.items.push({k:'labour',d:'Live item',q:1,p:2});save();return j.id;});await W(A,2500);
  ok(await B.evaluate(id=>byId('jobs',id).items.some(i=>i.d==='Live item'),jid),'1. B sees A\'s new item within 2.5 s');
+ /* R. B's listener broke (tablet slept / network error): A's km edit still reaches B when B comes back to the screen */
+ await B.evaluate(()=>syncUnlisten());const kj=await A.evaluate(()=>{const j=DB.jobs.find(j=>j.km);j.km=+j.km+1234;save();return {id:j.id,km:j.km};});await W(A,2000);
+ const before=await B.evaluate(id=>byId('jobs',id).km,kj.id);await B.evaluate(()=>{SYNC.hidAt=Date.now()-60000;Object.defineProperty(document,'hidden',{value:false,configurable:true});document.dispatchEvent(new Event('visibilitychange'));});await W(B,2500);
+ const after=await B.evaluate(id=>byId('jobs',id).km,kj.id);ok(before!==kj.km&&after===kj.km,'R. dead listener: B had '+before+', after coming back has '+after+' (A: '+kj.km+')');
  /* 2. both offline, same job: A adds an item, B adds a note + payment */
  await A.evaluate(()=>syncStop());await B.evaluate(()=>syncStop());
  await A.evaluate(id=>{const j=byId('jobs',id);j.items.push({k:'part',d:'Offline A part',q:1,p:3});j.mt=now();save();},jid);await W(A,300);

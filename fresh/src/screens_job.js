@@ -196,6 +196,8 @@ function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=
   <div class="inv-ft">${esc(DB.ws.warranty||'Thank you · شكراً لزيارتكم')}</div></div>`;}
 function printHtml(doc,w,h,name){const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswPrint;
   if(P){P.printHtml({html:doc,widthMm:w,heightMm:h,name}).catch(e=>toast('Could not print: '+(e&&e.message||e)));return;}
+  /* phone and tablet browsers do not print from a hidden frame: open the page in its own tab and print it there */
+  if(matchMedia('(pointer:coarse)').matches){try{const w=window.open('','_blank');if(w){w.document.open();w.document.write(doc.replace('</body>','<script>setTimeout(function(){print()},500)<\/script></body>'));w.document.close();return;}}catch(e){}}
   const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);f.contentDocument.open();f.contentDocument.write(doc);f.contentDocument.close();setTimeout(()=>{try{f.contentWindow.print();}catch(e){}setTimeout(()=>f.remove(),1000);},300);}
 /* reminders */
 function makeReminders(j){const v=vehOf(j);(j.items||[]).forEach(it=>{const s=it.ref&&byId('services',it.ref);const tag=it.tag||(s&&s.tag)||'';
