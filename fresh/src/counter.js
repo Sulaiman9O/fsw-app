@@ -1,7 +1,7 @@
 /* ---------- COUNTER: the car in front of you is the centre.
    Type the plate (or phone, or name) → the car's card: last visit, what it usually needs, today's price →
    one tap opens the job with it → "Invoice & pay" at the bottom takes the money and closes the job. ---------- */
-function newJobFor(v,km){const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:v.cust,veh:v.id,km:num(km)||v.km||0,stage:'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),'Job opened · '+S.user.name]],pays:[]};
+function newJobFor(v,km){const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:v.cust,veh:v.id,km:num(km)||0,stage:'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),'Job opened · '+S.user.name]],pays:[]};
   S.freshKm={veh:v.id,km:v.km};
   /* a typo like one 0 too many: ask before it goes on the car for good */
   const kn=num(km),last=+v.km||0;let carKm=kn>last;if(carKm&&last&&(kn>last*3||kn-last>150000)&&!confirm(T_('That is much more than the last km')+' ('+kmf(last)+'). '+T_('Save anyway?')))carKm=false;

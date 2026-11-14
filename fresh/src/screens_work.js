@@ -103,7 +103,7 @@ SCREENS.newjob=m=>{
     if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     if(!v){v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
-    const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:c.id,veh:v.id,km:num(N.km)||v.km||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
+    const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:c.id,veh:v.id,km:num(N.km)||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
     if(S.pendQuote){j.items=S.pendQuote.items;if(S.pendQuote.kind==='oil')j.rx={oil:{mode:'usual',at:now()}};S.pendQuote=null;}
     DB.jobs.push(j);save();S.freshJ=j.id;toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};
 };
