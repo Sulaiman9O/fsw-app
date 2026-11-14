@@ -46,7 +46,7 @@ addEventListener('online',()=>trail('net','online'));addEventListener('offline',
 trail('open','v'+(window.WS_VN||'')+' '+(window.CapApp?'app':'web')+' '+innerWidth+'x'+innerHeight);
 /* online: one small document per device per 10 minutes; also the sync health of this device */
 const trKey=()=>new Date(Date.now()+4*3600e3).toISOString().slice(0,16).replace(/[-T:]/g,'').slice(0,11);  /* yyyymmddhhm (Oman time, 10-minute bucket) */
-async function trailUp(){if(TRAIL.up||!TRAIL.q.length)return;if(!(window.SYNC&&SYNC.on&&SYNC.user&&window.firebase))return;TRAIL.up=1;
+async function trailUp(){if(TRAIL.up||!TRAIL.q.length)return;if(typeof SYNC==='undefined'||!SYNC.on||!SYNC.user||typeof firebase==='undefined')return;TRAIL.up=1;
   const part=TRAIL.q.slice(0,300);
   try{const FV=firebase.firestore.FieldValue;const ua=navigator.userAgent;
     await wsRef().collection('trail').doc(syncDev()+'_'+trKey()).set({dev:syncDev(),v:window.WS_VN||'',app:!!window.CapApp,os:/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'other',

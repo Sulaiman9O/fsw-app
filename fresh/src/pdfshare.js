@@ -41,7 +41,15 @@ async function sendInvoicePdf(j){const c=custOf(j)||{},cap=invCaption(j);const a
   if(app&&!(P&&typeof P.sharePdf==='function')){toast(T_('This app version sends text. Install the new app to send a PDF.'));asText();return;}
   toast(T_('Making the PDF…'));let pdf;try{pdf=await invoicePdf(j);}catch(e){toast(T_('Could not make the PDF, sent as text'));asText();return;}
   const sent=()=>{logJ(j,'Invoice PDF sent');save();};
-  if(app){try{await P.sharePdf({b64:b64of(pdf.bytes),name:pdf.name,phone:c.phone?waNum(c.phone):'',text:cap});sent();}catch(e){toast(T_('Could not send the PDF')+': '+(e&&e.message||e));}return;}
+  const appSend=async(txt)=>{try{await P.sharePdf({b64:b64of(pdf.bytes),name:pdf.name,phone:c.phone?waNum(c.phone):'',text:txt});sent();}catch(e){toast(T_('Could not send the PDF')+': '+(e&&e.message||e));}};
+  /* WhatsApp opens a chat straight from a number only for text, and puts a file straight into a chat only for a saved contact.
+     So: 1) the customer's chat opens with the invoice line (any number); 2) back in the app, one tap sends the PDF —
+     the customer is then the first chat in WhatsApp's list. */
+  if(app){if(!c.phone){appSend(cap);return;}
+    const ask=()=>openSheet(`<h3>📄 ${T_('Now send the PDF')}</h3><p class="hint">${T_('In WhatsApp, the customer is at the top of the list.')}</p><button class="btn" id="pdfgo">📄 ${T_('Send the invoice PDF')}</button>`,el=>el.querySelector('#pdfgo').onclick=()=>{closeSheet();appSend('');});
+    const back=()=>{if(document.hidden)return;document.removeEventListener('visibilitychange',back);clearTimeout(tm);setTimeout(ask,250);};
+    document.addEventListener('visibilitychange',back);const tm=setTimeout(()=>{document.removeEventListener('visibilitychange',back);ask();},20000);
+    trail('pdf','chat first, then PDF');shareText(c.phone,cap);return;}
   const f=new File([pdf.bytes],pdf.name,{type:'application/pdf'});
   const touch=matchMedia('(pointer:coarse)').matches;
   if(touch&&navigator.canShare&&navigator.canShare({files:[f]})){
