@@ -34,5 +34,5 @@ const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&am
   TOP.innerHTML='<h1>'+esc(ws)+'</h1><div class="s">فاتورة رقم '+esc(no)+' · Invoice #'+esc(no)+'</div><div class="bar"><button class="b" id="dl">⬇️ تحميل PDF</button>'+(ph?'<a class="b g" href="tel:'+esc(ph.replace(/[^+0-9]/g,''))+'">📞 '+esc(ph)+'</a>':'')+'</div>';
   V.className='';V.innerHTML='<img alt="فاتورة '+esc(no)+'" src="data:image/jpeg;base64,'+J.b64+'">';
   document.getElementById('dl').onclick=()=>{const b=new Blob([jpegPdf(J)],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Invoice-'+no+'.pdf';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);};
- }catch(e){V.textContent='الفاتورة غير موجودة · Invoice not found';}})();
+ }catch(e){V.textContent='الرابط انتهى أو غير موجود. تواصل مع الورشة لنسخة من الفاتورة · This link has expired.';}})();
 </script></body></html>

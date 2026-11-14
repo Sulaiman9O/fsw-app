@@ -45,6 +45,10 @@ async function invUploadLink(j){let J;for(const [sc,q] of [[2,0.82],[1.7,0.72],[
   if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
   await FBS.collection('inv').doc(id).set({img:J.b64,w:J.w,h:J.h,no:String(j.inv.no),ws:DB.ws.name||'',ph:DB.ws.phone||'',job:j.id,t:firebase.firestore.FieldValue.serverTimestamp()});
   return INV_VIEW+'?k='+id;}
+/* invoice links last one month: once a day, any device signed in deletes the older ones (the invoice itself stays in the app) */
+async function invLinksGC(){try{if(!invLinkOk())return;const day=new Date().toISOString().slice(0,10);if(localStorage.getItem('ws_inv_gc')===day)return;localStorage.setItem('ws_inv_gc',day);
+  const cut=firebase.firestore.Timestamp.fromMillis(Date.now()-30*864e5);const qs=await FBS.collection('inv').where('t','<',cut).limit(200).get();let n=0;qs.forEach(d=>{d.ref.delete();n++;});if(n)trail('pdf','old invoice links deleted: '+n);}catch(e){trail('pdf','link cleanup: '+(e&&e.message||e));}}
+setTimeout(invLinksGC,60000);setInterval(invLinksGC,6*3600e3);
 const invLinkOk=()=>typeof FBS!=='undefined'&&FBS&&typeof SYNC!=='undefined'&&SYNC.user&&navigator.onLine!==false;
 async function sendInvoiceLink(j){const c=custOf(j)||{};
   /* the browser lets a new tab open only right after the tap: open it now, fill it when the link is ready */
