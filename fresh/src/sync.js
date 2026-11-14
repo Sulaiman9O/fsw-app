@@ -33,8 +33,8 @@ function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(
     try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();
         G.forEach(([t,k,v])=>{const m=t==='rec'?SYNC.last.rec:SYNC.last.kv;if(v==null)m.delete(k);else m.set(k,v);if(SYNC.base)delete SYNC.base[k];});sent+=G.length;}
       if(big.length){SYNC.status='err';SYNC.err='Too large to send online: '+big.join(', ');}else SYNC.status='ok';}
-    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
-    if(sent){syncSaveLast();if(SYNC.base)baseSave();SYNC.sent+=sent;SYNC.lastAt=Date.now();}}).catch(()=>{});return SYNC.pushQ;}
+    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);trail('SYNC-ERR','send: '+SYNC.err);}
+    if(sent){syncSaveLast();if(SYNC.base)baseSave();SYNC.sent+=sent;SYNC.lastAt=Date.now();trail('sync','sent '+sent);}}).catch(()=>{});return SYNC.pushQ;}
 /* ---- online → local ---- */
 /* the same record changed here (not sent yet) and on another device: join the two instead of dropping one.
    Stock: the other device's movements + this device's own (per-device totals). Jobs: payments, items and history from both. */
@@ -96,10 +96,10 @@ function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
     qs.docChanges().forEach(ch=>{const x=ch.doc.data();if(ch.type==='removed'||ch.doc.metadata.hasPendingWrites)return;if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(SYNC.last&&SYNC.last[t]&&SYNC.last[t].get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))return;
       applyRemote(t,x.k,x.del?null:x.v);n++;});syncHeld();
-    if(!n)return;SYNC.got+=n;SYNC.lastAt=Date.now();SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);syncRelisten(5000);}));});}
+    if(!n)return;SYNC.got+=n;SYNC.lastAt=SYNC.gotAt=Date.now();trail('sync','got '+n+' from other devices');SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);trail('SYNC-ERR','listen '+t+': '+SYNC.err);syncRelisten(5000);}));});}
 /* a listener that broke (no network, the tablet slept) used to stay broken until the app was closed: changes from other devices stopped coming.
    Now it starts again by itself, and every time the app comes back to the screen or the internet comes back. */
-function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
+function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;trail('sync','listen again');try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){SYNC.hidAt=Date.now();return;}if(Date.now()-(SYNC.hidAt||0)>20000)syncRelisten(200);});
 addEventListener('online',()=>syncRelisten(500));
 /* and a quiet catch-up every 3 minutes while the app is on the screen, in case a listener stops without saying so */
