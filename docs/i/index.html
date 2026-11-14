@@ -1,0 +1,38 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>فاتورة</title><meta property="og:title" content="فاتورة · Invoice"><meta property="og:description" content="اضغط لعرض الفاتورة وتحميلها PDF">
+<style>:root{--bg:#EEF1F5;--fg:#15202B;--mut:#5B6875;--card:#fff;--acc:#1D6FE0}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1620;--fg:#E8EDF2;--mut:#93A1AE;--card:#18222D}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Tahoma,Arial,sans-serif}
+.w{max-width:820px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:6px 0 2px}.s{color:var(--mut);font-size:14px;margin-bottom:12px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.b{flex:1;min-width:140px;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;background:var(--acc);color:#fff;cursor:pointer;text-align:center;text-decoration:none}
+.b.g{background:var(--card);color:var(--fg);border:1px solid #8883}
+img{display:block;width:100%;height:auto;border-radius:10px;background:#fff;box-shadow:0 2px 14px #0002}
+.msg{padding:40px 10px;text-align:center;color:var(--mut)}</style></head>
+<body><div class="w"><div id="top"></div><div id="v" class="msg">…</div></div>
+<script>
+function jpegPdf(J){const bin=atob(J.b64),img=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)img[i]=bin.charCodeAt(i);
+  const A4=841.89,pw=595.28;let iw=pw,ih=pw*J.h/J.w;if(ih>A4&&A4/ih>=0.62){iw=pw*A4/ih;ih=A4;}const ph=Math.max(A4,ih),ix=(pw-iw)/2;   /* a little longer than A4: shrunk onto one A4 page, like the print */
+  const enc=new TextEncoder(),parts=[],off=[];let len=0;
+  const add=s=>{const b=typeof s==='string'?enc.encode(s):s;parts.push(b);len+=b.length;};const obj=(n,s)=>{off[n]=len;add(n+' 0 obj\n'+s+'\nendobj\n');};
+  add('%PDF-1.4\n');
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph.toFixed(2)+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  off[4]=len;add('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+J.w+' /Height '+J.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>\nstream\n');add(img);add('\nendstream\nendobj\n');
+  const cs='q '+iw.toFixed(2)+' 0 0 '+ih.toFixed(2)+' '+ix.toFixed(2)+' '+(ph-ih).toFixed(2)+' cm /Im0 Do Q';obj(5,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
+  const xr=len;add('xref\n0 6\n0000000000 65535 f \n'+[1,2,3,4,5].map(n=>String(off[n]).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n');
+  const out=new Uint8Array(len);let p=0;parts.forEach(b=>{out.set(b,p);p+=b.length;});return out;}
+
+const K=new URLSearchParams(location.search).get('k')||'',V=document.getElementById('v'),TOP=document.getElementById('top');
+const U='https://firestore.googleapis.com/v1/projects/fsw-workshop-7e4ab/databases/(default)/documents/inv/'+encodeURIComponent(K)+'?key=AIzaSyA_j9-62srvQvpUn7XDUGDRfVrwpIwpxC0';
+const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+(async()=>{if(!/^[A-Za-z0-9]{16,40}$/.test(K)){V.textContent='الرابط غير صحيح · Invalid link';return;}
+ try{const r=await fetch(U);if(!r.ok)throw 0;const d=(await r.json()).fields||{};const g=k=>d[k]&&(d[k].stringValue||d[k].integerValue||d[k].doubleValue)||'';
+  const J={b64:g('img'),w:+g('w'),h:+g('h')},no=g('no'),ws=g('ws'),ph=g('ph');if(!J.b64)throw 0;
+  document.title='فاتورة '+no+' · '+ws;
+  TOP.innerHTML='<h1>'+esc(ws)+'</h1><div class="s">فاتورة رقم '+esc(no)+' · Invoice #'+esc(no)+'</div><div class="bar"><button class="b" id="dl">⬇️ تحميل PDF</button>'+(ph?'<a class="b g" href="tel:'+esc(ph.replace(/[^+0-9]/g,''))+'">📞 '+esc(ph)+'</a>':'')+'</div>';
+  V.className='';V.innerHTML='<img alt="فاتورة '+esc(no)+'" src="data:image/jpeg;base64,'+J.b64+'">';
+  document.getElementById('dl').onclick=()=>{const b=new Blob([jpegPdf(J)],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Invoice-'+no+'.pdf';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);};
+ }catch(e){V.textContent='الفاتورة غير موجودة · Invoice not found';}})();
+</script></body></html>

@@ -4,7 +4,7 @@
 const PDF_MM=96/25.4;
 function invDocCss(){return INV_CSS+(window.INV2_CSS||INV2_CSS);}
 /* HTML -> picture: drawn by the browser itself inside an SVG, so Arabic, the logo and the stamp look exactly as on screen */
-async function htmlJpeg(html,css,wmm,scale){
+async function htmlJpeg(html,css,wmm,scale,q){
   const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:'+wmm+'mm;background:#fff;color:#000';
   host.innerHTML='<style>'+css+'</style><div class="pdfpg" style="width:'+wmm+'mm;padding:9mm;box-sizing:border-box;background:#fff">'+html+'</div>';
   document.body.appendChild(host);
@@ -20,7 +20,7 @@ async function htmlJpeg(html,css,wmm,scale){
   let bot=c.height;try{const d=x.getImageData(0,0,c.width,c.height).data,rw=c.width*4;
     for(let y=c.height-1;y>0;y--){let ink=false;for(let i=y*rw;i<y*rw+rw;i+=16){if(d[i]<245||d[i+1]<245||d[i+2]<245){ink=true;break;}}if(ink){bot=Math.min(c.height,y+Math.round(9*PDF_MM*scale));break;}}}catch(e){}
   let o=c;if(bot<c.height){o=document.createElement('canvas');o.width=c.width;o.height=bot;const y=o.getContext('2d');y.fillStyle='#fff';y.fillRect(0,0,o.width,o.height);y.drawImage(c,0,0);}
-  const url=o.toDataURL('image/jpeg',0.88);return {b64:url.slice(url.indexOf(',')+1),w:o.width,h:o.height};}
+  const url=o.toDataURL('image/jpeg',q||0.88);return {b64:url.slice(url.indexOf(',')+1),w:o.width,h:o.height};}
 /* one picture on one page (A4 width; longer than A4 only when the invoice is) */
 function jpegPdf(J){const bin=atob(J.b64),img=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)img[i]=bin.charCodeAt(i);
   const A4=841.89,pw=595.28;let iw=pw,ih=pw*J.h/J.w;if(ih>A4&&A4/ih>=0.62){iw=pw*A4/ih;ih=A4;}const ph=Math.max(A4,ih),ix=(pw-iw)/2;   /* a little longer than A4: shrunk onto one A4 page, like the print */
@@ -36,7 +36,26 @@ function jpegPdf(J){const bin=atob(J.b64),img=new Uint8Array(bin.length);for(let
 async function invoicePdf(j){const J=await htmlJpeg(invoiceHtml(j,true),invDocCss(),210,2.2);return {bytes:jpegPdf(J),name:'Invoice-'+j.inv.no+'.pdf'};}
 function invCaption(j){const x=jobVars(j),T=jobTotals(j);return ['فاتورة رقم '+j.inv.no+' — '+DB.ws.name,'الإجمالي: '+x.total,T.due>0.0005&&!j.returned?'المتبقي: '+x.due:'','شكراً لثقتكم'].filter(Boolean).join('\n');}
 const b64of=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);};
-async function sendInvoicePdf(j){const c=custOf(j)||{},cap=invCaption(j);const asText=()=>shareText(c.phone,docText(j,'invoice'));
+/* ---------- the invoice as a LINK: the picture of the invoice is kept online under a long random name (inv/{id}, readable only by
+   someone who has the link, nobody can list them), and the customer's chat opens with the invoice line + the link: one tap on Send.
+   The link opens a page with the invoice and «Download PDF». Free (a few hundred KB each). ---------- */
+const INV_VIEW='https://sulaiman9o.github.io/fsw-app/i/';
+const rid=n=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',b=new Uint8Array(n);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('');};
+async function invUploadLink(j){let J;for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(invoiceHtml(j,true),invDocCss(),210,sc,q);if(J.b64.length<900000)break;}
+  if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
+  await FBS.collection('inv').doc(id).set({img:J.b64,w:J.w,h:J.h,no:String(j.inv.no),ws:DB.ws.name||'',ph:DB.ws.phone||'',job:j.id,t:firebase.firestore.FieldValue.serverTimestamp()});
+  return INV_VIEW+'?k='+id;}
+const invLinkOk=()=>typeof FBS!=='undefined'&&FBS&&typeof SYNC!=='undefined'&&SYNC.user&&navigator.onLine!==false;
+async function sendInvoiceLink(j){const c=custOf(j)||{};
+  /* the browser lets a new tab open only right after the tap: open it now, fill it when the link is ready */
+  let w=null;if(!window.CapApp){try{w=window.open('about:blank','_blank');}catch(e){}}
+  toast(T_('Making the invoice link…'));
+  try{const url=await Promise.race([invUploadLink(j),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))]);
+    const t=invCaption(j)+'\n\n📄 الفاتورة PDF:\n'+url;const u='https://wa.me/'+(c.phone?waNum(c.phone):'')+'?text='+encodeURIComponent(t);
+    j.invLink=url;logJ(j,'Invoice link sent');save();trail('pdf','link '+url.slice(-6));
+    if(w){try{w.opener=null;}catch(e){}w.location.href=u;}else shareText(c.phone,t);return true;}
+  catch(e){trail('pdf','link failed: '+(e&&e.message||e));if(w)try{w.close();}catch(x){}return false;}}
+async function sendInvoicePdf(j){if(invLinkOk()&&await sendInvoiceLink(j))return;const c=custOf(j)||{},cap=invCaption(j);const asText=()=>shareText(c.phone,docText(j,'invoice'));
   const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswShare;const app=!!window.CapApp;
   if(app&&!(P&&typeof P.sharePdf==='function')){toast(T_('This app version sends text. Install the new app to send a PDF.'));asText();return;}
   toast(T_('Making the PDF…'));let pdf;try{pdf=await invoicePdf(j);}catch(e){toast(T_('Could not make the PDF, sent as text'));asText();return;}
