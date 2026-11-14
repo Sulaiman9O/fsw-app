@@ -174,12 +174,14 @@ SCREENS.inv=m=>{
   <div class="inv-pv">${invoiceHtml(j)}</div>
   ${!j.returned&&T.due>0.0005&&(can.invoice()||can.money())?`${sec('Take payment',`due ${f3(T.due)}`)}<div class="chips big">${DB.ws.pay.map(p=>`<button data-pay="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
   ${(j.pays||[]).length?sec('Payments')+`<div class="jb-list">${j.pays.map(p=>`<div class="jb-r"><div>${esc(p.m)}<small>${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by)}</small></div><b>${f3(p.amt)}</b></div>`).join('')}</div>`:''}
-  <div class="two"><button class="btn" id="iwa">WhatsApp</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
+  ${DB.ws.stamp&&invS().stamp&&invS().t!=='classic'?`<label class="chk inv-stp"><input type="checkbox" id="istp" ${j.nost?'':'checked'}> 🔵 ${T_('Stamp on this invoice')}</label>`:''}
+  <div class="two"><button class="btn wa" id="iwa">📄 WhatsApp PDF</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
   <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>
   ${(can.invoice()||can.del())&&!j.returned?`<button class="btn ghost jb-del" id="iret">Return / cancel invoice</button>`:''}`;
   $$('[data-pay]').forEach(b=>b.onclick=()=>{const mth=b.dataset.pay;if(isCreditM(mth)){j.credit=now();logJ(j,'On credit (to pay later) · due '+f3(T.due));audit('pay','On credit · invoice #'+j.inv.no+' · '+f3(T.due));closeJob(j);save();toast(T_('Kept as a debt on the customer'));render();return;}openSheet(`<h3>${esc(mth)}</h3><input class="field" id="pam" inputmode="decimal" value="${f3(T.due)}"><button class="btn" id="pok">Save payment</button>`,el=>el.querySelector('#pok').onclick=()=>{const a=Math.min(num($('#pam').value),T.due);if(a<=0)return;j.pays.push({m:mth,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+mth);if(jobTotals(j).due<=0)closeJob(j);save();closeSheet();render();});});
-  $('#iwa').onclick=()=>shareText(c.phone,docText(j,'invoice'));
-  $('#ipr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+(window.INV2_CSS||INV2_CSS)+'</style></head><body>'+invoiceHtml(j,true)+'</body></html>',210,297,'Invoice '+j.inv.no);
+  $('#iwa').onclick=()=>sendInvoicePdf(j);
+  $('#ipr').onclick=()=>printHtml(invPrintDoc(j,12),210,297,'Invoice '+j.inv.no);
+  const stp=$('#istp');if(stp)stp.onchange=()=>{if(stp.checked)delete j.nost;else j.nost=1;logJ(j,stp.checked?'Stamp on':'Stamp off');save();render();};
   const rt=$('#iret');if(rt)rt.onclick=()=>confirmSheet('Return invoice #'+j.inv.no+'? Parts go back to stock.','Return',()=>{(j.items||[]).forEach(it=>{if(it.k==='part'&&it.ref&&!it.custPart){const p=byId('parts',it.ref);if(p)mv(p,+it.q||0,'Return of invoice #'+j.inv.no,j.id);}});j.returned=now();audit('return','Invoice #'+j.inv.no+' returned');j.inv.void=true;const byM={};(j.pays||[]).forEach(p=>{if(!isCreditM(p.m))byM[p.m]=(byM[p.m]||0)+(+p.amt||0);});const back=Object.values(byM).reduce((a,x)=>a+Math.max(0,x),0);if(back>0.0005){Object.entries(byM).forEach(([m,a])=>{if(a>0.0005)j.pays.push({m,amt:-r3(a),t:now(),by:S.user.name,refund:1});});logJ(j,'Refund '+f3(back));}DB.reminders=DB.reminders.filter(r=>r.job!==j.id);j.stage='done';logJ(j,'Invoice returned');save();render();});
 };
 function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=0;

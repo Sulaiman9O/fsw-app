@@ -37,8 +37,15 @@ jobs:
         run: |
           D=android/app/src/main/java/om/fsw/garage
           sed 's/^package om.fsw.workshop;/package om.fsw.garage;/' ../native/FswPrintPlugin.java > $D/FswPrintPlugin.java
-          printf 'package om.fsw.garage;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(FswPrintPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n' > $D/MainActivity.java
+          cp native/FswSharePlugin.java $D/FswSharePlugin.java
+          printf 'package om.fsw.garage;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(FswPrintPlugin.class);\n        registerPlugin(FswSharePlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n' > $D/MainActivity.java
           cat $D/MainActivity.java
+      - name: Share a PDF (FileProvider for the app's cache folder)
+        run: |
+          grep -q 'fileprovider' android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/res/xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<paths xmlns:android="http://schemas.android.com/apk/res/android">\n  <external-path name="my_images" path="." />\n  <cache-path name="my_cache_images" path="." />\n</paths>\n' > android/app/src/main/res/xml/file_paths.xml
+          cat android/app/src/main/res/xml/file_paths.xml
       - name: Icons
         continue-on-error: true
         run: npx capacitor-assets generate --android --iconBackgroundColor '#2F80FF' --splashBackgroundColor '#0B1F3A' --iconBackgroundColorDark '#2F80FF' --splashBackgroundColorDark '#0B1F3A'

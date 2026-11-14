@@ -34,7 +34,7 @@ const INV2_CSS=`@media print{.iv2,.iv2 *{-webkit-print-color-adjust:exact;print-
 .inv-pv .iv2{padding:6mm;width:190mm;box-sizing:border-box}`;
 (function(){const st=document.createElement('style');st.textContent=INV2_CSS;document.head.appendChild(st);})();
 function invNext(j){const r=(DB.reminders||[]).filter(x=>x.job===j.id&&(x.kind==='oil'||x.kind==='gear')).sort((a,b)=>a.due-b.due)[0];return r||null;}
-function invoiceModern(j,I){I=I||invS();const v=vehOf(j)||{},c=custOf(j)||{},T=jobTotals(j);const W=DB.ws;const sh=I.show;
+function invoiceModern(j,I){I=I||invS();if(j.nost&&I.stamp)I=Object.assign({},I,{stamp:0});const v=vehOf(j)||{},c=custOf(j)||{},T=jobTotals(j);const W=DB.ws;const sh=I.show;
   const L=(ar,en)=>I.lang==='ar'?ar:I.lang==='en'?en:ar+' · '+en;const cur=W.currency==='OMR'?(I.lang==='en'?'OMR':'ر.ع'):W.currency;
   const lh={s:'12mm',m:'18mm',l:'26mm'}[I.lsz]||'18mm';
   const inPk=i=>i.k==='pkg'||i.inPkg||i.pkgx;const P=(j.items||[]).filter(i=>i.k==='pkg');
@@ -91,7 +91,7 @@ SCREENS.invstyle=m=>{if(!can.settings()){go('more');return;}const I=invS();const
   const iw=$('#iwar');iw.oninput=()=>{DB.ws.warranty=iw.value;save();pv();};
   $('#ilogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,700/Math.max(im.width,im.height));let c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);try{c=cleanLogoCanvas(c);}catch(x){}DB.ws.logo=c.toDataURL('image/png');audit('settings','Logo changed');save();render();toast(T_('Picture saved'));};im.src=r.result;};r.readAsDataURL(f);};
   const lx=$('#ilogox');if(lx)lx.onclick=()=>{DB.ws.logo='';save();render();};
-  $('#iprint').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:12mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+(window.INV2_CSS||INV2_CSS)+'</style></head><body>'+invoiceHtml(invSample(),true)+'</body></html>',210,297,'Invoice test');};
+  $('#iprint').onclick=()=>printHtml(invPrintDoc(invSample(),12),210,297,'Invoice test');};
 /* the way in: Settings → Invoices, and from any invoice (owner) */
 (function(){const SE=SCREENS.settings;SCREENS.settings=m=>{SE(m);const w=m.querySelector('#swar');const at=w&&w.closest('label');if(!at)return;const b=document.createElement('button');b.className='mitem';b.innerHTML=`<span class="ic">🎨</span><div><b>${T_('Invoice look')}</b><span>${T_('Template, colour, logo, what shows')}</span></div><span class="v">›</span>`;b.onclick=()=>go('invstyle');at.before(b);};
   const IV=SCREENS.inv;SCREENS.inv=m=>{IV(m);if(!can.settings())return;const pv=m.querySelector('.inv-pv');if(!pv)return;const a=document.createElement('button');a.className='lnk';a.style.margin='4px 0 8px';a.textContent='🎨 '+T_('Change the invoice look');a.onclick=()=>go('invstyle');pv.after(a);};})();
