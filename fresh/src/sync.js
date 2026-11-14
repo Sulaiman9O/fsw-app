@@ -102,6 +102,8 @@ function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').
 function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){SYNC.hidAt=Date.now();return;}if(Date.now()-(SYNC.hidAt||0)>20000)syncRelisten(200);});
 addEventListener('online',()=>syncRelisten(500));
+/* and a quiet catch-up every 3 minutes while the app is on the screen, in case a listener stops without saying so */
+setInterval(()=>{if(!document.hidden)syncRelisten(100);},180000);
 function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=[];}
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);

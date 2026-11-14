@@ -12,7 +12,9 @@ function editInvAsk(j){if(!can.invoice()){toast(T_('Ask the manager to edit the 
     el.querySelector('#ieinv').onclick=()=>{closeSheet();go('inv',{id:j.id});};});}
 /* too much paid after an edit that lowered the total → the difference is given back */
 (function(){const II=issueInvoice;window.issueInvoice=issueInvoice=function(j){const ed=!!j.invEdit;II(j);if(!ed)return;const T=jobTotals(j);const over=Math.round((T.paid-T.total)*1000)/1000;
-  if(over>0.0005){const last=(j.pays||[]).filter(p=>!isCreditM(p.m)&&+p.amt>0).slice(-1)[0];j.pays.push({m:last?last.m:'Cash',amt:-over,t:now(),by:S.user.name,refund:1});logJ(j,'Give back '+f3(over));toast(T_('Give the customer back')+' '+f3(over));}};})();
+  if(over>0.0005){const last=(j.pays||[]).filter(p=>!isCreditM(p.m)&&+p.amt>0).slice(-1)[0];j.pays.push({m:last?last.m:'Cash',amt:-over,t:now(),by:S.user.name,refund:1});logJ(j,'Give back '+f3(over));toast(T_('Give the customer back')+' '+f3(over));}
+  /* already paid in full: the car has left, the job stays done (it used to come back to the work list as «Ready») */
+  if(jobTotals(j).due<=0.0005&&!j.returned)closeJob(j);};})();
 /* the ways in: the invoice page and the job page */
 (function(){const IV=SCREENS.inv;SCREENS.inv=m=>{IV(m);const j=byId('jobs',S.p&&S.p.id);if(!j||!isInvoiced(j)||j.returned||!can.invoice())return;
     const ret=m.querySelector('#iret');const b=document.createElement('button');b.className='btn';b.innerHTML='✏️ '+T_('Edit the invoice');b.onclick=()=>editInvAsk(j);(ret||m.lastChild).before(b);};
