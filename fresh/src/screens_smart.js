@@ -15,7 +15,8 @@ const liqTxt=(o,litres)=>o.L?o.q+' L':o.pk?o.q+' × '+o.pk+' L':'1 × ? L';
 const GRADE={mineral:['Mineral',5000],semi:['Semi synthetic',7000],full:['Full synthetic',10000]};
 function gradeOf(p){if(p.grade)return p.grade;const n=lc(p.name);if(/semi/.test(n))return 'semi';if(/mineral|20w-?50|15w-?40|20w-?40/.test(n))return 'mineral';if(/full|fully|synth|0w-?|5w-?(20|30|40)/.test(n))return 'full';return '';}
 function rxGuess(s){const n=lc(s.name);if(s.tag==='oil'||/engine oil/.test(n))return 'oil';if(s.tag==='gear'||/gearbox oil|atf/.test(n))return 'gear';if(/spark plug/.test(n))return 'plugs';if(/brake pads/.test(n))return 'pads';if(/battery replace|new battery/.test(n))return 'battery';if(/coolant|radiator flush/.test(n))return 'coolant';return '';}
-const rxOf=s=>s&&(s.rx!==undefined?s.rx:rxGuess(s));
+/* a check / inspection is labour only: it never adds litres of fluid */
+const rxOf=s=>s&&(s.rx!==undefined?s.rx:(/\b(check|inspection|inspect)\b/i.test(s.name||'')?'':rxGuess(s)));
 const smartOk=s=>sx('smart')&&!!rxOf(s)&&!!RX[rxOf(s)];
 const engCode=v=>{const e=(v&&v.engine)||'';const m=e.split('·').pop().trim();return m||e;};
 const learnKey=(k,v)=>k+'|'+(engCode(v)||mkKey((v&&v.make)+' '+(v&&v.model)));
