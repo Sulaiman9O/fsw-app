@@ -608,3 +608,5 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .qrow .qin.qpr{width:96px}
 .qrow #lppok{background:var(--ok)!important;color:#fff;border:0;font-weight:800}
 .qrow+.qrow{margin-top:8px}
+.jb-r .en2{display:block;font-size:.72rem;font-weight:500;color:var(--muted);direction:ltr;text-align:start}
+.jb-r.tot.tot2{padding-top:6px;padding-bottom:6px}.jb-r.tot.tot2 small{font-size:.8rem}

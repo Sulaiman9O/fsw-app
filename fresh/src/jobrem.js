@@ -3,8 +3,40 @@
    2) "Reminders" on the job shows, before the invoice, which reminders the visit will make (oil, gearbox, any service
       that has a reminder set, or one typed by hand). Each can be changed or switched off; they are made when the job closes. */
 const REM_PART={'Engine oil':/oil change|engine oil|زيت المحرك/i,'Oil filters':/oil change|engine oil|زيت المحرك/i,'Gearbox oil':/atf|transmission|gear|cvt|جير|ناقل/i,'Brake fluid':/brake fluid|زيت الفرامل/i,'Coolant':/coolant|radiator|رديتر|تبريد/i,'Bulbs':/bulb|light|لمب/i,'Additives':/flush|clean|تنظيف/i};
+/* which service a part belongs under, for EVERY job: the part (its category + name, in English or Arabic) says what kind it is,
+   and it goes under the job's service of the same kind. Most specific first. No such service in the job → "Other parts". */
+const PART_FAM=[
+ {p:/intake|throttle|valve clean|ثروتل/i,s:/throttle|intake|ثروتل/i},
+ {p:/motor flush|engine flush/i,s:null,oil:1},
+ {p:/brake clean/i,s:/brake|فرامل/i},
+ {p:/injector|fuel system|بخاخ/i,s:/injector|fuel|بخاخ/i},
+ {p:/brake fluid|dot-?[345]|زيت (ال)?فرامل/i,s:/brake fluid|زيت (ال)?فرامل/i},
+ {p:/^(gearbox oil|gearbox filters)\b|a\/t|atf|cvt|transmission|gearbox|زيت (ال)?جير|فلتر (ال)?جير|ناقل/i,s:/atf|transmission|gearbox|cvt|a\/t|جير|ناقل/i},
+ {p:/^differential oil\b|differential|gear oil|75w|80w|85w|دفرنس/i,s:/differential|transfer|دفرنس|توزيع/i},
+ {p:/^(engine oil|oil filters)\b|engine oil|motor oil|oil filter|\b(0|5|10|15|20)\s*w-?\s*(16|20|30|40|50)\b|زيت (ال)?(محرك|مكينة)|فلتر (ال)?زيت/i,s:null,oil:1},
+ {p:/^coolant\b|coolant|antifreeze|كولنت|ماء (ال)?رديتر/i,s:/coolant|radiator|رديتر|تبريد/i},
+ {p:/spark plug|بلك|بواجي|بوجي/i,s:/spark plug|بلك|بواجي|بوجي/i},
+ {p:/brake pad|pads|rotor|disc|shoe|فحمات|ديسك|هوب|فرامل/i,s:/brake|rotor|pads|فرامل|ديسك/i},
+ {p:/stabili[sz]er link|link rod|\blink\b|لنك/i,s:/link|stabili|لنك/i},
+ {p:/bush|بوش|جلب (ال)?مقص/i,s:/bush|arm|بوش|مقص/i},
+ {p:/axle boot|cv boot|cv joint|drive ?shaft|جلد(ة)? (ال)?عكس|عكس/i,s:/axle|cv|boot|drive ?shaft|عكس/i},
+ {p:/ball joint|tie rod|rack end|كف|دركسون/i,s:/ball joint|tie rod|rack|steering|كف|دركسون|ستيرنج/i},
+ {p:/shock|strut|absorber|spring|مساعد|سوست/i,s:/shock|strut|absorber|suspension|spring|مساعد|سوست/i},
+ {p:/wheel bearing|hub bearing|بلي|رومان/i,s:/bearing|hub|بلي|رومان/i},
+ {p:/belt|سير/i,s:/belt|سير/i},
+ {p:/air filter|فلتر (ال)?هواء/i,s:/air filter|فلتر (ال)?هواء/i},
+ {p:/cabin|a\/c filter|ac filter|فلتر (ال)?مكيف/i,s:/cabin|a\/c|ac filter|مكيف/i},
+ {p:/battery|بطاري/i,s:/battery|بطاري/i},
+ {p:/wiper|مساح/i,s:/wiper|مساح/i},
+ {p:/bulb|lamp|لمب/i,s:/bulb|light|lamp|لمب|ضو/i},
+ {p:/throttle|ثروتل|throttle cleaner/i,s:/throttle|ثروتل/i}];
+function partFam(x){const p=partOfItem(x);const t=((p&&p.cat)||'')+' '+(x.d||'')+' '+((p&&p.name)||'');return PART_FAM.find(f=>f.p.test(t));}
 function jobGroups(j){const it=j.items||[];const inPk=i=>i.k==='pkg'||i.inPkg||i.pkgx;const svcIdx=it.map((x,i)=>i).filter(i=>!inPk(it[i])&&it[i].k!=='part');
-  const owner={};it.forEach((x,i)=>{if(inPk(x)||x.k!=='part')return;const p=partOfItem(x);const re=p&&REM_PART[p.cat];if(!re)return;const s=svcIdx.find(k=>re.test((it[k].d||'')+' '+(it[k].ar||''))||(p.cat==='Engine oil'||p.cat==='Oil filters')&&isOilSvc(it[k]));if(s!=null)owner[i]=s;});
+  const svcTxt=k=>(it[k].d||'')+' '+(it[k].ar||'')+' '+(((svcOfItem(it[k])||{}).ar)||'');
+  const owner={};it.forEach((x,i)=>{if(inPk(x)||x.k!=='part')return;if(x.under!=null&&svcIdx.includes(+x.under)){owner[i]=+x.under;return;}
+    const f=partFam(x);let s=null;if(f)s=svcIdx.find(k=>f.oil?isOilSvc(it[k]):f.s.test(svcTxt(k)));
+    if(s==null){const p=partOfItem(x);const re=p&&p.cat!=='Additives'&&REM_PART[p.cat];if(re)s=svcIdx.find(k=>re.test(svcTxt(k))||(p.cat==='Engine oil'||p.cat==='Oil filters')&&isOilSvc(it[k]));}
+    if(s!=null)owner[i]=s;});
   const order=[];it.forEach((x,i)=>{if(inPk(x))order.push({i,pk:1});});
   svcIdx.forEach(s=>{order.push({i:s,svc:1});it.forEach((x,i)=>{if(owner[i]===s)order.push({i,sub:1});});});
   const rest=it.map((x,i)=>i).filter(i=>!inPk(it[i])&&it[i].k==='part'&&owner[i]==null);rest.forEach((i,n)=>order.push({i,rest:1,first:n===0}));

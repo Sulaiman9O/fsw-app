@@ -63,6 +63,8 @@ function payNow(j){const T=jobTotals(j);if(!(j.items||[]).length){toast('Add ser
   const tot=m.querySelector('.jb-r.tot');const bar=document.createElement('div');bar.className='paybar';
   bar.innerHTML=`<div><small>${T_('Total')}</small><b>${f3(T.total)} <span>${esc(DB.ws.currency)}</span></b></div><button class="btn okb" id="jpay">💵 ${T_('Invoice & pay')}</button>`;
   const list=tot&&tot.closest('.jb-list');(list||m).after(bar);bar.querySelector('#jpay').onclick=()=>payNow(j);
+  /* the total shows once (in the bar): the list's last row keeps only parts · labour (and the profit eye) */
+  if(tot){tot.classList.add('tot2');const b=tot.querySelector('b');if(b)[...b.childNodes].forEach(n=>{if(n.nodeType===3)n.remove();});const d=tot.querySelector('div');if(d)[...d.childNodes].forEach(n=>{if(n.nodeType===3)n.remove();});}
   /* the old "Make invoice" button stays for "invoice now, payment later", but quieter */
   const iv=m.querySelector('#jinv');if(iv)iv.classList.add('quiet');
   /* "Start work" is for the workers' board: still there, but the money button is the big one */
