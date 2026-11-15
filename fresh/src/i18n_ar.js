@@ -212,3 +212,4 @@ Object.assign(AR_DICT,{'Stamp on this invoice':'الختم على هذي الف�
 Object.assign(AR_DICT,{'Now send the PDF':'الحين أرسل ملف PDF','In WhatsApp, the customer is at the top of the list.':'في الواتساب، العميل بيكون أول واحد في القائمة.','Send the invoice PDF':'أرسل ملف الفاتورة'});
 Object.assign(AR_DICT,{'Making the invoice link…':'يجهّز رابط الفاتورة…','Invoice link sent':'انرسل رابط الفاتورة'});
 Object.assign(AR_DICT,{'Making the report link…':'يجهّز رابط التقرير…'});
+Object.assign(AR_DICT,{'Camera':'الكاميرا','From gallery':'من الاستوديو'});

@@ -10,7 +10,10 @@ function thumbUrl(p){let u=THUMB.get(p.id);if(u&&u.src===p.img)return u.url;
     if(u)URL.revokeObjectURL(u.url);u={src:p.img,url:URL.createObjectURL(new Blob([a],{type:(p.img.slice(5,i).split(';')[0])||'image/jpeg'}))};THUMB.set(p.id,u);return u.url;}catch(e){return '';}}
 function vehThumb(v,c){const id=v&&(v.ph||[])[0];const p=id&&photoOf(id);const u=p&&thumbUrl(p);return u?`<span class="cth${c?' '+c:''}"><img src="${esc(u)}" alt="" loading="lazy"></span>`:'';}
 const vehPhotos=v=>(v&&v.ph||[]).map(id=>photoOf(id)).filter(Boolean);
-function vehAddPhotos(v,done){const f=document.createElement('input');f.type='file';f.accept='image/*';f.multiple=true;
+/* mode 'cam' (the default on a phone or tablet): the camera opens straight away. Without «capture» Android often opened the gallery instead.
+   mode 'gal': choose one or more pictures already on the device. */
+function vehAddPhotos(v,done,mode){mode=mode||(matchMedia('(pointer:coarse)').matches?'cam':'gal');const f=document.createElement('input');f.type='file';f.accept='image/*';
+  if(mode==='cam')f.setAttribute('capture','environment');else f.multiple=true;trail('photo',mode==='cam'?'camera':'gallery');
   f.onchange=()=>{const L=[...(f.files||[])];if(!L.length)return;let n=0;L.forEach(x=>shrinkCar(x,u=>{if(u){DB.photos=DB.photos||[];const id=uid('ph');DB.photos.push({id,veh:v.id,img:u,t:now()});(v.ph=v.ph||[]).push(id);}
     if(++n===L.length){save();toast(T_('Photo saved'));done&&done();}}));};f.click();}
 function vehDelPhoto(v,id){v.ph=(v.ph||[]).filter(x=>x!==id);DB.photos=(DB.photos||[]).filter(x=>x.id!==id);save();toast(T_('Photo deleted'));}
@@ -42,9 +45,10 @@ function vehPhotoSheet(v,id,done){const P=vehPhotos(v);let k=Math.max(0,P.findIn
     strip.querySelector('[data-vpa]').onclick=()=>vehAddPhotos(v,render);});};})();
 /* all the car's pictures in a window (from the job) */
 function vehGallery(v){const P=vehPhotos(v);
-  openSheet(`<h3>📷 ${esc(carName(v))}</h3><p class="hint">${T_('Tap a picture to see it big. ✕ twice deletes it.')}</p><div class="vphs big">${vehThumbs(v,P)}</div><button class="btn ghost" id="vpadd">📷 ${T_('Add photo')}</button>`,el=>{
+  openSheet(`<h3>📷 ${esc(carName(v))}</h3><p class="hint">${T_('Tap a picture to see it big. ✕ twice deletes it.')}</p><div class="vphs big">${vehThumbs(v,P)}</div><div class="two"><button class="btn" id="vpadd">📷 ${T_('Camera')}</button><button class="btn ghost" id="vpgal">🖼 ${T_('From gallery')}</button></div>`,el=>{
     vehThumbsBind(el,v,()=>{if(S.r==='job')render();if(vehPhotos(v).length)vehGallery(v);else closeSheet();});
-    el.querySelector('#vpadd').onclick=()=>{closeSheet();vehAddPhotos(v,()=>{render();vehGallery(v);});};});}
+    el.querySelector('#vpadd').onclick=()=>{closeSheet();vehAddPhotos(v,()=>{render();vehGallery(v);},'cam');};
+    el.querySelector('#vpgal').onclick=()=>{closeSheet();vehAddPhotos(v,()=>{render();vehGallery(v);},'gal');};});}
 /* job header: the car's main picture (tap to see / add) */
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);const v=j&&vehOf(j);if(!v||!v.id)return;const card=m.querySelector('.card');const h=card&&card.querySelector('.h');if(!h)return;
   const P=vehPhotos(v);const b=document.createElement('button');b.className='vth'+(P.length?'':' none');b.title=T_('Car photos');b.innerHTML=P.length?`<img src="${P[0].img}" alt="">${P.length>1?`<i>${P.length}</i>`:''}`:'📷';
