@@ -222,7 +222,7 @@ img{-webkit-user-drag:none;user-drag:none}
 html.sheet-open,html.sheet-open body{overflow:hidden!important;overscroll-behavior:none}
 .sheet{overscroll-behavior:contain;touch-action:none}
 .sheet .pnl{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
-.sheet .pnl *{touch-action:pan-y}
+.sheet .pnl *{touch-action:pan-x pan-y}
 .sheet .pnl input,.sheet .pnl textarea,.sheet .pnl select{touch-action:manipulation}
 /* ---------- look: colour themes picker + Arabic text ---------- */
 .themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
