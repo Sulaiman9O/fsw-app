@@ -1,5 +1,5 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>فاتورة</title><meta property="og:title" content="فاتورة · عالم الخدمات السريعة"><meta property="og:site_name" content="Fast Service World"><meta property="og:description" content="اضغط لعرض الفاتورة وتحميلها PDF">
+<meta name="robots" content="noindex,nofollow"><title>فاتورة</title><meta property="og:title" content="عالم الخدمات السريعة · Fast Service World"><meta property="og:site_name" content="Fast Service World"><meta property="og:description" content="اضغط لعرض المستند وتحميله PDF">
 <style>:root{--bg:#EEF1F5;--fg:#15202B;--mut:#5B6875;--card:#fff;--acc:#1D6FE0}
 @media (prefers-color-scheme:dark){:root{--bg:#0E1620;--fg:#E8EDF2;--mut:#93A1AE;--card:#18222D}}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:Tahoma,Arial,sans-serif}
@@ -12,27 +12,31 @@ img{display:block;width:100%;height:auto;border-radius:10px;background:#fff;box-
 .msg{padding:40px 10px;text-align:center;color:var(--mut)}</style></head>
 <body><div class="w"><div id="top"></div><div id="v" class="msg">…</div></div>
 <script>
-function jpegPdf(J){const bin=atob(J.b64),img=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)img[i]=bin.charCodeAt(i);
-  const A4=841.89,pw=595.28;let iw=pw,ih=pw*J.h/J.w;if(ih>A4&&A4/ih>=0.62){iw=pw*A4/ih;ih=A4;}const ph=Math.max(A4,ih),ix=(pw-iw)/2;   /* a little longer than A4: shrunk onto one A4 page, like the print */
-  const enc=new TextEncoder(),parts=[],off=[];let len=0;
-  const add=s=>{const b=typeof s==='string'?enc.encode(s):s;parts.push(b);len+=b.length;};const obj=(n,s)=>{off[n]=len;add(n+' 0 obj\n'+s+'\nendobj\n');};
-  add('%PDF-1.4\n');
-  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph.toFixed(2)+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
-  off[4]=len;add('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+J.w+' /Height '+J.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>\nstream\n');add(img);add('\nendstream\nendobj\n');
-  const cs='q '+iw.toFixed(2)+' 0 0 '+ih.toFixed(2)+' '+ix.toFixed(2)+' '+(ph-ih).toFixed(2)+' cm /Im0 Do Q';obj(5,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
-  const xr=len;add('xref\n0 6\n0000000000 65535 f \n'+[1,2,3,4,5].map(n=>String(off[n]).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n');
+function jpegPdf(J){return pagesPdf(Array.isArray(J)?J:[J]);}
+function pagesPdf(L){const enc=new TextEncoder(),parts=[],off=[];let len=0;const A4=841.89,pw=595.28,n=L.length;
+  const add=s=>{const b=typeof s==='string'?enc.encode(s):s;parts.push(b);len+=b.length;};const obj=(k,s)=>{off[k]=len;add(k+' 0 obj\n'+s+'\nendobj\n');};
+  add('%PDF-1.4\n');obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,'<< /Type /Pages /Kids ['+L.map((_,k)=>(3+k*3)+' 0 R').join(' ')+'] /Count '+n+' >>');
+  L.forEach((J,k)=>{const bin=atob(J.b64),img=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)img[i]=bin.charCodeAt(i);
+    let iw=pw,ih=pw*J.h/J.w;if(ih>A4&&A4/ih>=0.62){iw=pw*A4/ih;ih=A4;}const ph=Math.max(A4,ih),ix=(pw-iw)/2,o=3+k*3;
+    obj(o,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph.toFixed(2)+'] /Resources << /XObject << /Im0 '+(o+1)+' 0 R >> >> /Contents '+(o+2)+' 0 R >>');
+    off[o+1]=len;add((o+1)+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+J.w+' /Height '+J.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>\nstream\n');add(img);add('\nendstream\nendobj\n');
+    const cs='q '+iw.toFixed(2)+' 0 0 '+ih.toFixed(2)+' '+ix.toFixed(2)+' '+(ph-ih).toFixed(2)+' cm /Im0 Do Q';obj(o+2,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');});
+  const N=3+n*3,xr=len;let xt='xref\n0 '+N+'\n0000000000 65535 f \n';for(let k=1;k<N;k++)xt+=String(off[k]).padStart(10,'0')+' 00000 n \n';
+  add(xt+'trailer\n<< /Size '+N+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n');
   const out=new Uint8Array(len);let p=0;parts.forEach(b=>{out.set(b,p);p+=b.length;});return out;}
-
-const K=(location.pathname.split('/f/')[1]||'').split(/[/?#]/)[0]||new URLSearchParams(location.search).get('k')||'',V=document.getElementById('v'),TOP=document.getElementById('top');
+const K0=(location.pathname.split('/f/')[1]||'').split(/[/?#]/)[0],K=/^[A-Za-z0-9]{16,40}$/.test(K0)?K0:(new URLSearchParams(location.search).get('k')||''),V=document.getElementById('v'),TOP=document.getElementById('top');
 const U='https://firestore.googleapis.com/v1/projects/fsw-workshop-7e4ab/databases/(default)/documents/inv/'+encodeURIComponent(K)+'?key=AIzaSyA_j9-62srvQvpUn7XDUGDRfVrwpIwpxC0';
 const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 (async()=>{if(!/^[A-Za-z0-9]{16,40}$/.test(K)){V.textContent='الرابط غير صحيح · Invalid link';return;}
- try{const r=await fetch(U);if(!r.ok)throw 0;const d=(await r.json()).fields||{};const g=k=>d[k]&&(d[k].stringValue||d[k].integerValue||d[k].doubleValue)||'';
-  const J={b64:g('img'),w:+g('w'),h:+g('h')},no=g('no'),ws=g('ws'),ph=g('ph');if(!J.b64)throw 0;
-  document.title='فاتورة '+no+' · '+ws;
-  TOP.innerHTML='<h1>'+esc(ws)+'</h1><div class="s">فاتورة رقم '+esc(no)+' · Invoice #'+esc(no)+'</div><div class="bar"><button class="b" id="dl">⬇️ تحميل PDF</button>'+(ph?'<a class="b g" href="tel:'+esc(ph.replace(/[^+0-9]/g,''))+'">📞 '+esc(ph)+'</a>':'')+'</div>';
-  V.className='';V.innerHTML='<img alt="فاتورة '+esc(no)+'" src="data:image/jpeg;base64,'+J.b64+'">';
-  document.getElementById('dl').onclick=()=>{const b=new Blob([jpegPdf(J)],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Invoice-'+no+'.pdf';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);};
- }catch(e){V.textContent='الرابط انتهى أو غير موجود. تواصل مع الورشة لنسخة من الفاتورة · This link has expired.';}})();
+ const get=async id=>{const r=await fetch(U.replace(encodeURIComponent(K),encodeURIComponent(id)));if(!r.ok)throw 0;const d=(await r.json()).fields||{};return k=>d[k]&&(d[k].stringValue||d[k].integerValue||d[k].doubleValue)||'';};
+ try{const g=await get(K);const kind=g('kind')||'inv',n=Math.max(1,+g('n')||1),no=g('no'),ws=g('ws'),ph=g('ph');
+  const pages=[{b64:g('img'),w:+g('w'),h:+g('h')}];if(!pages[0].b64)throw 0;
+  for(let k=2;k<=n;k++){const x=await get(K+'-'+k);pages.push({b64:x('img'),w:+x('w'),h:+x('h')});}
+  const isI=kind==='insp',ttl=isI?'تقرير الفحص · Inspection report':'فاتورة رقم '+esc(no)+' · Invoice #'+esc(no);
+  document.title=(isI?'تقرير الفحص ':'فاتورة '+no+' ')+'· '+ws;
+  TOP.innerHTML='<h1>'+esc(ws)+'</h1><div class="s">'+ttl+(isI&&no?' · '+esc(no):'')+'</div><div class="bar"><button class="b" id="dl">⬇️ تحميل PDF</button>'+(ph?'<a class="b g" href="tel:'+esc(ph.replace(/[^+0-9]/g,''))+'">📞 '+esc(ph)+'</a>':'')+'</div>';
+  V.className='';V.innerHTML=pages.map((J,k)=>'<img alt="'+(isI?'تقرير الفحص':'فاتورة '+esc(no))+' '+(k+1)+'" src="data:image/jpeg;base64,'+J.b64+'" style="margin-bottom:12px">').join('');
+  const fn=(isI?'Inspection-':'Invoice-')+String(no).replace(/[^A-Za-z0-9-]/g,'')+'.pdf';
+  document.getElementById('dl').onclick=()=>{const b=new Blob([pagesPdf(pages)],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);};
+ }catch(e){V.textContent='الرابط انتهى أو غير موجود. تواصل مع الورشة · This link has expired.';}})();
 </script></body></html>

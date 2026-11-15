@@ -161,9 +161,18 @@ const IR_CSS='.irsum{display:flex;gap:4mm;flex-wrap:wrap;margin:3mm 0;font-weigh
 SCREENS.inspr=m=>{const j=byId('jobs',S.p.id);if(!j||!j.insp){go('work');return;}const c=custOf(j);
   m.innerHTML=head(T_('Inspection report'))+`<div class="invwrap">${inspReportHtml(j)}</div>
    <div class="two">${c.phone?`<button class="btn wa" id="irwa">📤 ${T_('Send on WhatsApp')}</button>`:''}<button class="btn ghost" id="irpr">🖨 ${T_('Print / PDF')}</button></div>`;
-  const wa=$('#irwa');if(wa)wa.onclick=()=>{shareText(c.phone,inspReportText(j));logJ(j,'Inspection report sent');save();};
+  const wa=$('#irwa');if(wa)wa.onclick=()=>sendInspReport(j);
   $('#irpr').onclick=()=>printHtml('<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:14mm}body{margin:0;font-family:Arial,sans-serif}'+INV_CSS+IR_CSS+'</style></head><body>'+inspReportHtml(j)+'</body></html>',210,297,'Inspection '+(vehOf(j).plate||j.no));};
 
+/* the report as a link (pages with the photos, «Download PDF»), like the invoice; no internet: the text as before */
+async function sendInspReport(j){const c=custOf(j)||{},v=vehOf(j),I=j.insp;const cnt=x=>Object.values(I.r).filter(y=>y===x).length;
+  const sent=()=>{logJ(j,'Inspection report sent');save();};
+  if(invLinkOk()){toast(T_('Making the report link…'));
+    const ok=await sendDocLink(c.phone,()=>docUploadLink('insp',inspReportHtml(j),INV_CSS+IR_CSS,{no:String(v.plate||j.no),job:j.id,title:I.name||''}),
+      url=>[`تقرير فحص سيارتك ${carName(v)}${v.plate?' ('+v.plate+')':''}`,`✅ سليم: ${cnt('ok')}   🟡 قريباً: ${cnt('warn')}   🔴 يحتاج الآن: ${cnt('bad')}`,'',`📋 التقرير كامل بالصور:`,url,'',DB.ws.name||''].join('\n'),
+      url=>{j.inspLink=url;sent();});
+    if(ok)return;}
+  shareText(c.phone,inspReportText(j));sent();}
 /* job screen: open the new inspection page; the summary shows sections and red/yellow */
 (function(){window.inspSheet=inspSheet=function(j){go('inspj',{id:j.id});};
   const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p.id);const b=$('#jinsp');if(!j||!b)return;
