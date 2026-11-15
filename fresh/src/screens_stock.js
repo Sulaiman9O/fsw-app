@@ -91,7 +91,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
    <div id="pgr"></div>
    <div class="in2"><label class="field-l">Selling price<input class="field" id="ppr" inputmode="decimal" value="${w.price?f3(w.price):''}"></label>${can.cost()?`<label class="field-l">Cost (owner only)<input class="field" id="pco" inputmode="decimal" value="${w.cost?f3(w.cost):''}"></label>`:'<span></span>'}</div>
    ${sx('markup')&&can.cost()?'<div id="psug"></div>':''}
-   <div class="in2"><label class="field-l">In stock<input class="field" id="pst" inputmode="decimal" value="${w.stock||''}" ${isNew||can.del()?'':'disabled'}></label><label class="field-l">Reorder at<input class="field" id="pro" inputmode="decimal" value="${w.reorder||''}"></label></div>
+   <div class="in2"><label class="field-l">In stock<input class="field" id="pst" inputmode="decimal" value="${w.stock||''}" ${isNew||can.del()?'':'disabled'}></label><label class="field-l">Reorder at<input class="field" id="pro" inputmode="decimal" value="${w.reorder||''}"></label></div>${['Engine oil','Gearbox oil','Coolant','Differential oil'].includes(w.cat)?`<label class="field-l">Litres in one can (if sold by the can)<input class="field" id="ppk" inputmode="decimal" placeholder="${packL(Object.assign({},w,{packL:0,unit:'pc'}))||''}" value="${+w.packL||''}"></label>`:''}
    ${!isNew?`<button class="btn ghost" id="prcv">📥 Received stock</button>`:''}
    <details class="pmore"${draft?' open':''}><summary>More details</summary>
    ${sx('loc')?`<label class="field-l">📍 Shelf place<input class="field" id="ploc" placeholder="e.g. Shelf A3 · Drawer 2" value="${esc(w.loc||'')}"></label>`:''}
@@ -117,7 +117,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
      let t=p;if(isNew){t={id:uid('p'),t:now(),stock:0};DB.parts.push(t);}
      const ns=num($('#pst').value),os=+t.stock||0;
      if(!isNew&&(Math.abs(num($('#ppr').value)-(+t.price||0))>0.0005))audit('price','Part '+t.name+': '+f3(t.price)+' → '+f3(num($('#ppr').value)));
-     Object.assign(t,{grade:$('#pcat').value==='Engine oil'?grade:t.grade,name:n,num:nm,cat:$('#pcat').value,unit,price:num($('#ppr').value),reorder:num($('#pro').value)});const co=$('#pco');if(co)t.cost=num(co.value);
+     Object.assign(t,{grade:$('#pcat').value==='Engine oil'?grade:t.grade,name:n,num:nm,cat:$('#pcat').value,unit,price:num($('#ppr').value),reorder:num($('#pro').value)});const pk=$('#ppk');if(pk){const n2=num(pk.value);if(n2>0)t.packL=n2;else delete t.packL;}const co=$('#pco');if(co)t.cost=num(co.value);
      const g=id=>{const e=el.querySelector(id);return e?e.value.trim():undefined;};if(g('#ploc')!==undefined)t.loc=g('#ploc');if(g('#pfit')!==undefined)t.fits=g('#pfit');
      if(el.querySelector('#palt')){const old=t.alts||[];t.alts=w.alts;old.filter(i=>!w.alts.includes(i)).forEach(i=>{const x=byId('parts',i);if(x)x.alts=(x.alts||[]).filter(y=>y!==t.id);});w.alts.forEach(i=>{const x=byId('parts',i);if(x){x.alts=x.alts||[];if(!x.alts.includes(t.id))x.alts.push(t.id);}});}
      if(el.querySelector('#pvp'))t.vprices=w.vprices;

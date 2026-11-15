@@ -141,7 +141,7 @@ function applyOilRecipe(j,mode,svc){const v=vehOf(j);const R=oilRecipe(v,mode);i
   j.items=(j.items||[]).filter(i=>i.grp!=='rxoil');
   if(!(j.items||[]).some(isOilSvc)){const s=svc||DB.services.find(s=>rxOf(s)==='oil');if(s){const it=svcItem(s,v);it.grp='rxoil';j.items.push(it);}}
   if(R.filter&&!(j.items.some(i=>isFilterI(i,partOfItem(i))))){const p=R.filter;j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0,grp:'rxoil',by:S.user.name});}
-  if(R.oil&&!(j.items.some(i=>isOilI(i,partOfItem(i))))){const p=R.oil;j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:R.qty,u:'L',p:+p.price,cost:+p.cost||0,grp:'rxoil',by:S.user.name});}
+  if(R.oil&&!(j.items.some(i=>isOilI(i,partOfItem(i))))){const p=R.oil;const lq=liqQ(p,R.qty);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:lq.q,u:lq.L?'L':'',p:+p.price,cost:+p.cost||0,grp:'rxoil',by:S.user.name});}
   j.rx=j.rx||{};j.rx.oil={mode,at:now()};logJ(j,(mode==='maker'?'Maker recommendation':'Usual oil change')+' added · '+[R.filter&&R.filter.name,R.oil&&(R.qty+' L '+R.oil.name)].filter(Boolean).join(' + '));return R;}
 /* called when a service or part is added: an oil-change service, an oil filter or an engine oil brings the rest by itself */
 function rxAuto(j,added){if(!sx('smart')||isInvoiced(j))return null;const v=vehOf(j);if(!v||isEV(v))return null;

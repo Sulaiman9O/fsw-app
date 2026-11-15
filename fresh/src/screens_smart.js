@@ -6,6 +6,12 @@ const RX={
  plugs:{t:'Spark plugs',ic:'🔥',cat:['Spark plugs'],cyl:1},
  pads:{t:'Brake pads',ic:'🛑',cat:['Brake pads'],fit:1},
  battery:{t:'Battery',ic:'🔋',cat:['Batteries'],last:1}};
+/* liquids: litres → how many of this part. A part kept in litres (drum) takes the litres; a part kept by the can/bottle takes
+   whole cans: litres ÷ litres in one can (part's "Litres in one can", else read from its name: "5ltrs", "4L", "1 litre").
+   Can size unknown → 1 and the option says so (never litres counted as cans: 4 L of a 4-litre can is 1 can, not 4). */
+function packL(p){if(!p||p.unit==='L')return 0;if(+p.packL>0)return +p.packL;const m=String(p.name||'').match(/(\d+(?:\.\d+)?)\s*(?:l|lt|ltr|ltrs|litre|litres|liter|liters)\b/i);const n=m?+m[1]:0;return n>0&&n<=30?n:0;}
+function liqQ(p,litres){if(!p||p.unit==='L')return {q:litres,L:1};const pk=packL(p);if(pk)return {q:Math.max(1,Math.ceil(litres/pk-0.02)),pk};return {q:1,unk:1};}
+const liqTxt=(o,litres)=>o.L?o.q+' L':o.pk?o.q+' × '+o.pk+' L':'1 × ? L';
 const GRADE={mineral:['Mineral',5000],semi:['Semi synthetic',7000],full:['Full synthetic',10000]};
 function gradeOf(p){if(p.grade)return p.grade;const n=lc(p.name);if(/semi/.test(n))return 'semi';if(/mineral|20w-?50|15w-?40|20w-?40/.test(n))return 'mineral';if(/full|fully|synth|0w-?|5w-?(20|30|40)/.test(n))return 'full';return '';}
 function rxGuess(s){const n=lc(s.name);if(s.tag==='oil'||/engine oil/.test(n))return 'oil';if(s.tag==='gear'||/gearbox oil|atf/.test(n))return 'gear';if(/spark plug/.test(n))return 'plugs';if(/brake pads/.test(n))return 'pads';if(/battery replace|new battery/.test(n))return 'battery';if(/coolant|radiator flush/.test(n))return 'coolant';return '';}
@@ -25,9 +31,9 @@ function smartOptions(j,s){const k=rxOf(s),R=RX[k],v=vehOf(j);const parts=DB.par
   let qty=R.liq?(learned(k,v)||guessLitres(k,v)):R.cyl?cylOf(v):1;const qSrc=R.liq?(learned(k,v)?'learned':'guess'):R.cyl?'cylinders':'';
   const fitting=parts.filter(p=>fitsCar(p,v));const useFit=(R.fit||R.cyl)&&fitting.length;let L=useFit?fitting:parts;
   const past=pastRefs(v,R.cat);const lab=svcPrice(s,v);const fl=pickFilter(R,v);
-  const opts=L.map(p=>{const g=R.grade?gradeOf(p):'';const q=R.liq?qty:R.cyl?qty:(R.fit?(p.unit==='set'?1:1):1);const partT=r3(q*(+p.price||0));const fT=fl?(+fl.p.price||0):0;
+  const opts=L.map(p=>{const g=R.grade?gradeOf(p):'';const lq=R.liq?liqQ(p,qty):null;const q=R.liq?lq.q:R.cyl?qty:(R.fit?(p.unit==='set'?1:1):1);const partT=r3(q*(+p.price||0));const fT=fl?(+fl.p.price||0):0;
     const total=r3(partT+fT+lab);const cost=r3(q*(+p.cost||0)+(fl?(+fl.p.cost||0):0));const next=g&&GRADE[g]?GRADE[g][1]:0;
-    return {p,g,q,partT,fT,total,profit:r3(total-cost),next,last:!!past[p.id],out:(+p.stock||0)<q-0.0001,fits:fitsCar(p,v)};});
+    return {p,g,q,lq,partT,fT,total,profit:r3(total-cost),next,last:!!past[p.id],out:(+p.stock||0)<q-0.0001,fits:fitsCar(p,v)};});
   const ord={mineral:1,semi:2,full:3,'':4};opts.sort((a,b)=>(ord[a.g]-ord[b.g])||(a.total-b.total));
   const perKm=opts.filter(o=>o.next).map(o=>o.total/o.next);const best=perKm.length?Math.min(...perKm):0;opts.forEach(o=>o.bestKm=o.next&&Math.abs(o.total/o.next-best)<1e-9&&perKm.length>1);
   return {k,R,v,qty,qSrc,lab,fl,opts,useFit};}
@@ -55,7 +61,7 @@ function smartSheet(j,s){let O=smartOptions(j,s),sel=O.opts.findIndex(o=>o.last)
     ${chipsHtml()}
     ${shown().length?shown().slice(0,all?999:5).map(({o,i})=>`<button class="oc${i===sel?' on':''}${o.last?' last':''}" data-op="${i}">${o.last?'<span class="bd">LAST TIME</span>':o.bestKm?'<span class="bd bk">BEST PER KM</span>':''}
       <div class="t"><b>${o.g?GRADE[o.g][0]+' · ':''}${esc(o.p.name)}</b><em>${f3(o.total)}</em></div>
-      <div class="l"><span>${O.R.liq?o.q+' L':o.q+' ×'} ${f3(o.p.price)}${o.out?' · <b style="color:var(--bad)">not enough in stock ('+(+o.p.stock||0)+')</b>':''}</span><span>${f3(o.partT)}</span></div>
+      <div class="l"><span>${O.R.liq&&o.lq.L?o.q+' L':o.q+' ×'} ${f3(o.p.price)}${O.R.liq&&o.lq.pk?' · '+T_('cans of')+' '+o.lq.pk+' L':''}${O.R.liq&&o.lq.unk?' · <b style="color:var(--warn)">'+T_('Can size unknown: check the quantity')+'</b>':''}${o.out?' · <b style="color:var(--bad)">not enough in stock ('+(+o.p.stock||0)+')</b>':''}</span><span>${f3(o.partT)}</span></div>
       ${o.fT?`<div class="l"><span>Filter</span><span>${f3(o.fT)}</span></div>`:''}<div class="l"><span>Labour · ${esc(s.name)}</span><span>${f3(O.lab)}</span></div>
       <div class="ft">${o.next?`<span class="km">Next: ${j.km?kmf(j.km+o.next)+' · ':''}${kmf(o.next)} km</span>`:''}${O.useFit&&o.fits?'<span class="km ok">fits ✓</span>':''}${showCost()?`<span class="pf">Profit ${f3(o.profit)}</span>`:''}</div></button>`).join('')
       +(!all&&shown().length>5?`<button class="btn ghost sm" id="small">Show all (${shown().length})</button>`:'')
@@ -75,10 +81,10 @@ function smartSheet(j,s){let O=smartOptions(j,s),sel=O.opts.findIndex(o=>o.last)
     const ok=el.querySelector('#smok');if(ok)ok.onclick=()=>{if(sel<0)return;const o=O.opts[sel];const it=svcItem(s,v);if(o.next)it.nextKm=o.next;it.rxk=O.k;it.rxg=o.g;j.items.push(it);
       j.items.push({k:'part',ref:o.p.id,d:o.p.name,num:o.p.num,q:o.q,u:o.p.unit==='L'?'L':'',p:+o.p.price,cost:+o.p.cost||0,rxk:O.k});
       if(O.fl)j.items.push({k:'part',ref:O.fl.p.id,d:O.fl.p.name,num:O.fl.p.num,q:1,u:'',p:+O.fl.p.price,cost:+O.fl.p.cost||0,rxk:O.k});
-      if(O.R.liq)learn(O.k,v,o.q);logJ(j,'Added '+s.name+' · '+o.p.name+(O.fl?' + '+O.fl.p.name:''));save();closeSheet();render();toast('Added: service, '+(O.fl?'oil and filter':'parts'));};};
+      if(O.R.liq)learn(O.k,v,O.qty);logJ(j,'Added '+s.name+' · '+o.p.name+(O.fl?' + '+O.fl.p.name:''));save();closeSheet();render();toast('Added: service, '+(O.fl?'oil and filter':'parts'));};};
   openSheet(`<h3>${O.R.ic} ${esc(s.name)} · choose</h3><div class="two"><button class="btn ghost sm" id="smman">✋ Choose manually</button><button class="btn ghost sm" id="smx">✕ Cancel</button></div><div id="smb"></div>`,el=>{
     el.querySelector('#smx').onclick=()=>{closeSheet();addItemSheet(j);};
     el.querySelector('#smman').onclick=()=>{j.items.push(svcItem(s,vehOf(j)));logJ(j,'Added '+s.name+' (manual)');save();closeSheet();render();addItemSheet(j,{manual:true,tab:'p:'+RX[rxOf(s)].cat[0]});toast(s.name+' added. Now pick the parts.');};});draw();}
-function smartOptionsQ(j,s,q){const O=smartOptions(j,s);if(q&&(O.R.liq||O.R.cyl)){if(Math.abs(q-O.qty)>1e-9)O.qSrc='';O.qty=q;O.opts.forEach(o=>{o.q=q;o.partT=r3(q*(+o.p.price||0));o.total=r3(o.partT+o.fT+O.lab);o.profit=r3(o.total-(q*(+o.p.cost||0)+(O.fl?(+O.fl.p.cost||0):0)));o.out=(+o.p.stock||0)<q-0.0001;});
+function smartOptionsQ(j,s,q){const O=smartOptions(j,s);if(q&&(O.R.liq||O.R.cyl)){if(Math.abs(q-O.qty)>1e-9)O.qSrc='';O.qty=q;O.opts.forEach(o=>{const n=O.R.liq?(o.lq=liqQ(o.p,q)).q:q;o.q=n;o.partT=r3(n*(+o.p.price||0));o.total=r3(o.partT+o.fT+O.lab);o.profit=r3(o.total-(n*(+o.p.cost||0)+(O.fl?(+O.fl.p.cost||0):0)));o.out=(+o.p.stock||0)<n-0.0001;});
     const perKm=O.opts.filter(o=>o.next).map(o=>o.total/o.next);const best=perKm.length?Math.min(...perKm):0;O.opts.forEach(o=>o.bestKm=o.next&&Math.abs(o.total/o.next-best)<1e-9&&perKm.length>1);}
   return O;}
