@@ -1,0 +1,20 @@
+/* an item changed by mistake comes back with Undo (Price?, No charge, edit, remove); Price? keeps the old price */
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:412,height:900}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const R=[];const ok=(c,m)=>{R.push(!!c);console.log((c?'PASS ':'FAIL ')+m);};
+await p.route('**/raw.githubusercontent.com/**',r=>r.abort());
+await p.goto('http://localhost:8811/');await p.waitForTimeout(700);await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();
+const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwdemo').catch(()=>{});await p.click('#nwl').catch(()=>{});
+const jid=await p.evaluate(()=>{const j=DB.jobs.find(j=>!isInvoiced(j)&&j.items.some(i=>i.k!=='part'&&+i.p>0));go('job',{id:j.id});return j.id;});await p.waitForTimeout(500);
+const li=await p.evaluate(id=>byId('jobs',id).items.findIndex(i=>i.k!=='part'&&+i.p>0),jid);const p0=await p.evaluate(([id,i])=>+byId('jobs',id).items[i].p,[jid,li]);
+const pick=async t=>{await p.evaluate(([id,i])=>{PRESS=null;itemMenu(byId('jobs',id),i);},[jid,li]);await p.waitForTimeout(200);await p.locator('.ash-b',{hasText:t}).first().click();await p.waitForTimeout(300);};
+await pick('Ask owner for the price');ok(await p.evaluate(([id,i])=>byId('jobs',id).items[i].pend,[jid,li]),'1. price pending set');
+ok(await p.isVisible('#undob'),'2. undo bar shows');await p.click('#undob button');await p.waitForTimeout(300);
+let it=await p.evaluate(([id,i])=>byId('jobs',id).items[i],[jid,li]);ok(!it.pend&&+it.p===p0,'3. undo: price back '+it.p);
+await pick('Ask owner for the price');await pick('Price is known now');const v=await p.inputValue('#ep');const ck=await p.isChecked('#epd');ok(+v===p0&&!ck,'4. edit opens with old price '+v+' and box unchecked');await p.click('#eok');await p.waitForTimeout(300);
+it=await p.evaluate(([id,i])=>byId('jobs',id).items[i],[jid,li]);ok(!it.pend&&+it.p===p0,'5. saved back to old price');
+await pick('Edit');await p.fill('#ep','99');await p.click('#eok');await p.waitForTimeout(300);ok(await p.evaluate(([id,i])=>+byId('jobs',id).items[i].p,[jid,li])===99,'6. edited to 99');
+const lg=await p.evaluate(id=>byId('jobs',id).log.slice(-1)[0][1],jid);ok(/was/.test(lg),'7. log keeps old value: '+lg);
+await p.click('#undob button');await p.waitForTimeout(300);ok(await p.evaluate(([id,i])=>+byId('jobs',id).items[i].p,[jid,li])===p0,'8. undo edit');
+const n0=await p.evaluate(id=>byId('jobs',id).items.length,jid);await pick('Edit');await p.click('#edel');await p.waitForTimeout(300);await p.click('#undob button');await p.waitForTimeout(300);ok(await p.evaluate(id=>byId('jobs',id).items.length,jid)===n0,'9. undo remove from edit');
+await pick('Edit');await p.fill('#ep','55');await p.click('[data-close]');await p.waitForTimeout(300);ok(await p.evaluate(([id,i])=>+byId('jobs',id).items[i].p,[jid,li])===p0,'10. Close without save keeps the price');
+console.log('errors',JSON.stringify(errs));ok(!errs.length,'no page errors');console.log(R.every(x=>x)?'ALL PASS':'SOME FAIL');await b.close();})();

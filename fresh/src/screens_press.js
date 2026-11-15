@@ -24,9 +24,12 @@ function actionSheet(title,sub,acts,top){acts=acts.filter(a=>a&&!a.hide);
 function fullSheet(title,sub,acts,top){
   openSheet(`<div class="ash-h"><h3>${title}</h3>${sub?`<span>${sub}</span>`:''}</div>${top||''}<div class="ash">${acts.map((a,i)=>`<button class="ash-b${a.danger?' dg':''}" data-ai="${i}"><span class="ic">${a.ic}</span><div><b>${a.t}</b>${a.d?`<small>${a.d}</small>`:''}</div></button>`).join('')}</div>`,el=>{
     el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>{const a=acts[+b.dataset.ai];if(!a.keep)closeSheet();a.fn(el);});});}
+/* undo for a change made by mistake: the job's lines, discount and stage as they were just before */
+function jobItemsSnap(j){return JSON.stringify({items:j.items,disc:j.disc,discPct:j.discPct});}
+function jobUndo(j,before,what){if(jobItemsSnap(j)===before)return;undoBar(esc(T_('Changed:'))+' '+esc(what||''),()=>{const o=JSON.parse(before);j.items=o.items;j.disc=o.disc;if(o.discPct==null)delete j.discPct;else j.discPct=o.discPct;logJ(j,'Undo change '+(what||''));save();render();});}
 let UNDO=null;
 function undoBar(msg,fn){UNDO=fn;let u=$('#undob');if(!u){u=document.createElement('div');u.id='undob';u.className='undob';document.body.appendChild(u);}
-  u.innerHTML=`<span>${msg}</span><button>Undo</button>`;u.hidden=false;u.querySelector('button').onclick=()=>{u.hidden=true;if(UNDO){UNDO();UNDO=null;}};clearTimeout(u._t);u._t=setTimeout(()=>{u.hidden=true;UNDO=null;},6000);}
+  u.innerHTML=`<span>${msg}</span><button>Undo</button>`;u.hidden=false;u.querySelector('button').onclick=()=>{u.hidden=true;if(UNDO){UNDO();UNDO=null;}};clearTimeout(u._t);u._t=setTimeout(()=>{u.hidden=true;UNDO=null;},10000);}
 /* job item menu */
 function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const pt=it.k==='part'?partOfItem(it):null;const locked=isInvoiced(j);
   const sub=`${it.k==='part'?'Part':'Labour'} · ${+it.q}${it.u?' '+esc(it.u):''} × ${it.pend?'?':f3(it.p)} = <b>${it.pend?'?':f3(it.q*it.p)}</b>`;
@@ -37,13 +40,13 @@ function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const 
   actionSheet(esc(it.d),sub,[
    {ic:'🔁',t:'Change to another',s:'Change',d:alts.length?alts.length+' alternative'+(alts.length>1?'s':'')+' · same category':'Same category',hide:!pt||(!same.length),fn:()=>swapSheet(j,i,alts,same)},
    {ic:'✏️',t:'Edit',s:'Edit',d:'Name, price, quantity',fn:()=>editItemSheet(j,i)},
-   {ic:'⏳',s:'Price?',t:it.pend?'Price is known now':'Ask owner for the price',d:it.pend?'Open to type the price':'Shows “Price?” until the owner sets it',fn:()=>{if(it.pend){editItemSheet(j,i);return;}it.pend=true;logJ(j,'Price pending · '+it.d);save();render();}},
+   {ic:'⏳',s:'Price?',t:it.pend?'Price is known now':'Ask owner for the price',d:it.pend?'Open to type the price':'Shows “Price?” until the owner sets it',fn:()=>{if(it.pend){editItemSheet(j,i,false,1);return;}it.pend=true;logJ(j,'Price pending · '+it.d);save();render();}},
    {ic:'🎁',t:'No charge',s:'Free',d:'Price 0, part still leaves stock',hide:!can.discount(),fn:()=>{const o=it.p;it.p=0;it.pend=false;it.free=1;audit('discount','No charge: '+it.d+' (was '+f3(o)+') · job #'+j.no);logJ(j,'No charge · '+it.d);save();render();}},
    {ic:'🧑‍🔧',s:'Customer part',t:it.custPart?'Undo: customer brought it':'Customer brought this part',d:'Price 0 and it does not leave our stock',hide:it.k!=='part',fn:()=>{it.custPart=!it.custPart;if(it.custPart){it._p=it.p;it.p=0;}else{it.p=it._p||it.p;delete it._p;}logJ(j,(it.custPart?'Customer part · ':'Our part again · ')+it.d);save();render();}},
    {ic:'📝',s:'Note',t:it.note?'Edit note':'Add a note',d:it.note?esc(it.note):'Shows on the invoice under the item',fn:()=>openSheet(`<h3>Note · ${esc(it.d)}</h3><input class="field" id="lpn" value="${esc(it.note||'')}" placeholder="e.g. old part given to customer"><button class="btn" id="lpnok">Save</button>`,el=>el.querySelector('#lpnok').onclick=()=>{it.note=$('#lpn').value.trim();save();closeSheet();render();})},
    {ic:'☑️',t:'Select several',s:'Select',d:'Then remove, mark or price them together',fn:()=>{S.selJ={id:j.id,set:new Set([i])};render();}},
    {ic:'🗑',t:'Remove',s:'Remove',danger:1,fn:()=>{const it0=j.items.splice(i,1)[0];logJ(j,'Removed '+it0.d);save();render();undoBar('Removed '+esc(it0.d),()=>{j.items.splice(i,0,it0);logJ(j,'Undo remove '+it0.d);save();render();});}}
-  ],top);
+  ].map(a=>{if(!a||a.hide||a.t==='Remove'||a.s==='Edit'||a.s==='Change'||a.s==='Note'||a.s==='Select')return a;const f=a.fn;return Object.assign({},a,{fn:x=>{const b=jobItemsSnap(j);f(x);jobUndo(j,b,it.d);}});}),top);
   const el=$('#qs')||$('#sheet');if(!el)return;el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{it.q=Math.max(step,Math.round(((+it.q)+step*(+b.dataset.q))*100)/100);el.querySelector('#lpq').value=it.q;save();render();const a=document.querySelector('[data-it="'+i+'"]');if(a)a.classList.add('qs-on');});
   const q=el.querySelector('#lpq');q.onfocus=()=>q.select();q.onchange=()=>{const n=num(q.value);if(n>0){it.q=n;save();render();}};}
 function swapSheet(j,i,alts,same){const it=j.items[i];const cur=partOfItem(it);const v=vehOf(j);

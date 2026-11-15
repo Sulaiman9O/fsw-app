@@ -76,7 +76,7 @@ function pkgMoney(j,inst){let rev=0,cost=0;(j.items||[]).forEach(i=>{if(i.inst==
   if(!j)return;(j.items||[]).forEach((it,i)=>{const b=m.querySelector(`[data-it="${i}"]`);if(!b)return;
     if(it.k==='pkg'){b.classList.add('pkh');const s=b.querySelector('small');if(s)s.innerHTML=`📦 ${T_('Package')}${it.p0&&Math.abs(it.p0-it.p)>0.0005?' · <s>'+f3(it.p0)+'</s>':''}${showCost()?' · '+T_('profit')+' '+f3(pkgMoney(j,it.inst).profit):''}`;}
     else if(it.inPkg){b.classList.add('pkm');const r=b.querySelector(':scope > b');if(r)r.innerHTML=`<small class="pkin">${T_('In package')}</small>`;const s=b.querySelector('small');if(s)s.innerHTML=(it.k==='part'?T_('Part'):T_('Labour'))+(it.num?' · <bdi dir="ltr" data-notr>'+esc(it.num)+'</bdi>':'')+' · '+(+it.q)+(it.u?' '+esc(it.u):'')+(+it.incl?' · '+T_('included')+' '+it.incl:'');}});};})();
-(function(){const E=editItemSheet;window.editItemSheet=editItemSheet=function(j,i,isNew){const it=j.items[i];if(!it)return;
+(function(){const E=editItemSheet;window.editItemSheet=editItemSheet=function(j,i,isNew,priceNow){const it=j.items[i];if(!it)return;
   if(it.k==='pkg'){const p=byId('pkgs',it.pkg)||{};const M=pkgMoney(j,it.inst);
     openSheet(`<h3>📦 ${esc(it.d)}</h3>${it.desc?`<p class="hint">${esc(it.desc)}</p>`:''}<div class="card"><div class="jb-r"><div>${T_('Package price')}${it.p0&&Math.abs(it.p0-it.p)>0.0005?` <s>${f3(it.p0)}</s>`:''}</div><b>${f3(it.p)}</b></div>${can.cost()?`<div class="jb-r"><div>${T_('Cost of parts')}</div><b>${f3(M.cost)}</b></div><div class="jb-r tot"><div>${T_('Profit')}</div><b>${f3(M.profit)}</b></div>`:''}</div>
       <p class="hint">${T_('The package price cannot be changed. Change a quantity by tapping its line; extra over what is included is added by itself.')}</p><button class="btn ghost jb-del" id="pkdel">${T_('Remove the package')}</button>`,el=>{
@@ -85,7 +85,7 @@ function pkgMoney(j,inst){let rev=0,cost=0;(j.items||[]).forEach(i=>{if(i.inst==
     openSheet(`<h3>${esc(it.d)}</h3><p class="hint">${T_('In package')} · ${it.incl?T_('included')+' '+it.incl+(it.u?' '+esc(it.u):'')+(it.extra?' · '+T_('each extra')+' '+f3(it.extra):''):''}</p>
       <label class="field-l">${T_('Qty')}${it.u?' ('+esc(it.u)+')':''}<input class="field" id="pkq" inputmode="decimal" value="${+it.q}"></label><button class="btn" id="pkok">${T_('Save')}</button>`,el=>{
       el.querySelector('#pkok').onclick=()=>{const q=num($('#pkq').value);if(!(q>0)){toast(T_('Type the quantity'));return;}it.q=q;pkgExtras(j.items,it.inPkg);logJ(j,'Package qty · '+it.d+' → '+q);save();closeSheet();render();};});return;}
-  return E(j,i,isNew);};})();
+  return E(j,i,isNew,priceNow);};})();
 /* the long-press menu: inside a package only the quantity and swap make sense */
 (function(){const IM=itemMenu;window.itemMenu=itemMenu=function(j,i){const it=j.items[i];if(it&&(it.k==='pkg'||it.inPkg||it.pkgx)&&!isInvoiced(j)){editItemSheet(j,i);return;}return IM(j,i);};})();
 

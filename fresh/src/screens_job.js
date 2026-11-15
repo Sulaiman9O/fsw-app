@@ -135,21 +135,21 @@ const isPickup=v=>/hilux|pickup|pick-up|navara|d-max|dmax|l200|triton|ranger|tac
 function sizeOf(v){const n=DB.sizes.length;if(v&&v.size!=null&&v.size<n)return v.size;const g=x=>{const i=DB.sizes.findIndex(s=>s.toLowerCase()===x);return i<0?null:i;};
   if(isPickup(v)&&g('pickup')!=null)return g('pickup');if(isSuv(v)&&g('suv')!=null)return g('suv');return g('sedan')!=null?g('sedan'):0;}
 function svcPrice(s,v){const k=sizeOf(v);const p=s.p||[0];return +(p[k]!=null&&p[k]!==''?p[k]:p[p.length-1])||0;}
-function editItemSheet(j,i,isNew){
-  const it=j.items[i];if(!it)return;
+function editItemSheet(j,i,isNew,priceNow){
+  const it=j.items[i];if(!it)return;const before=jobItemsSnap(j),was={q:+it.q,p:+it.p,pend:!!it.pend};
   openSheet(`<h3>${isNew&&!it.ref?'New item':'Item'}</h3>
    <input class="field" id="ed" placeholder="Name" value="${esc(it.d)}">
    <div class="chips"><button data-k="part" aria-pressed="${it.k==='part'}">Part</button><button data-k="labour" aria-pressed="${it.k!=='part'}">Labour / service</button></div>
-   <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each${it.from?' (starts from '+f3(it.p)+')':''}<input class="field" id="ep" inputmode="decimal" value="${it.pend?'':f3(it.p)}" ${it.lockP&&!can.discount()?'disabled':''}></label></div>
+   <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each${it.from?' (starts from '+f3(it.p)+')':''}<input class="field" id="ep" inputmode="decimal" value="${it.pend&&!(+it.p)?'':f3(it.p)}" ${it.lockP&&!can.discount()?'disabled':''}></label></div>
    ${showCost()&&it.k==='part'?`<label class="field-l">Cost each (owner only)<input class="field" id="ec" inputmode="decimal" value="${it.cost?f3(it.cost):''}"></label>`:''}
    ${!it.ref?`<label class="chk"><input type="checkbox" id="eo" ${it.outside?'checked':''}> Bought outside (not from our stock)</label>`:''}
-   <label class="chk"><input type="checkbox" id="epd" ${it.pend?'checked':''}> Ask the owner for the price</label>
+   <label class="chk"><input type="checkbox" id="epd" ${it.pend&&!priceNow?'checked':''}> Ask the owner for the price</label>
    <button class="btn" id="eok">Save</button><button class="btn ghost jb-del" id="edel">Remove</button>`,el=>{
     let k=it.k;el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=b.dataset.k;el.querySelectorAll('[data-k]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
     el.querySelector('#eok').onclick=()=>{const d=$('#ed').value.trim();if(!d){toast('Type a name');return;}it.d=d;it.k=k;it.q=num($('#eq').value)||1;it.pend=$('#epd').checked;it.p=it.pend?0:num($('#ep').value);const ec=$('#ec');if(ec)it.cost=num(ec.value);const eo=$('#eo');if(eo)it.outside=eo.checked;
       if(!can.discount()&&it.ref){const base=it.k==='part'?(byId('parts',it.ref)||{}).price:null;if(base!=null&&it.p<+base-0.0005){it.p=+base;toast('Workers cannot lower prices');}}
-      delete it.oldp;logJ(j,(it.neu?'Added ':'Changed ')+d+(it.pend?' (price pending)':' '+f3(it.q*it.p)));delete it.neu;save();closeSheet();render();};
-    el.querySelector('#edel').onclick=()=>{j.items.splice(i,1);logJ(j,'Removed '+(it.d||'item'));save();closeSheet();render();};
+      delete it.oldp;const neu=it.neu;logJ(j,(neu?'Added ':'Changed ')+d+(it.pend?' (price pending)':' '+f3(it.q*it.p))+(!neu&&(was.q!==+it.q||was.p!==+it.p||was.pend!==!!it.pend)?' (was '+was.q+' × '+(was.pend?'?':f3(was.p))+')':''));delete it.neu;save();closeSheet();render();if(!neu)jobUndo(j,before,d);};
+    el.querySelector('#edel').onclick=()=>{j.items.splice(i,1);logJ(j,'Removed '+(it.d||'item'));save();closeSheet();render();if(!it.neu)jobUndo(j,before,it.d);};
     el.querySelector('[data-close]').onclick=()=>{if(it.neu)j.items.splice(i,1);closeSheet();render();};});
 }
 /* inspection */
