@@ -41,10 +41,13 @@ function jobGroups(j){const it=j.items||[];const inPk=i=>i.k==='pkg'||i.inPkg||i
   svcIdx.forEach(s=>{order.push({i:s,svc:1});it.forEach((x,i)=>{if(owner[i]===s)order.push({i,sub:1});});});
   const rest=it.map((x,i)=>i).filter(i=>!inPk(it[i])&&it[i].k==='part'&&owner[i]==null);rest.forEach((i,n)=>order.push({i,rest:1,first:n===0}));
   return {order,hasSvc:svcIdx.length>0};}
+/* engine oil on the job → next-service km: full synthetic 10,000 · semi 7,000 · mineral 5,000 (two oils: the shorter) */
+function isEngOil(it,p){const n=lc((p&&p.name)||it.d||'');if(/gear|atf|cvt|transmission|matic|differential|brake|coolant|75w|80w|85w|ناقل|جير|فرامل/.test(n))return false;return (p&&p.cat==='Engine oil')||/motor oil|engine oil|زيت (محرك|مكينة)/.test(n);}
+function oilKm(j){let best=0;(j.items||[]).forEach(it=>{if(it.k!=='part')return;const p=it.ref&&byId('parts',it.ref);if(!isEngOil(it,p))return;const g=gradeOf(p||{name:it.d||''});const km=g&&GRADE[g]?GRADE[g][1]:0;if(km&&(!best||km<best))best=km;});return best;}
 /* what reminders this job will leave */
-function planRems(j){if(j.rems)return j.rems;const out=[];const add=r=>{if(!out.some(x=>x.kind===r.kind&&x.name===r.name))out.push(r);};
+function planRems(j){if(j.rems){const k=oilKm(j);if(k)j.rems.forEach(r=>{if(r.kind==='oil'&&!r.kmSet&&+r.km!==k)r.km=k;});return j.rems;}const out=[];const add=r=>{if(!out.some(x=>x.kind===r.kind&&x.name===r.name))out.push(r);};
   (j.items||[]).forEach(it=>{if(it.k==='part'||it.k==='pkg')return;const s=svcOfItem(it)||{};const tag=it.tag||s.tag||'';
-    if(tag==='oil'||isOilSvc(it))add({kind:'oil',name:'',mo:+DB.ws.remMonths||6,km:+it.nextKm||+DB.ws.remKm||7000});
+    if(tag==='oil'||isOilSvc(it))add({kind:'oil',name:'',mo:+DB.ws.remMonths||6,km:oilKm(j)||+it.nextKm||+DB.ws.remKm||7000});
     else if(tag==='gear')add({kind:'gear',name:'',mo:36,km:70000});
     else if(s.rem&&(s.rem.mo||s.rem.km))add({kind:'other',name:s.ar||s.name,mo:+s.rem.mo||0,km:+s.rem.km||0});});
   return out;}
@@ -65,7 +68,7 @@ function remSheet(j,k){const L=j.rems=JSON.parse(JSON.stringify(planRems(j)));co
    <button class="btn" id="rmok">${T_('Save')}</button>${isNew?'':`<button class="btn ghost" id="rmoff">${r.on===false?T_('Turn on'):T_('Do not remind')}</button>`}`,el=>{
     el.querySelectorAll('[data-rq]').forEach(b=>b.onclick=()=>{el.querySelector('#rmo').value=b.dataset.rq;});
     el.querySelector('#rmok').onclick=()=>{const n=el.querySelector('#rmn');if(n&&!n.value.trim()){toast(T_('Type what to remind about'));return;}
-      {const nm=num(el.querySelector('#rmo').value)||0,nkm=num(el.querySelector('#rkm').value)||0;if(nkm!==(+r.km||0))delete r.atKm;if(nm!==(+r.mo||0))delete r.date;}Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:num(el.querySelector('#rkm').value)||0,on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
+      {const nm=num(el.querySelector('#rmo').value)||0,nkm=num(el.querySelector('#rkm').value)||0;if(nkm!==(+r.km||0)){delete r.atKm;r.kmSet=1;}if(nm!==(+r.mo||0))delete r.date;}Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:num(el.querySelector('#rkm').value)||0,on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
       if(isNew){r.manual=1;L.push(r);}logJ(j,'Reminder: '+remName(r));if(j.stage==='done')makeReminders(j);save();closeSheet();render();};
     const off=el.querySelector('#rmoff');if(off)off.onclick=()=>{r.on=r.on===false;if(j.stage==='done'){DB.reminders=DB.reminders.filter(x=>!(x.job===j.id&&x.kind===r.kind&&(r.kind!=='other'||x.name===r.name)));if(r.on!==false)makeReminders(j);}save();closeSheet();render();};});}
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;

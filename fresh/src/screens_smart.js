@@ -13,7 +13,7 @@ function packL(p){if(!p||p.unit==='L')return 0;if(+p.packL>0)return +p.packL;con
 function liqQ(p,litres){if(!p||p.unit==='L')return {q:litres,L:1};const pk=packL(p);if(pk)return {q:Math.max(1,Math.ceil(litres/pk-0.02)),pk};return {q:1,unk:1};}
 const liqTxt=(o,litres)=>o.L?o.q+' L':o.pk?o.q+' × '+o.pk+' L':'1 × ? L';
 const GRADE={mineral:['Mineral',5000],semi:['Semi synthetic',7000],full:['Full synthetic',10000]};
-function gradeOf(p){if(p.grade)return p.grade;const n=lc(p.name);if(/semi/.test(n))return 'semi';if(/mineral|20w-?50|15w-?40|20w-?40/.test(n))return 'mineral';if(/full|fully|synth|0w-?|5w-?(20|30|40)/.test(n))return 'full';return '';}
+function gradeOf(p){if(p.grade)return p.grade;const n=lc(p.name);if(/semi|s\/s\b|شبه|نصف? (تخليقي|صناعي)/.test(n))return 'semi';if(/mineral|معدني|20w-?50|15w-?40|20w-?40/.test(n))return 'mineral';if(/f\/s\b|full|fully|synth|تخليقي|صناعي|0w-?|5w-?(20|30|40)/.test(n))return 'full';return '';}
 function rxGuess(s){const n=lc(s.name);if(s.tag==='oil'||/engine oil/.test(n))return 'oil';if(s.tag==='gear'||/gearbox oil|atf/.test(n))return 'gear';if(/spark plug/.test(n))return 'plugs';if(/brake pads/.test(n))return 'pads';if(/battery replace|new battery/.test(n))return 'battery';if(/coolant|radiator flush/.test(n))return 'coolant';return '';}
 /* a check / inspection is labour only: it never adds litres of fluid */
 const rxOf=s=>s&&(s.rx!==undefined?s.rx:(/\b(check|inspection|inspect)\b/i.test(s.name||'')?'':rxGuess(s)));

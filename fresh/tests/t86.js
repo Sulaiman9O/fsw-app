@@ -8,9 +8,9 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(()=>{const v=DB.vehicles.find(v=>v.plate&&/31838/.test(v.plate));go('counter',{vid:v.id});});await p.waitForTimeout(400);
  await p.fill('#ckm','٢٥٠٠٠٠');await p.click('#coil');await p.waitForTimeout(600);
  ok(await p.evaluate(()=>byId('jobs',S.p.id).km===250000),'counter km (Arabic digits) goes to the job');
- ok(/257,000/.test(await stkKm()),'sticker uses it');
+ ok(/260,000/.test(await stkKm()),"sticker uses it (full synthetic: +10,000)");
  await p.locator('[data-kmj]').scrollIntoViewIfNeeded();await p.click('[data-kmj]');await p.waitForTimeout(400);await p.fill('#jkm','251000');await p.click('#jkmok');await p.waitForTimeout(400);
- ok(await p.evaluate(()=>byId('jobs',S.p.id).km===251000),'km changed in the job');ok(/258,000/.test(await stkKm()),'sticker follows');
+ ok(await p.evaluate(()=>byId('jobs',S.p.id).km===251000),'km changed in the job');ok(/261,000/.test(await stkKm()),"sticker follows");
  await p.evaluate(()=>window.scrollTo(0,0));await p.evaluate(()=>document.querySelectorAll('*').forEach(e=>{if(e.scrollTop)e.scrollTop=0;}));await p.waitForTimeout(300);await p.screenshot({path:'km1.png',clip:{x:0,y:0,width:400,height:420}});
  /* open job again from the counter with a new km */
  const id=await p.evaluate(()=>S.p.id);await p.evaluate(()=>{const v=vehOf(byId('jobs',S.p.id));go('counter',{vid:v.id});});await p.waitForTimeout(400);await p.fill('#ckm','252000');await p.click('#coj');await p.waitForTimeout(400);
