@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:390,height:844}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const R=[];const ok=(c,m)=>{R.push(!!c);console.log((c?'PASS ':'FAIL ')+m);};
+await p.route('**/raw.githubusercontent.com/**',r=>r.abort());
+await p.goto('http://localhost:8811/');await p.waitForTimeout(700);await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();
+const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwdemo').catch(()=>{});await p.click('#nwl').catch(()=>{});
+const jid=await p.evaluate(()=>{const j=DB.jobs.find(j=>!isInvoiced(j));j.km=580916;j.rems=[{kind:'gear',name:'',mo:36,km:70000},{kind:'other',name:'Sparkplugs',mo:36,km:100000,manual:1}];save();go('job',{id:j.id});
+  window._pr=[];printSticker3=(t,d,rb,done)=>{window._pr.push(d);done&&done();};return j.id;});await p.waitForTimeout(400);
+await p.click('#jrstk');await p.waitForTimeout(400);ok(await p.isVisible('#sgoall'),'1. "Print all (2)" shows');console.log(await p.textContent('#sgoall'));
+await p.click('#sgoall');await p.waitForTimeout(1500);const pr=await p.evaluate(()=>window._pr.map(d=>d.kind+':'+(d.name||'')+':'+d.nextKm));console.log(pr);ok(pr.length===2&&pr[0]!==pr[1],'2. two stickers printed, one per reminder');
+ok(!(await p.isVisible('#sheet')),'3. sheet closed after');
+console.log('errors',JSON.stringify(errs));ok(!errs.length,'no page errors');console.log(R.every(x=>x)?'ALL PASS':'SOME FAIL');await b.close();})();

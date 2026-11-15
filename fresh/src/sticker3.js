@@ -92,11 +92,11 @@ stickerSheet=window.stickerSheet=function(j,k0){const A=j.rems=planRems(j)||[];c
   if(!L.length){toast(T_('No reminder on this job. Add one under “Reminders for the customer”.'));return;}
   const set=stkSet();let k=k0!=null&&A[k0]?Math.max(0,L.indexOf(A[k0])):0,t=STK_ROLLS[set.roll].t.includes(set.tpl)?set.tpl:STK_ROLLS[set.roll].t[0];
   const oilLine=()=>{const o=(j.items||[]).find(i=>i.k==='part'&&(i.u==='L'||/oil/i.test(i.d||''))&&!/filter/i.test(i.d||''));return o?o.d.replace(/\s+F\/S.*$/i,'').replace(/\s+\d+\s*ltrs?.*$/i,''):'';};
-  const data=()=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
+  const data=()=>dataOf(k);const dataOf=k=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
   openSheet(`<h3>🏷️ ${T_('Service sticker')}</h3>${L.length>1?`<div class="chips" id="skr"></div>`:''}<div class="stkpv3" id="spv3"></div><div class="chips" id="skt"></div>
    <div class="in2"><label class="field-l">${T_('Next km')}<input class="field" id="snk" inputmode="numeric" autocomplete="off"></label><label class="field-l">${T_('Next date')}<input class="field" id="snd" type="date"></label></div>
    ${j.km?'':`<p class="hint">${T_('Add the km on the job to print the next km.')}</p>`}
-   <button class="btn" id="sgo3">🖨 ${T_('Print sticker')}</button><p class="hint">${T_('In the print screen choose the paper')} <b>${STK_PAPER[t][2]}</b>. ${T_('Look, logo, roll and colour: Settings → Sticker.')}</p>`,el=>{
+   <button class="btn" id="sgo3">🖨 ${T_('Print sticker')}</button>${L.length>1?`<button class="btn ghost" id="sgoall">🖨 ${T_('Print all')} (${L.length})</button>`:''}<p class="hint">${T_('In the print screen choose the paper')} <b>${STK_PAPER[t][2]}</b>. ${T_('Look, logo, roll and colour: Settings → Sticker.')}</p>`,el=>{
     const draw=()=>{const sr=el.querySelector('#skr');if(sr){sr.innerHTML=L.map((r,i)=>`<button data-k="${i}" aria-pressed="${i===k}">${esc(remName(r))}</button>`).join('');sr.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=+b.dataset.k;draw();});}
       el.querySelector('#skt').innerHTML=STK_ROLLS[set.roll].t.map(x=>`<button data-tp="${x}" aria-pressed="${x===t}">${T_(STK_SIZES[x][2])}</button>`).join('');el.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{t=b.dataset.tp;draw();});
       const w=remWhen(j,L[k]);const nk=el.querySelector('#snk'),nd=el.querySelector('#snd');if(document.activeElement!==nk)nk.value=w.km?kmf(w.km):'';if(document.activeElement!==nd)nd.value=w.due?new Date(w.due-new Date(w.due).getTimezoneOffset()*6e4).toISOString().slice(0,10):'';
@@ -106,7 +106,9 @@ stickerSheet=window.stickerSheet=function(j,k0){const A=j.rems=planRems(j)||[];c
     el.querySelector('#snk').oninput=e=>{const x=num(String(e.target.value).replace(/[^\d.]/g,''));const r=L[k];if(x>0)r.atKm=Math.round(x);else delete r.atKm;later();};
     el.querySelector('#snd').onchange=e=>{const r=L[k];const v=e.target.value;if(v){const d=new Date(v+'T09:00:00');r.date=d.getTime();}else delete r.date;later();};
     if(DB.ws.logo)try{logoTrimmed(DB.ws.logo,()=>draw());}catch(e){}
-    el.querySelector('#sgo3').onclick=()=>{logJ(j,'Sticker · '+remName(L[k]));save();printSticker3(t,data(),set.rb,()=>closeSheet());};});};
+    el.querySelector('#sgo3').onclick=()=>{logJ(j,'Sticker · '+remName(L[k]));save();printSticker3(t,data(),set.rb,()=>closeSheet());};
+    /* every reminder of the job, one sticker each, one after the other */
+    const ga=el.querySelector('#sgoall');if(ga)ga.onclick=()=>{logJ(j,'Stickers · '+L.map(r=>remName(r)).join(', '));save();let i=0;const next=()=>{if(i>=L.length){closeSheet();return;}const d=dataOf(i++);setTimeout(()=>printSticker3(t,d,set.rb,next),i>1?600:0);};next();};});};
 /* a picture → white removed, cut to its edges, max 600 px */
 function stkPic(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));let c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);try{c=cleanLogoCanvas(c);}catch(x){}
   try{const x=c.getContext('2d'),D=x.getImageData(0,0,c.width,c.height).data;let x0=c.width,y0=c.height,x1=-1,y1=-1;for(let y=0;y<c.height;y++)for(let i=0;i<c.width;i++){if(D[(y*c.width+i)*4+3]>20){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y;}}
