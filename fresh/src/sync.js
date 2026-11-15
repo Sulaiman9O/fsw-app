@@ -19,7 +19,10 @@ const recDocId=key=>encodeURIComponent(key).replace(/\./g,'%2E').slice(0,1400);
 /* ---- local → online ---- */
 function syncSnap(){return snapshot();}
 function syncPush(){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(syncPushNow,400);}
-function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(async()=>{const a=SYNC.last,b=syncSnap();const ops=[];
+/* while the app is starting, nothing is sent until it has (1) its "last sent" copy and (2) what other devices changed meanwhile.
+   Sending earlier compared against nothing = sent EVERY record, with the copies this device had before catching up:
+   older copies went over newer ones made on other devices (lines of a job came back old). */
+function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;if(SYNC.status==='starting'&&!SYNC.startSend)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(async()=>{const a=SYNC.last,b=syncSnap();const ops=[];
     b.kv.forEach((v,k)=>{if(!a||a.kv.get(k)!==v)ops.push(['kv',k,v]);});if(a)a.kv.forEach((v,k)=>{if(!b.kv.has(k))ops.push(['kv',k,null]);});
     b.rec.forEach((v,k)=>{if(!a||a.rec.get(k)!==v)ops.push(['rec',k,v]);});if(a)a.rec.forEach((v,k)=>{if(!b.rec.has(k))ops.push(['rec',k,null]);});
     /* Firestore refuses a document over 1 MiB: keep it here, tell the owner, and still send everything else */
@@ -77,6 +80,9 @@ function applyRemote(t,k,v){
   if(SYNC.last&&(t==='rec'?SYNC.last.rec:SYNC.last.kv).get(k)==='\u0000gone')return;
   if(t==='rec'&&v!=null&&MERGE_C.includes(k.split('\u0001')[0])&&localDirty(t,k)){const [c,id]=k.split('\u0001');const arr=DB[c];const i=arr.findIndex(x=>String(x.id||x._k)===id);
     try{const bs=SYNC.base&&SYNC.base[k];const m=recMerge(c,arr[i],JSON.parse(v),bs?JSON.parse(bs):null);if(m){arr[i]=m;SYNC.last.rec.set(k,v);if(SYNC.base){SYNC.base[k]=v;baseSave();}SYNC.mergeN=(SYNC.mergeN||0)+1;setTimeout(syncPush,0);return;}}catch(e){}}
+  /* while starting nothing is sent yet: a record changed here meanwhile (not a job/part, those are joined above) keeps this
+     device's copy; it is sent right after the catch-up. */
+  if(t==='rec'&&v!=null&&SYNC.status==='starting'&&!MERGE_C.includes(k.split('\u0001')[0])&&localDirty(t,k))return;
   /* a list this version does not know (made by a newer version): leave it alone. Remembering it here would make this
      device send "deleted" for all of it on its next save. And a newer list sent as a plain value by an older device is ignored. */
   if(t==='rec'&&!REC_KEYS.includes(k.split('\u0001')[0]))return;
@@ -102,8 +108,8 @@ function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').
 /* while starting: wait. A start still busy after 60 s (slow catch-up, a request that never answers) is rescued:
    listen and send now, as long as the start already knows what was sent last (else sending could put old copies over new ones). */
 function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;
-  if(SYNC.status==='starting'){if(Date.now()-(SYNC.startAt||0)<60000||!SYNC.last)return;trail('SYNC-ERR','start stuck at '+SYNC.stage+' '+Math.round((Date.now()-SYNC.startAt)/1000)+' s: listening and sending anyway');SYNC.rescued=1;}
-  else trail('sync','listen again');try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
+  if(SYNC.status==='starting'){if(Date.now()-(SYNC.startAt||0)<60000||!SYNC.last)return;trail('SYNC-ERR','start slow at '+SYNC.stage+' '+Math.round((Date.now()-SYNC.startAt)/1000)+' s: listening meanwhile');SYNC.rescued=1;try{syncListen();}catch(e){}return;}
+  trail('sync','listen again');try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){SYNC.hidAt=Date.now();return;}if(Date.now()-(SYNC.hidAt||0)>20000)syncRelisten(200);});
 addEventListener('online',()=>syncRelisten(500));
 /* and a quiet catch-up every 3 minutes while the app is on the screen, in case a listener stops without saying so */
@@ -121,13 +127,13 @@ async function resetAt(){try{const r=await wsRef().collection('meta').doc('reset
 /* the workshop was deleted from another device: this device's copy belongs to the deleted workshop, so it is removed too */
 async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));lastDrop();}catch(e){}
   try{await FBA.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});closeSheet();render();if(msg)toast(msg);}
-async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;SYNC.startAt=Date.now();SYNC.stage='check';trail('sync','start');
+async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;SYNC.startSend=0;SYNC.startAt=Date.now();SYNC.stage='check';trail('sync','start');
   try{const ra=await resetAt();
     if(ra&&ra>sinceGet()&&DB.ws){await wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));return;}
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
-    if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
+    if(any.empty){if(DB.ws){SYNC.last=null;SYNC.startSend=1;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=await syncLoadLast();{let od=0,n=0;if(SYNC.last)SYNC.last.rec.forEach(v=>{n++;if(v==='\u0000old')od++;});trail('sync','start: last-sent copy '+(SYNC.last?n+' records, '+od+' changed here':'MISSING (all will be sent)')+' · storage '+lsKB()+' KB');}if(SYNC.reload){trail('sync','start: '+SYNC.reload+' records missing here, taking all again');try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}SYNC.stage='catch-up';await syncCatchUp();SYNC.stage='send';await syncPushNow();}
+    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=await syncLoadLast();{let od=0,n=0;if(SYNC.last)SYNC.last.rec.forEach(v=>{n++;if(v==='\u0000old')od++;});trail('sync','start: last-sent copy '+(SYNC.last?n+' records, '+od+' changed here':'MISSING (all will be sent)')+' · storage '+lsKB()+' KB');}if(SYNC.reload){trail('sync','start: '+SYNC.reload+' records missing here, taking all again');try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}SYNC.stage='catch-up';await syncCatchUp();SYNC.stage='send';SYNC.startSend=1;await syncPushNow();}
     localStorage.setItem('ws_sync_seeded','1');try{localStorage.setItem('ws_sync_em',SYNC.user.email||'');}catch(e){}
     if(!SYNC.rescued)syncListen();SYNC.rescued=0;SYNC.status='ok';SYNC.stage='';trail('sync','started in '+Math.round((Date.now()-SYNC.startAt)/1000)+' s');}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);SYNC.stage='';trail('SYNC-ERR','start: '+SYNC.err);}
   try{if(S.r==='settings')render();}catch(e){}}

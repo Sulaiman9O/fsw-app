@@ -21,6 +21,6 @@ const {chromium}=require('playwright');const M=require('./fbmock.js');
  await B.evaluate(id=>{const j=byId('jobs',id);j.items.push({k:'labour',d:'From B after rescue',q:1,p:1});save();},jid);await W(B,2500);
  ok(await A.evaluate(id=>byId('jobs',id).items.some(i=>i.d==='From B after rescue'),jid),'S4. B\'s change reaches A');
  await B.evaluate(()=>{syncBadge();});ok(await B.evaluate(()=>SYNC.status==='ok'&&$('#synb').hidden),'S5. badge gone when synced');
- const tr=await B.evaluate(()=>TRAIL.q.filter(x=>JSON.stringify(x).includes('stuck')).length);ok(tr>0,'S6. trail has the stuck note');
+ const tr=await B.evaluate(()=>TRAIL.q.filter(x=>JSON.stringify(x).includes('start slow')).length);ok(tr>0,'S6. trail has the stuck note');
  console.log('errors',JSON.stringify(errs));ok(!errs.length,'no page errors');
  console.log(R.every(x=>x)?'ALL PASS':'SOME FAIL');await b.close();})();
