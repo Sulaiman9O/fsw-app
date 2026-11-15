@@ -97,7 +97,7 @@ stickerSheet=window.stickerSheet=function(j,k0){const A=j.rems=planRems(j)||[];c
   const data=()=>dataOf(k);const dataOf=k=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
   openSheet(`<h3>🏷️ ${T_('Service sticker')}</h3>${L.length>1?`<div class="chips" id="skr"></div>`:''}<div class="stkpv3" id="spv3"></div><div class="chips" id="skt"></div>
    <div class="in2"><label class="field-l">${T_('Next km')}<input class="field" id="snk" inputmode="numeric" autocomplete="off"></label><label class="field-l">${T_('Next date')}<input class="field" id="snd" type="date"></label></div>
-   ${j.km?'':`<p class="hint">${T_('Add the km on the job to print the next km.')}</p>`}
+   ${j.km?'':`<label class="field-l stkkm">🛣 ${T_('Km now')} <b style="color:var(--bad)">*</b><input class="field" id="skm" inputmode="numeric" autocomplete="off" placeholder="${T_('Type the km first')}"></label>`}
    <button class="btn" id="sgo3">🖨 ${T_('Print sticker')}</button>${L.length>1?`<button class="btn ghost" id="sgoall">🖨 ${T_('Print all')} (${L.length})</button>`:''}<p class="hint">${T_('In the print screen choose the paper')} <b>${STK_PAPER[t][2]}</b>. ${T_('Look, logo, roll and colour: Settings → Sticker.')}</p>`,el=>{
     const draw=()=>{const sr=el.querySelector('#skr');if(sr){sr.innerHTML=L.map((r,i)=>`<button data-k="${i}" aria-pressed="${i===k}">${esc(remName(r))}</button>`).join('');sr.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=+b.dataset.k;draw();});}
       el.querySelector('#skt').innerHTML=STK_ROLLS[set.roll].t.map(x=>`<button data-tp="${x}" aria-pressed="${x===t}">${T_(STK_SIZES[x][2])}</button>`).join('');el.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{t=b.dataset.tp;draw();});
@@ -108,9 +108,13 @@ stickerSheet=window.stickerSheet=function(j,k0){const A=j.rems=planRems(j)||[];c
     el.querySelector('#snk').oninput=e=>{const x=num(String(e.target.value).replace(/[^\d.]/g,''));const r=L[k];if(x>0)r.atKm=Math.round(x);else delete r.atKm;later();};
     el.querySelector('#snd').onchange=e=>{const r=L[k];const v=e.target.value;if(v){const d=new Date(v+'T09:00:00');r.date=d.getTime();}else delete r.date;later();};
     if(DB.ws.logo)try{logoTrimmed(DB.ws.logo,()=>draw());}catch(e){}
-    el.querySelector('#sgo3').onclick=()=>{logJ(j,'Sticker · '+remName(L[k]));save();printSticker3(t,data(),set.rb,()=>closeSheet());};
+    /* no km on the job: type it here (it goes on the job and the car), the next km follows; no sticker without it */
+    const skm=el.querySelector('#skm');if(skm){setTimeout(()=>{try{skm.focus();}catch(e){}},120);let t2=0;skm.oninput=()=>{clearTimeout(t2);t2=setTimeout(()=>{const x=Math.round(num(String(skm.value).replace(/[^\d.]/g,'')));if(!(x>0))return;
+      const v=byId('vehicles',j.veh);const old=+j.km||0;j.km=x;if(v&&(+v.km===old||x>(+v.km||0)))v.km=x;L.forEach(r=>{delete r.atKm;});logJ(j,'Km → '+x);if(j.stage==='done'&&typeof makeReminders==='function')makeReminders(j);save();draw();},400);};}
+    const needKm=list=>{if(+j.km>0)return false;if(list.some(r=>!remWhen(j,r).km)){toast(T_('Type the km first'));try{skm&&skm.focus();}catch(e){}return true;}return false;};
+    el.querySelector('#sgo3').onclick=()=>{if(needKm([L[k]]))return;logJ(j,'Sticker · '+remName(L[k]));save();printSticker3(t,data(),set.rb,()=>closeSheet());};
     /* every reminder of the job, one sticker each, one after the other */
-    const ga=el.querySelector('#sgoall');if(ga)ga.onclick=()=>{logJ(j,'Stickers · '+L.map(r=>remName(r)).join(', '));save();let i=0;const next=()=>{if(i>=L.length){closeSheet();return;}const d=dataOf(i++);setTimeout(()=>printSticker3(t,d,set.rb,next),i>1?600:0);};next();};});};
+    const ga=el.querySelector('#sgoall');if(ga)ga.onclick=()=>{if(needKm(L))return;logJ(j,'Stickers · '+L.map(r=>remName(r)).join(', '));save();let i=0;const next=()=>{if(i>=L.length){closeSheet();return;}const d=dataOf(i++);setTimeout(()=>printSticker3(t,d,set.rb,next),i>1?600:0);};next();};});};
 /* a picture → white removed, cut to its edges, max 600 px */
 function stkPic(file,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,600/Math.max(im.width,im.height));let c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);try{c=cleanLogoCanvas(c);}catch(x){}
   try{const x=c.getContext('2d'),D=x.getImageData(0,0,c.width,c.height).data;let x0=c.width,y0=c.height,x1=-1,y1=-1;for(let y=0;y<c.height;y++)for(let i=0;i<c.width;i++){if(D[(y*c.width+i)*4+3]>20){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y;}}
