@@ -213,3 +213,5 @@ Object.assign(AR_DICT,{'Now send the PDF':'الحين أرسل ملف PDF','In W
 Object.assign(AR_DICT,{'Making the invoice link…':'يجهّز رابط الفاتورة…','Invoice link sent':'انرسل رابط الفاتورة'});
 Object.assign(AR_DICT,{'Making the report link…':'يجهّز رابط التقرير…'});
 Object.assign(AR_DICT,{'Camera':'الكاميرا','From gallery':'من الاستوديو'});
+
+Object.assign(AR_DICT,{'⚠️ Not synced':'⚠️ غير متزامن','This device is not synced. Check the internet. New cards here wait until it is back.':'هذا الجهاز غير متزامن. تأكد من الإنترنت. البطاقات الجديدة هنا تنتظر حتى يرجع.'});

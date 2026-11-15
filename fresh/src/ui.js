@@ -46,13 +46,14 @@ function render(){
   const T={quote:'Quick price',checks:'Invoice checks',debts:'Debts',home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages',audit:'Activity log',news:'What\'s new',slow:'Slow parts',stockval:'Stock value',stocktools:'Stock tools'};
   const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
-   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${safeCol(S.user.color)}">${initials(S.user.name)}</span></div></header>
+   <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="synb" id="synb" data-synb hidden>⚠️ Not synced</button><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${safeCol(S.user.color)}">${initials(S.user.name)}</span></div></header>
    <nav class="rail">${logoImg('em')}${nb}<span class="av me" style="background:${safeCol(S.user.color)}" data-logout title="Log out">${initials(S.user.name)}</span></nav>
    <main id="main"></main>
    <nav class="bottom"><div class="in">${nb}</div></nav></div>`;
   $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
   $$('[data-logout]').forEach(b=>b.onclick=()=>{S.user=null;render();});
   $$('[data-bug]').forEach(b=>b.onclick=()=>bugSheet());
+  $$('[data-synb]').forEach(b=>b.onclick=()=>{toast('This device is not synced. Check the internet. New cards here wait until it is back.');try{syncRelisten(10);}catch(e){}});try{syncBadge();}catch(e){}
   const m=$('#main');
   if(!routeOk(S.r)){toast('Not allowed for '+S.user.name);S.r='home';}
   (SCREENS[S.r]||SCREENS.home)(m);

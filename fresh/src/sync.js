@@ -99,11 +99,18 @@ function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').
     if(!n)return;SYNC.got+=n;SYNC.lastAt=SYNC.gotAt=Date.now();trail('sync','got '+n+' from other devices');SYNC.status='ok';{const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}uiRefresh();},e=>{SYNC.status='err';SYNC.err=String(e&&e.message||e);trail('SYNC-ERR','listen '+t+': '+SYNC.err);syncRelisten(5000);}));});}
 /* a listener that broke (no network, the tablet slept) used to stay broken until the app was closed: changes from other devices stopped coming.
    Now it starts again by itself, and every time the app comes back to the screen or the internet comes back. */
-function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;trail('sync','listen again');try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
+/* while starting: wait. A start still busy after 60 s (slow catch-up, a request that never answers) is rescued:
+   listen and send now, as long as the start already knows what was sent last (else sending could put old copies over new ones). */
+function syncRelisten(ms){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.rl);SYNC.rl=setTimeout(()=>{if(!SYNC.on||!SYNC.user)return;
+  if(SYNC.status==='starting'){if(Date.now()-(SYNC.startAt||0)<60000||!SYNC.last)return;trail('SYNC-ERR','start stuck at '+SYNC.stage+' '+Math.round((Date.now()-SYNC.startAt)/1000)+' s: listening and sending anyway');SYNC.rescued=1;}
+  else trail('sync','listen again');try{syncListen();}catch(e){}try{syncPush();}catch(e){}},ms||300);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){SYNC.hidAt=Date.now();return;}if(Date.now()-(SYNC.hidAt||0)>20000)syncRelisten(200);});
 addEventListener('online',()=>syncRelisten(500));
 /* and a quiet catch-up every 3 minutes while the app is on the screen, in case a listener stops without saying so */
 setInterval(()=>{if(!document.hidden)syncRelisten(100);},180000);
+setInterval(()=>{if(!document.hidden&&SYNC.on&&SYNC.status==='starting')syncRelisten(10);try{syncBadge();}catch(e){}},20000);
+/* header badge: this device is not in sync for more than a minute (new cards here could get numbers already used elsewhere) */
+function syncBadge(){const off=SYNC.on&&SYNC.status!=='ok';if(!off)SYNC.badAt=0;else if(!SYNC.badAt)SYNC.badAt=Date.now();const b=$('#synb');if(b)b.hidden=!(off&&Date.now()-SYNC.badAt>60000);}
 function syncUnlisten(){SYNC.unsub.forEach(f=>{try{f();}catch(e){}});SYNC.unsub=[];}
 function uiRefresh(){const busy=S.sheet||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(busy){SYNC.uiDirty=true;return;}try{render();}catch(e){}}
 setInterval(()=>{if(SYNC.uiDirty&&!S.sheet&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))){SYNC.uiDirty=false;try{render();}catch(e){}}},1200);
@@ -114,20 +121,20 @@ async function resetAt(){try{const r=await wsRef().collection('meta').doc('reset
 /* the workshop was deleted from another device: this device's copy belongs to the deleted workshop, so it is removed too */
 async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));}catch(e){}
   try{await FBA.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});closeSheet();render();if(msg)toast(msg);}
-async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;
+async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;SYNC.startAt=Date.now();SYNC.stage='check';trail('sync','start');
   try{const ra=await resetAt();
     if(ra&&ra>sinceGet()&&DB.ws){await wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));return;}
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(any.empty){if(DB.ws){SYNC.last=null;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=syncLoadLast();if(SYNC.reload){try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}await syncCatchUp();await syncPushNow();}
+    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=syncLoadLast();if(SYNC.reload){trail('sync','start: '+SYNC.reload+' records missing here, taking all again');try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}SYNC.stage='catch-up';await syncCatchUp();SYNC.stage='send';await syncPushNow();}
     localStorage.setItem('ws_sync_seeded','1');try{localStorage.setItem('ws_sync_em',SYNC.user.email||'');}catch(e){}
-    syncListen();SYNC.status='ok';}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);}
+    if(!SYNC.rescued)syncListen();SYNC.rescued=0;SYNC.status='ok';SYNC.stage='';trail('sync','started in '+Math.round((Date.now()-SYNC.startAt)/1000)+' s');}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);SYNC.stage='';trail('SYNC-ERR','start: '+SYNC.err);}
   try{if(S.r==='settings')render();}catch(e){}}
 /* on start: take what other phones changed while this one was closed BEFORE sending, so old copies do not overwrite newer ones */
 async function syncCatchUp(){const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));const me=syncDev();let n=0;
   for(const t of ['kv','rec']){const q=await wsRef().collection(t).where('t','>',since).get();const L=SYNC.last&&SYNC.last[t];q.forEach(doc=>{const x=doc.data();if(x.t&&x.t.toMillis)tsSet(x.t.toMillis());if(x.d===me)return;if(L&&((L.get(x.k)==='\u0000old'&&x.k!=='ws'&&!MERGE_C.includes(String(x.k).split('\u0001')[0]))||L.get(x.k)==='\u0000gone'))return;/* changed here while offline: this phone's change is sent */applyRemote(t,x.k,x.del?null:x.v);n++;});}syncHeld();
-  if(n){SYNC.got+=n;const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}}
+  trail('sync','catch-up got '+n);if(n){SYNC.got+=n;SYNC.gotAt=Date.now();const ch=fixDupNumbers();syncSaveLast();if(ch)syncPush();}}
 /* two phones can give the same invoice or job number while apart. The phone that made the later one renumbers its own. */
 function fixDupNumbers(){const me=syncDev();let ch=0;
   const fix=(list,get,setNo,label)=>{const by={};list.forEach(j=>{const k=get(j);if(k)(by[k]=by[k]||[]).push(j);});
