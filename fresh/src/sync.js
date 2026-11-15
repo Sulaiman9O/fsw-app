@@ -22,6 +22,7 @@ function syncPush(){if(!SYNC.on||!SYNC.user)return;clearTimeout(SYNC.timer);SYNC
 /* while the app is starting, nothing is sent until it has (1) its "last sent" copy and (2) what other devices changed meanwhile.
    Sending earlier compared against nothing = sent EVERY record, with the copies this device had before catching up:
    older copies went over newer ones made on other devices (lines of a job came back old). */
+async function commitT(bt){let to;const t=new Promise((_,no)=>{to=setTimeout(()=>no(new Error('send timeout')),SYNC.commitMs||25000);});try{await Promise.race([bt.commit(),t]);}finally{clearTimeout(to);}}
 function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;if(SYNC.status==='starting'&&!SYNC.startSend)return SYNC.pushQ;SYNC.pushQ=SYNC.pushQ.then(async()=>{const a=SYNC.last,b=syncSnap();const ops=[];
     b.kv.forEach((v,k)=>{if(!a||a.kv.get(k)!==v)ops.push(['kv',k,v]);});if(a)a.kv.forEach((v,k)=>{if(!b.kv.has(k))ops.push(['kv',k,null]);});
     b.rec.forEach((v,k)=>{if(!a||a.rec.get(k)!==v)ops.push(['rec',k,v]);});if(a)a.rec.forEach((v,k)=>{if(!b.rec.has(k))ops.push(['rec',k,null]);});
@@ -33,10 +34,13 @@ function syncPushNow(){if(!SYNC.on)return SYNC.pushQ;if(SYNC.status==='starting'
     /* remember only what was really sent, part by part. Replacing the whole "last sent" copy with this device's snapshot would
        forget changes that came in from other devices while sending, and send their older copy back over newer ones. */
     if(!SYNC.last)SYNC.last={kv:new Map(),rec:new Map()};let sent=0;
-    try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await bt.commit();
+    try{for(const G of groups){const bt=FBS.batch();G.forEach(([t,k,v])=>{const ref=wsRef().collection(t).doc(recDocId(k));bt.set(ref,v==null?{k,del:true,t:ts,d}:{k,v,t:ts,d});});await commitT(bt);
         G.forEach(([t,k,v])=>{const m=t==='rec'?SYNC.last.rec:SYNC.last.kv;if(v==null)m.delete(k);else m.set(k,v);if(SYNC.base)delete SYNC.base[k];});sent+=G.length;}
       if(big.length){SYNC.status='err';SYNC.err='Too large to send online: '+big.join(', ');}else SYNC.status='ok';}
-    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);trail('SYNC-ERR','send: '+SYNC.err);}
+    catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);trail('SYNC-ERR','send: '+SYNC.err);
+      /* a send that never answers (seen on a phone after the camera: 2 hours, every later change stuck behind it):
+         reset the connection and send again; the same values twice do no harm */
+      if(/send timeout/.test(SYNC.err)){try{await FBS.disableNetwork();await FBS.enableNetwork();}catch(x){}setTimeout(()=>{try{syncPush();}catch(x){}},3000);}}
     if(sent){syncSaveLast();if(SYNC.base)baseSave();SYNC.sent+=sent;SYNC.lastAt=Date.now();trail('sync','sent '+sent);}}).catch(()=>{});return SYNC.pushQ;}
 /* ---- online → local ---- */
 /* the same record changed here (not sent yet) and on another device: join the two instead of dropping one.
