@@ -1,14 +1,14 @@
 /* ---------- TRAIL: what each device did, step by step — every tap (which button, on which screen), every screen it went to,
    every message and error, and how the online sync was doing. So when someone says "something went wrong", we can read
-   what happened instead of asking for every detail. Kept on the device (last 1500 steps) and online (30 days, in ws/{uid}/trail,
+   what happened instead of asking for every detail. Kept on the device (last 600 steps) and online (30 days, in ws/{uid}/trail,
    never in the shop data that syncs). NOT kept: what is typed in the boxes (only which box), the PIN keys, passwords. ---------- */
-const TRAIL={buf:[],q:[],max:1500,up:0,tm:0};
+const TRAIL={buf:[],q:[],max:600,up:0,tm:0};
 (function(){try{TRAIL.buf=JSON.parse(localStorage.getItem('ws_trail')||'[]');}catch(e){}try{TRAIL.q=JSON.parse(localStorage.getItem('ws_trail_q')||'[]');}catch(e){}
   if(!Array.isArray(TRAIL.buf))TRAIL.buf=[];if(!Array.isArray(TRAIL.q))TRAIL.q=[];})();
 function trSave(){try{localStorage.setItem('ws_trail',JSON.stringify(TRAIL.buf));localStorage.setItem('ws_trail_q',JSON.stringify(TRAIL.q));}catch(e){}}
 function trScr(){try{let s=S.r||'';const id=S.p&&S.p.id;if(id){const j=byId('jobs',id);s+=j?' #'+j.no+(j.inv?' inv'+j.inv.no:'')+' '+id:' '+id;}if(S.sheet||document.getElementById('sheet'))s+=' [sheet]';return s;}catch(e){return '';}}
 function trail(k,txt){try{const e=[Date.now(),k,String(txt==null?'':txt).replace(/\s+/g,' ').trim().slice(0,180),trScr(),(S.user&&S.user.name)||''];
-  TRAIL.buf.push(e);TRAIL.q.push(e);if(TRAIL.buf.length>TRAIL.max)TRAIL.buf.splice(0,TRAIL.buf.length-TRAIL.max);if(TRAIL.q.length>4000)TRAIL.q.splice(0,TRAIL.q.length-4000);
+  TRAIL.buf.push(e);TRAIL.q.push(e);if(TRAIL.buf.length>TRAIL.max)TRAIL.buf.splice(0,TRAIL.buf.length-TRAIL.max);if(TRAIL.q.length>1500)TRAIL.q.splice(0,TRAIL.q.length-1500);
   clearTimeout(TRAIL.tm);TRAIL.tm=setTimeout(trSave,800);}catch(x){}}
 /* the name of what was tapped: its id, its data-…, and its words (never the value typed in a box) */
 function trLabel(el){const a=[];if(el.id)a.push('#'+el.id);

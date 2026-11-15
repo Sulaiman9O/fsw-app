@@ -27,6 +27,10 @@ function go(r,p){S.hist=S.hist||[];if(!(S.r===r&&((S.p&&S.p.id)||'')===((p&&p.id
     else if(S.r&&S.r!==r){if(!NOHIST.has(S.r))S.hist.push({r:S.r,p:S.p});const pid=p&&p.id;const i=S.hist.findIndex(h=>h.r===r&&((h.p&&h.p.id)||undefined)===(pid||undefined));if(i>=0)S.hist=S.hist.slice(0,i);}
     if(S.hist.length>40)S.hist=S.hist.slice(-40);}S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
 function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;closeSheet();return true;}
+  /* back first undoes what is open on this screen (strip, selection, undo bar) before leaving it */
+  if(document.getElementById('qs')){try{closeQs();}catch(e){}return true;}
+  if(S.selJ||S.sel){S.selJ=null;S.sel=null;render();return true;}
+  {const ub=document.getElementById('undob');if(ub&&!ub.hidden){ub.hidden=true;}}
   if(S.r==='job'&&S.freshJ&&S.freshJ===S.p.id&&typeof freshJobAsk==='function'&&freshJobAsk())return true;
   if(S.r==='quote'&&S.quote&&(S.quote.vid||S.quote.car)&&typeof quoteBack==='function'){quoteBack();return true;}
   if(S.r==='pkgwiz'&&S.pw&&S.pw.step>0){try{if(window.pwKeep)window.pwKeep();}catch(e){}S.pw.step--;render();return true;}
