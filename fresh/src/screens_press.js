@@ -25,8 +25,8 @@ function fullSheet(title,sub,acts,top){
   openSheet(`<div class="ash-h"><h3>${title}</h3>${sub?`<span>${sub}</span>`:''}</div>${top||''}<div class="ash">${acts.map((a,i)=>`<button class="ash-b${a.danger?' dg':''}" data-ai="${i}"><span class="ic">${a.ic}</span><div><b>${a.t}</b>${a.d?`<small>${a.d}</small>`:''}</div></button>`).join('')}</div>`,el=>{
     el.querySelectorAll('[data-ai]').forEach(b=>b.onclick=()=>{const a=acts[+b.dataset.ai];if(!a.keep)closeSheet();a.fn(el);});});}
 /* undo for a change made by mistake: the job's lines, discount and stage as they were just before */
-function jobItemsSnap(j){return JSON.stringify({items:j.items,disc:j.disc,discPct:j.discPct});}
-function jobUndo(j,before,what){if(jobItemsSnap(j)===before)return;undoBar(esc(T_('Changed:'))+' '+esc(what||''),()=>{const o=JSON.parse(before);j.items=o.items;j.disc=o.disc;if(o.discPct==null)delete j.discPct;else j.discPct=o.discPct;logJ(j,'Undo change '+(what||''));save();render();});}
+function jobItemsSnap(j){return JSON.stringify({items:j.items,disc:j.disc,discPct:j.discPct,discOn:j.discOn});}
+function jobUndo(j,before,what){if(jobItemsSnap(j)===before)return;undoBar(esc(T_('Changed:'))+' '+esc(what||''),()=>{const o=JSON.parse(before);j.items=o.items;j.disc=o.disc;if(o.discPct==null)delete j.discPct;else j.discPct=o.discPct;if(o.discOn==null)delete j.discOn;else j.discOn=o.discOn;logJ(j,'Undo change '+(what||''));save();render();});}
 let UNDO=null;
 function undoBar(msg,fn){UNDO=fn;let u=$('#undob');if(!u){u=document.createElement('div');u.id='undob';u.className='undob';document.body.appendChild(u);}
   u.innerHTML=`<span>${msg}</span><button>Undo</button>`;u.hidden=false;u.querySelector('button').onclick=()=>{u.hidden=true;if(UNDO){UNDO();UNDO=null;}};clearTimeout(u._t);u._t=setTimeout(()=>{u.hidden=true;UNDO=null;},10000);}

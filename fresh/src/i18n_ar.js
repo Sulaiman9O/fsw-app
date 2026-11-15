@@ -220,3 +220,4 @@ Object.assign(AR_DICT,{'Save price':'حفظ السعر'});
 Object.assign(AR_DICT,{'Can size unknown: check the quantity':'حجم العلبة غير معروف: تأكد من الكمية','Litres in one can (if sold by the can)':'كم لتر في العلبة (إذا تنباع بالعلبة)'});
 Object.assign(AR_DICT,{'cans of':'علب'});
 Object.assign(AR_DICT,{'Petrol':'بنزين','Diesel':'ديزل','Hybrid':'هايبرد','Electric':'كهربائي','bought outside':'من الخارج'});
+Object.assign(AR_DICT,{'On labour':'على الأجرة','On the whole invoice':'على الفاتورة كاملة','on labour':'على الأجرة','Leave both empty or 0 to remove the discount.':'اتركهما فارغين أو 0 لإزالة الخصم.'});

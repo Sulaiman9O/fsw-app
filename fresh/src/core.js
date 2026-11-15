@@ -59,7 +59,7 @@ const carName=v=>v?[v.make,v.model,v.year].filter(Boolean).join(' '):'';
 /* job maths */
 function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j.items||[]).forEach(it=>{if(it.pend)return;const q=+it.q||0,a=q*(+it.p||0);if(it.k==='part'){parts+=a;if(!it.custPart)cost+=q*(+it.cost||0);}else labour+=a;
     const o=it.out;if(o&&o.who){let x=0;if(o.mode==='pass'){passOut+=a;x=a;}else if(o.mode==='share'){x=Math.max(0,a-q*(+o.amt||0));cost+=x;}else{x=q*(+o.amt||0);cost+=x;}owe+=x;ow[o.who]=(ow[o.who]||0)+x;}});
-  const R3_=x=>Math.round(x*1000)/1000;parts=R3_(parts);labour=R3_(labour);cost=R3_(cost);const sub=R3_(parts+labour);let disc=+j.disc||0;if(j.discPct)disc=sub*(+j.discPct)/100;disc=R3_(Math.min(disc,sub));const total=R3_(Math.max(0,sub-disc));const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
+  const R3_=x=>Math.round(x*1000)/1000;parts=R3_(parts);labour=R3_(labour);cost=R3_(cost);const sub=R3_(parts+labour);/* discount on everything, or on the labour only (j.discOn='labour') */const dBase=j.discOn==='labour'?labour:sub;let disc=+j.disc||0;if(j.discPct)disc=dBase*(+j.discPct)/100;disc=R3_(Math.min(disc,dBase));const total=R3_(Math.max(0,sub-disc));const paid=(j.pays||[]).reduce((a,p)=>a+(isCreditM(p.m)?0:(+p.amt||0)),0);const sales=Math.max(0,total-passOut);
   const R3=x=>Math.round(x*1000)/1000;let due=R3(Math.max(0,R3(total)-R3(paid)));if(due<0.001)due=0;   /* money is kept to the baisa: no 0.0005 debts, the same total on every screen */
   /* written off (from the previous system): the rest is not owed any more, and it is not money in */
   const wo=j.wo?Math.min(due,R3(+j.wo.amt||0)):0;if(wo)due=R3(due-wo);
