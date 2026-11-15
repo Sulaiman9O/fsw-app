@@ -108,9 +108,21 @@ async function sendInvoicePdf(j){if(invLinkOk()&&await sendInvoiceLink(j))return
   shareText(c.phone,cap);sent();toast(T_('PDF saved: drag it into the WhatsApp chat'),5000);}
 /* print on ONE page: a page that runs a little over A4 is shrunk to fit, so «شكراً لثقتكم» never lands alone on a second page.
    Measured here (the tablet's print view runs no scripts) and written into the page. */
-function invPrintDoc(j,mar){mar=mar||12;const inner=210-2*mar,avail=297-2*mar,css=invDocCss(),html=invoiceHtml(j,true);let z=1;
-  try{const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:'+inner+'mm;background:#fff;font-family:Arial,sans-serif';
-    host.innerHTML='<style>'+css+'</style>'+html;document.body.appendChild(host);const iv=host.querySelector('.iv2')||host.querySelector('.inv');
-    const h=iv?iv.getBoundingClientRect().height:0;host.remove();const av=avail*PDF_MM-6;if(h>av&&av/h>=0.62)z=av/h;}catch(e){}
-  return '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:'+mar+'mm}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif}'+css+
-   '.iv2-seal,.iv2-ft,.iv2-bot{break-inside:avoid}'+(z<1?'.iv2,.inv{zoom:'+z.toFixed(4)+'}':'')+'</style></head><body>'+html+'</body></html>';}
+/* ONE page, keeping the text size where possible: first the same invoice with tighter spacing (rows, header, boxes,
+   margins), measured again; only if it still does not fit, the whole page is shrunk (never below 45 %). */
+const INV_FIT=`.iv2.fitA{padding:2mm;line-height:1.3}.iv2.fitA .iv2-hd{margin-top:2.5mm}.iv2.fitA .iv2-ttl b{font-size:7mm}.iv2.fitA .iv2-ttl em{font-size:5.5mm}
+.iv2.fitA .iv2-strip{margin-top:2.5mm}.iv2.fitA .iv2-strip>div{padding:1.2mm 2.5mm}.iv2.fitA .iv2-cards{margin-top:2.5mm;gap:2.5mm}.iv2.fitA .iv2-cards>div{padding:1.8mm 2.8mm}
+.iv2.fitA .iv2-t{margin-top:3mm}.iv2.fitA .iv2-t th{padding:1.3mm 2.5mm}.iv2.fitA .iv2-t td{padding:1mm 2.5mm}.iv2.fitA .iv2-t tr.iv2-g td{padding:.9mm 2.5mm}.iv2.fitA .iv2-t .x{margin-top:0}
+.iv2.fitA .iv2-bot{margin-top:3mm;gap:3mm}.iv2.fitA .iv2-box{padding:2mm 2.8mm;margin-top:2mm}.iv2.fitA .iv2-tot{padding:2.2mm 3mm}.iv2.fitA .iv2-tot .due b{font-size:6.5mm}
+.iv2.fitA .iv2-sign{margin-top:5mm}.iv2.fitA .iv2-ft{margin-top:3mm;padding-top:2mm}.iv2.fitA .iv2-end{margin-top:2.5mm}
+.iv2.fitB .iv2-brand img{max-height:16mm}.iv2.fitB .iv2-hd{margin-top:1.5mm}.iv2.fitB .iv2-t td{padding:.6mm 2mm}.iv2.fitB .iv2-sign{margin-top:3mm}.iv2.fitB .iv2-cards .big{font-size:3.6mm}`;
+function invPrintDoc(j,mar){const css=invDocCss()+INV_FIT,html=invoiceHtml(j,true);
+  const measure=(cls,m)=>{try{const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:'+(210-2*m)+'mm;background:#fff;font-family:Arial,sans-serif';
+    host.innerHTML='<style>'+css+'</style>'+html;document.body.appendChild(host);const iv=host.querySelector('.iv2')||host.querySelector('.inv');if(iv&&cls)iv.classList.add(...cls.split(' '));
+    const h=iv?iv.getBoundingClientRect().height:0;host.remove();return {h,av:((297-2*m)*PDF_MM-6)*0.95};}catch(e){return {h:0,av:1};}};
+  const steps=[['',mar||12],['fitA',9],['fitA fitB',7]];let pick=steps[steps.length-1],z=1,M=null;
+  for(const st of steps){const r=measure(st[0],st[1]);M=r;pick=st;if(r.h<=r.av)break;}
+  if(M&&M.h>M.av)z=Math.max(0.45,M.av/M.h);
+  const cls=pick[0],m=pick[1];let body=html;if(cls)body=body.replace(/class="iv2(\s|")/,'class="iv2 '+cls+'$1');
+  return '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:'+m+'mm}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif}'+css+
+   '.iv2-seal,.iv2-ft,.iv2-bot{break-inside:avoid}.iv2{width:auto!important;max-width:'+(210-2*m)+'mm}'+(z<1?'.iv2,.inv{zoom:'+z.toFixed(4)+'}':'')+'</style></head><body>'+body+'</body></html>';}
