@@ -35,7 +35,7 @@ function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const 
   const sub=`${it.k==='part'?'Part':'Labour'} · ${+it.q}${it.u?' '+esc(it.u):''} × ${it.pend?'?':f3(it.p)} = <b>${it.pend?'?':f3(it.q*it.p)}</b>`;
   if(locked){actionSheet(esc(it.d),sub,[{ic:'🧾',s:'Invoice',t:'Open the invoice',fn:()=>go('inv',{id:j.id})},{ic:'📋',s:'Copy',t:'Copy line',fn:()=>{try{navigator.clipboard.writeText(it.d+' · '+f3(it.q*it.p));toast('Copied');}catch(e){}}}],'<p class="hint">Invoice made. Return the invoice to change items.</p>');return;}
   const step=it.u==='L'?0.5:1;
-  const top=`<div class="qrow"><span>Quantity</span><div class="st"><button data-q="-1">−</button><input class="qin" id="lpq" inputmode="decimal" value="${+it.q}"><button data-q="1">+</button></div></div>`;
+  const top=`<div class="qrow"><span>Quantity</span><div class="st"><button data-q="-1">−</button><input class="qin" id="lpq" inputmode="decimal" value="${+it.q}"><button data-q="1">+</button></div></div>`+(it.lockP&&!can.discount()?'':`<div class="qrow"><span>Price each</span><div class="st"><input class="qin qpr" id="lpp" inputmode="decimal" placeholder="?" value="${it.pend&&!(+it.p)?'':f3(it.p)}"><button id="lppok" aria-label="Save price">✓</button></div></div>`);
   const same=pt?DB.parts.filter(p=>p.cat===pt.cat&&p.id!==pt.id):[];const alts=pt?(pt.alts||[]).map(a=>byId('parts',a)).filter(Boolean):[];
   actionSheet(esc(it.d),sub,[
    {ic:'🔁',t:'Change to another',s:'Change',d:alts.length?alts.length+' alternative'+(alts.length>1?'s':'')+' · same category':'Same category',hide:!pt||(!same.length),fn:()=>swapSheet(j,i,alts,same)},
@@ -48,7 +48,14 @@ function itemMenu(j,i){const it=j.items[i];if(!it)return;const v=vehOf(j);const 
    {ic:'🗑',t:'Remove',s:'Remove',danger:1,fn:()=>{const it0=j.items.splice(i,1)[0];logJ(j,'Removed '+it0.d);save();render();undoBar('Removed '+esc(it0.d),()=>{j.items.splice(i,0,it0);logJ(j,'Undo remove '+it0.d);save();render();});}}
   ].map(a=>{if(!a||a.hide||a.t==='Remove'||a.s==='Edit'||a.s==='Change'||a.s==='Note'||a.s==='Select')return a;const f=a.fn;return Object.assign({},a,{fn:x=>{const b=jobItemsSnap(j);f(x);jobUndo(j,b,it.d);}});}),top);
   const el=$('#qs')||$('#sheet');if(!el)return;el.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{it.q=Math.max(step,Math.round(((+it.q)+step*(+b.dataset.q))*100)/100);el.querySelector('#lpq').value=it.q;save();render();const a=document.querySelector('[data-it="'+i+'"]');if(a)a.classList.add('qs-on');});
-  const q=el.querySelector('#lpq');q.onfocus=()=>q.select();q.onchange=()=>{const n=num(q.value);if(n>0){it.q=n;save();render();}};}
+  const q=el.querySelector('#lpq');q.onfocus=()=>q.select();q.onchange=()=>{const n=num(q.value);if(n>0){const b0=jobItemsSnap(j);it.q=n;save();render();jobUndo(j,b0,it.d);}};
+  /* price typed right here: no need to open Edit */
+  const pp=el.querySelector('#lpp');if(pp){let done=0;pp.onfocus=()=>pp.select();
+    const setP=()=>{if(done)return;const v=String(pp.value).trim();if(v===''||isNaN(num(v)))return;let n=num(v);
+      if(!can.discount()&&it.ref&&it.k==='part'){const base=(byId('parts',it.ref)||{}).price;if(base!=null&&n<+base-0.0005){n=+base;pp.value=f3(n);toast('Workers cannot lower prices');}}
+      if(Math.abs(n-(+it.p))<0.0005&&!it.pend)return;done=1;const b0=jobItemsSnap(j),was=it.pend?'?':f3(it.p);it.p=n;it.pend=false;delete it.free;
+      logJ(j,'Price '+it.d+' → '+f3(n)+' (was '+was+')');save();closeQs();closeSheet();render();jobUndo(j,b0,it.d);};
+    pp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();setP();}};pp.onchange=setP;el.querySelector('#lppok').onclick=setP;}}
 function swapSheet(j,i,alts,same){const it=j.items[i];const cur=partOfItem(it);const v=vehOf(j);
   /* the likely ones first: its alternatives, then (filters) the ones that fit this car or (oils) the same viscosity, then what is in stock */
   const fit=new Set();try{if(cur&&cur.cat==='Oil filters')filterOpts(v,oilRecipe(v,'usual')).forEach(o=>fit.add(o.p.id));}catch(e){}const vs=cur?viscTxt(cur.name):'';

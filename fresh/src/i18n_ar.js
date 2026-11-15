@@ -216,3 +216,4 @@ Object.assign(AR_DICT,{'Camera':'الكاميرا','From gallery':'من الاس
 
 Object.assign(AR_DICT,{'⚠️ Not synced':'⚠️ غير متزامن','This device is not synced. Check the internet. New cards here wait until it is back.':'هذا الجهاز غير متزامن. تأكد من الإنترنت. البطاقات الجديدة هنا تنتظر حتى يرجع.'});
 Object.assign(AR_DICT,{'Changed:':'تغيّر:'});
+Object.assign(AR_DICT,{'Save price':'حفظ السعر'});

@@ -605,3 +605,6 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .synb{background:var(--bad)!important;color:#fff!important;border:0;border-radius:999px;font-size:13px;font-weight:700;padding:5px 10px;margin-inline-start:auto;cursor:pointer;white-space:nowrap}
 .synb+.bugb{margin-inline-start:6px}
 .synb[hidden]{display:none}
+.qrow .qin.qpr{width:96px}
+.qrow #lppok{background:var(--ok)!important;color:#fff;border:0;font-weight:800}
+.qrow+.qrow{margin-top:8px}
