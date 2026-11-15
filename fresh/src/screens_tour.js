@@ -2,6 +2,7 @@ const lastJob=()=>{const j=DB.jobs.slice().sort((a,b)=>b.t-a.t)[0];return j?['jo
 const lastInv=()=>{const j=DB.jobs.filter(isInvoiced).sort((a,b)=>b.inv.t-a.inv.t)[0];return j?['inv',{id:j.id}]:null;};
 /* ---------- WHAT'S NEW + guided tours (Arabic text, layout stays LTR) ---------- */
 const NEWS=[
+ {v:'2.38.5',ic:'🎓',t:'الشرح يطلع مرة وحدة بس',d:'نافذة «الجديد في الإصدار» تطلع مرة وحدة أول ما يفتح التطبيق بعد التحديث، حتى لو سكّرتها بأي طريقة أو بدأت الشرح. وتلقاها أي وقت في: المزيد ← ما الجديد.'},
  {v:'2.38.4',ic:'💲',t:'تغيير السعر أسرع',d:'اضغط على البند، وتحت الكمية صارت خانة «سعر الوحدة». اكتب السعر واضغط ✓ وخلاص، بدون ما تفتح «تعديل». وإذا غلطت، اضغط «تراجع».'},
  {v:'2.38.3',ic:'↩️',t:'تراجع إذا غيّرت بند بالغلط',d:'أي تغيير على بند في البطاقة (السعر؟، بدون مقابل، قطعة العميل، الكمية، التعديل، الحذف) يطلع تحته شريط «تراجع» لمدة 10 ثواني، تضغطه ويرجع البند مثل ما كان. وإذا حطيت «السعر؟» بالغلط وبعدين فتحته، يطلع لك السعر القديم جاهز. وسجل البطاقة صار يكتب السعر والكمية القديمة.'},
  {v:'2.38.2',ic:'⚠️',t:'تنبيه إذا الجهاز مو متزامن',d:'إذا الجهاز ما تزامن أكثر من دقيقة تطلع فوق علامة حمرا «غير متزامن». لا تفتح بطاقات جديدة عليه لين تختفي العلامة. والمزامنة إذا علقت وقت التشغيل ترجع لحالها بعد دقيقة.'},
@@ -210,7 +211,9 @@ function showNewsPrompt(first){const un=newsUnseen();if(!S.user||!(S.user.role==
    <button class="btn ghost" id="nwl">Later</button>`,el=>{const dm=el.querySelector('#nwdemo');if(dm)dm.onclick=()=>{loadDemo();dm.remove();};
     const n1=el.querySelector('#nwnew');if(n1)n1.onclick=()=>{closeSheet();startTour({tour:un.slice().reverse().flatMap(n=>n.tour)});};
     el.querySelector('#nwfull').onclick=()=>{closeSheet();startFull();};
-    el.querySelector('#nwl').onclick=()=>{markNewsSeen();closeSheet();toast('Find it any time: More → What\'s new');};});}
+    el.querySelector('#nwl').onclick=()=>{markNewsSeen();closeSheet();toast('Find it any time: More → What\'s new');};});
+  /* shown once per update: counted as seen as soon as it opens (closing it any way, or starting a tour, does not bring it back) */
+  if(!first)markNewsSeen();}
 /* tour runner */
 let TOUR=null;
 function startTour(n){if(!n)return;markNewsSeen();const steps=n.tour.filter(s=>{if(typeof s.go==='function'){const t=s.go();return t?routeOk(t[0]):!!s.alt;}return !s.go||routeOk(s.go);});TOUR={steps,i:0};runStep();}
@@ -280,7 +283,7 @@ const FULL=[
 function startFull(chs){startTour({tour:(chs||FULL).flatMap(c=>c.steps)});}
 
 /* short tours for the newer versions (every entry must have a tour list, even empty) */
-const NEWS_T={'2.38.4':[],'2.38.3':[],'2.38.2':[],'2.38.1':[],'2.38.0':[],'2.37.2':[],'2.37.1':[],'2.37.0':[],'2.36.1':[],'2.36.0':[],'2.35.2':[],'2.35.1':[],'2.35.0':[],'2.34.1':[],'2.34.0':[],'2.33.1':[],'2.33.0':[],'2.32.4':[],'2.32.3':[],'2.32.2':[],'2.32.1':[],'2.32.0':[],
+const NEWS_T={'2.38.5':[],'2.38.4':[],'2.38.3':[],'2.38.2':[],'2.38.1':[],'2.38.0':[],'2.37.2':[],'2.37.1':[],'2.37.0':[],'2.36.1':[],'2.36.0':[],'2.35.2':[],'2.35.1':[],'2.35.0':[],'2.34.1':[],'2.34.0':[],'2.33.1':[],'2.33.0':[],'2.32.4':[],'2.32.3':[],'2.32.2':[],'2.32.1':[],'2.32.0':[],
  '2.31.0':[],
  '2.30.9':[],
  '2.30.7':[],
