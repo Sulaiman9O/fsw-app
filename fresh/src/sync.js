@@ -210,7 +210,7 @@ function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;
     el.querySelector('#jgo').onclick=async()=>{const em=el.querySelector('#jem').value.trim(),pw=el.querySelector('#jpw').value,er=el.querySelector('#jer');if(!em||!pw)return;
       er.textContent='';const bt=el.querySelector('#jgo');bt.disabled=true;bt.textContent=T_('Signing in…');
       try{try{localStorage.setItem('ws_sync','0');}catch(e){}await SYNC.ready;await FBA.signInWithEmailAndPassword(em,pw);
-        const any=await wsRef().collection('kv').limit(1).get();
+        const any=await wsRef().collection(typeof sync3On==='function'&&sync3On()?S3C('kv'):'kv').limit(1).get();
         if(any.empty){await FBA.signOut();throw {code:T_('This account has no workshop online yet. Set up the workshop on the main phone and turn on online sync there first.')};}
         await syncPull();sinceSet();try{localStorage.setItem('ws_sync_seeded','1');localStorage.setItem('ws_sync','1');}catch(e){}
         closeSheet();SYNC.on=false;syncStart();audit('settings','Joined the workshop by online sign-in');toast('Signed in. Choose your name.');render();}
