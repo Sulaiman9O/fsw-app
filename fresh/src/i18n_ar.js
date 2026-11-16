@@ -223,3 +223,5 @@ Object.assign(AR_DICT,{'Petrol':'بنزين','Diesel':'ديزل','Hybrid':'ها�
 Object.assign(AR_DICT,{'On labour':'على الأجرة','On the whole invoice':'على الفاتورة كاملة','on labour':'على الأجرة','Leave both empty or 0 to remove the discount.':'اتركهما فارغين أو 0 لإزالة الخصم.'});
 Object.assign(AR_DICT,{'Print all':'اطبع الكل'});
 Object.assign(AR_DICT,{'Type the km first':'اكتب الكيلومتر أول'});
+
+Object.assign(AR_DICT,{'Unticked lines do not show in the report.':'اللي تشيل علامته ما يطلع في التقرير.'});

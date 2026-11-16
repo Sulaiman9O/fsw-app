@@ -123,18 +123,20 @@ function inspSwitchSheet(j){inspSeed();const I=j.insp;let sure=0;
 /* after Done: a suggested quote for the yellow and red checks; untick what you don't want, change the service, then add to the job */
 function inspQuoteSheet(j){const I=j.insp,v=vehOf(j);const L=I.items.map((n,i)=>({n,i,s:I.r[i]})).filter(x=>x.s==='bad'||x.s==='warn').sort((a,b)=>(a.s==='bad'?0:1)-(b.s==='bad'?0:1));if(!L.length)return false;
   const SV=DB.services.filter(s=>!s.hidden).sort((a,b)=>String(a.name).localeCompare(String(b.name)));const nm=s=>I18N.lang==='ar'&&s.ar?s.ar:s.name;
-  const pick={};L.forEach(x=>{const sv=(I.meta[x.i]||{}).svc||inspGuess(x.n);pick[x.i]={sv,on:!!sv&&!inspAdded(j,x.i)};});
+  const pick={};L.forEach(x=>{const sv=(I.meta[x.i]||{}).svc||inspGuess(x.n);pick[x.i]={sv,on:!!sv&&!inspAdded(j,x.i)&&!(I.meta[x.i]||{}).noRep};});
+  /* a tick or a service change is kept at once (Close keeps it): unticked = not in the customer's report */
+  const keep=i=>{const m=I.meta[i]=I.meta[i]||{},p=pick[i];if(p.sv)m.svc=p.sv;if(p.on||inspAdded(j,i))delete m.noRep;else m.noRep=1;save();};
   const tot=()=>L.reduce((a,x)=>{const p=pick[x.i],s=p.on&&byId('services',p.sv);return a+(s?svcPrice(s,v):0);},0);
-  openSheet(`<h3>💡 ${T_('Suggested quote')}</h3><p class="hint">${T_('From the yellow and red checks. Untick what you don\'t want or change the service.')}</p><div class="iqs">${L.map(x=>{const p=pick[x.i],done=inspAdded(j,x.i);return `<div class="iqr ${x.s}">
+  openSheet(`<h3>💡 ${T_('Suggested quote')}</h3><p class="hint">${T_('From the yellow and red checks. Untick what you don\'t want or change the service.')+' '+T_('Unticked lines do not show in the report.')}</p><div class="iqs">${L.map(x=>{const p=pick[x.i],done=inspAdded(j,x.i);return `<div class="iqr ${x.s}">
       <label class="iqc"><input type="checkbox" data-qc="${x.i}" ${p.on?'checked':''} ${done?'disabled':''}><span><i class="dot ${x.s}"></i> ${esc(x.n)}${(I.d[x.i]||{}).note?`<small>${esc(I.d[x.i].note)}</small>`:''}</span></label>
       ${done?`<span class="iqd">✓ ${T_('Already in the job')}</span>`:`<div class="iqv"><select class="field" data-qs="${x.i}"><option value="">— ${T_('Choose a service')} —</option>${SV.map(s=>`<option value="${s.id}" ${s.id===p.sv?'selected':''}>${esc(nm(s))}</option>`).join('')}</select><b data-qp="${x.i}"></b></div>`}</div>`;}).join('')}</div>
     <div class="iqt"><span>${T_('Total')}</span><b id="iqtot"></b></div><button class="btn okb" id="iqok"></button><button class="btn ghost" id="iqno">${T_('Not now')}</button>`,el=>{
     const upd=()=>{L.forEach(x=>{const b=el.querySelector('[data-qp="'+x.i+'"]');if(!b)return;const s=byId('services',pick[x.i].sv);b.textContent=s?f3(svcPrice(s,v)):'';});
       const n=L.filter(x=>pick[x.i].on&&pick[x.i].sv&&!inspAdded(j,x.i)).length;el.querySelector('#iqtot').textContent=f3(tot())+' '+DB.ws.currency;const ok=el.querySelector('#iqok');ok.textContent='＋ '+T_('Add {n} to the job'.replace('{n}',n));ok.disabled=!n;};
-    el.querySelectorAll('[data-qc]').forEach(c=>c.onchange=()=>{pick[c.dataset.qc].on=c.checked;upd();});
-    el.querySelectorAll('[data-qs]').forEach(c=>c.onchange=()=>{const p=pick[c.dataset.qs];p.sv=c.value;p.on=!!c.value;const cb=el.querySelector('[data-qc="'+c.dataset.qs+'"]');if(cb)cb.checked=p.on;upd();});
+    el.querySelectorAll('[data-qc]').forEach(c=>c.onchange=()=>{pick[c.dataset.qc].on=c.checked;keep(c.dataset.qc);upd();});
+    el.querySelectorAll('[data-qs]').forEach(c=>c.onchange=()=>{const p=pick[c.dataset.qs];p.sv=c.value;p.on=!!c.value;const cb=el.querySelector('[data-qc="'+c.dataset.qs+'"]');if(cb)cb.checked=p.on;keep(c.dataset.qs);upd();});
     el.querySelector('#iqno').onclick=()=>{closeSheet();go('job',{id:j.id});};
-    el.querySelector('#iqok').onclick=()=>{let n=0;j.items=j.items||[];L.forEach(x=>{const p=pick[x.i];if(p.sv)I.meta[x.i].svc=p.sv;if(!p.on||!p.sv||inspAdded(j,x.i))return;const s=byId('services',p.sv);if(!s)return;
+    el.querySelector('#iqok').onclick=()=>{let n=0;j.items=j.items||[];L.forEach(x=>{const p=pick[x.i];if(p.sv)(I.meta[x.i]=I.meta[x.i]||{}).svc=p.sv;if(!p.on||!p.sv||inspAdded(j,x.i))return;const s=byId('services',p.sv);if(!s)return;
         const it=svcItem(s,v);it.fromInsp=String(x.i);it.note=T_('From inspection')+': '+x.n;j.items.push(it);n++;});
       if(n)logJ(j,'Added from inspection · '+n);save();closeSheet();toast(T_('Added {n} to the job'.replace('{n}',n)));go('job',{id:j.id});};upd();});return true;}
 /* finishing: log the red items, make reminders for the yellow ones the worker asked for */
@@ -143,7 +145,7 @@ function inspFinish(j){const I=j.insp;if(!I)return;const red=Object.entries(I.r)
     DB.reminders.push({id:uid('r'),veh:v.id,cust:j.cust,kind:'other',name:I.items[i],due:due.getTime(),dueKm:R.km&&j.km?(+j.km)+R.km:0,job:j.id,sent:0});d.remDone=1;});save();}
 /* the customer's report: colours, notes, photos and what we recommend with prices */
 function inspReportHtml(j){const I=j.insp,v=vehOf(j),c=custOf(j);const secs=inspSecs(I);const cnt=x=>Object.values(I.r).filter(y=>y===x).length;
-  const recs=I.items.map((n,i)=>({n,i,s:I.r[i],sv:I.meta&&I.meta[i]&&I.meta[i].svc&&byId('services',I.meta[i].svc)})).filter(x=>(x.s==='bad'||x.s==='warn')&&x.sv);
+  const recs=I.items.map((n,i)=>({n,i,s:I.r[i],sv:I.meta&&I.meta[i]&&I.meta[i].svc&&byId('services',I.meta[i].svc)})).filter(x=>(x.s==='bad'||x.s==='warn')&&x.sv&&!(I.meta&&I.meta[x.i]&&I.meta[x.i].noRep));
   const col={ok:'#16a34a',warn:'#d97706',bad:'#dc2626'};const lab={ok:'Good · سليم',warn:'Soon · قريباً',bad:'Now · الآن'};
   return `<div class="inv irep"><div class="inv-hd">${DB.ws.logo?`<img src="${DB.ws.logo}" alt="">`:`<b style="font-size:6mm">${esc(DB.ws.name)}</b>`}<div class="inv-ws"><b>${esc(DB.ws.name)}</b><span>${[DB.ws.addr,DB.ws.phone].filter(Boolean).map(esc).join(' · ')}</span></div></div>
   <div class="inv-ttl"><b>INSPECTION REPORT <span class="ar">تقرير الفحص</span></b><span>${esc(I.name)} · ${fmtD(I.at||j.t)}</span></div>
@@ -153,7 +155,7 @@ function inspReportHtml(j){const I=j.insp,v=vehOf(j),c=custOf(j);const secs=insp
   ${recs.length?`<div class="irsec"><b>We recommend · ننصح بـ</b>${recs.map(r=>`<div class="irr"><span class="irdot" style="background:${col[r.s]}"></span><span class="irn">${esc(r.sv.name)}${r.sv.ar?` <span class="ar">${esc(r.sv.ar)}</span>`:''}<small>${esc(r.n)}</small></span><span class="irs">${f3(svcPrice(r.sv,v))} ${DB.ws.currency}</span></div>`).join('')}<div class="irr tot"><span></span><span class="irn"><b>Total · المجموع</b></span><span class="irs"><b>${f3(recs.reduce((a,r)=>a+svcPrice(r.sv,v),0))} ${DB.ws.currency}</b></span></div></div>`:''}
   <div class="inv-ft">${esc(DB.ws.phone?'📞 '+DB.ws.phone:'')} · شكراً لزيارتكم</div></div>`;}
 function inspReportText(j){const I=j.insp,v=vehOf(j),c=custOf(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;const L=(x,e)=>I.items.map((n,i)=>I.r[i]===x?e+' '+n+((I.d||{})[i]&&I.d[i].note?' — '+I.d[i].note:''):'').filter(Boolean);
-  const recs=I.items.map((n,i)=>({s:I.r[i],sv:I.meta&&I.meta[i]&&I.meta[i].svc&&byId('services',I.meta[i].svc)})).filter(x=>(x.s==='bad'||x.s==='warn')&&x.sv);
+  const recs=I.items.map((n,i)=>({i,s:I.r[i],sv:I.meta&&I.meta[i]&&I.meta[i].svc&&byId('services',I.meta[i].svc)})).filter(x=>(x.s==='bad'||x.s==='warn')&&x.sv&&!(I.meta&&I.meta[x.i]&&I.meta[x.i].noRep));
   return [`مرحباً ${c.name||''}،`,`نتيجة فحص سيارتك ${carName(v)}${v.plate?' ('+v.plate+')':''}:`,'',`✅ سليم: ${Object.values(I.r).filter(x=>x==='ok').length} بند`,...(L('bad','🔴').length?['','🔴 يحتاج الآن:',...L('bad','•')]:[]),...(L('warn','🟡').length?['','🟡 قريباً:',...L('warn','•')]:[]),
     ...(recs.length?['','ننصح بـ:',...recs.map(r=>'• '+(r.sv.ar||r.sv.name)+': '+f3(svcPrice(r.sv,v))+' '+cur),'المجموع: '+f3(recs.reduce((a,r)=>a+svcPrice(r.sv,v),0))+' '+cur]:[]),'',DB.ws.name||''].join('\n');}
 const IR_CSS='.irsum{display:flex;gap:4mm;flex-wrap:wrap;margin:3mm 0;font-weight:700}.irsec{margin:3mm 0;border:0.3mm solid #ddd;border-radius:2mm;padding:2mm 3mm}.irsec>b{display:block;margin-bottom:1.5mm;font-size:3.6mm}.irr{display:grid;grid-template-columns:3mm 1fr auto;gap:2mm;align-items:start;padding:1.2mm 0;border-top:0.2mm solid #eee}.irr:first-of-type{border-top:0}.irdot{width:3mm;height:3mm;border-radius:50%;margin-top:0.6mm}.irn small{display:block;color:#555;font-size:2.6mm}.irs{font-size:2.8mm;font-weight:700;white-space:nowrap}.irph{display:flex;gap:2mm;flex-wrap:wrap;padding:1mm 0 2mm 5mm}.irph img{width:28mm;height:21mm;object-fit:cover;border-radius:1.5mm}.irr.tot{border-top:0.4mm solid #333}';
