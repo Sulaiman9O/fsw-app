@@ -34,5 +34,7 @@ async function vinDecode(vin,skipId){vin=String(vin||'').toUpperCase().trim();if
   if(!out.src.length)out.src.push('guess');return out;}
 const vinLabel=o=>[o.make,o.model,o.year||''].filter(Boolean).join(' ')+(o.engine?' · '+o.engine:o.engineHint?' · '+o.engineHint:'');
 /* put what the VIN said into a car (only into empty fields, unless force) — returns the names of what changed */
-function vinFill(d,o,force){const ch=[];['make','model','year','engine'].forEach(k=>{const v=k==='year'?(o.year?String(o.year):''):o[k];if(!v)return;if(force||!d[k]){if(String(d[k]||'')!==v){d[k]=v;ch.push(k);}}});
+/* "ES" from the VIN and "ES 350" chosen are the same car: keep the fuller name */
+function vinSame(a,b){const n=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');a=n(a);b=n(b);return !!a&&!!b&&(a===b||a.startsWith(b)||b.startsWith(a));}
+function vinFill(d,o,force){const ch=[];['make','model','year','engine'].forEach(k=>{const v=k==='year'?(o.year?String(o.year):''):o[k];if(!v)return;if(k==='model'&&d[k]&&vinSame(d[k],v)&&String(d[k]).length>=String(v).length)return;if(force||!d[k]){if(String(d[k]||'')!==v){d[k]=v;ch.push(k);}}});
   if(ch.includes('make')&&!ch.includes('model')&&force)d.model=o.model||d.model;return ch;}

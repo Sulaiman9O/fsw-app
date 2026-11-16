@@ -137,9 +137,13 @@ function filterOpts(v,rec){const seen=new Set(),out=[];const add=(p,n,why)=>{if(
 /* last resort: a filter whose "fits" list (built from the invoices) names this car */
 function fitsFilter(v){if(!v||typeof fitsCar!=='function')return null;const L=DB.parts.filter(p=>p.cat==='Oil filters'&&fitsCar(p,v)&&filterBrandOk(p,v));return L.find(p=>(+p.stock||0)>0)||L[0]||null;}
 function makerFilter(v){const ns=makerFilterNums(v);if(!ns.length)return null;const L=DB.parts.filter(p=>p.cat==='Oil filters'&&filterIsMaker(p,v));return L.find(p=>(+p.stock||0)>0)||L[0]||null;}
+/* which oil-change service fits this car: the SUV / pickup one for big cars, the sedan one otherwise (when the shop has both) */
+function rxSvcFor(kind,v){const L=DB.services.filter(s=>!s.hidden&&rxOf(s)===kind);if(L.length<2)return L[0]||DB.services.find(s=>rxOf(s)===kind);
+  const sz=String(DB.sizes[sizeOf(v)]||'');const big=!!v&&(isSuv(v)||isPickup(v)||/suv|truck|pick|van|mpv|4x4|jeep/i.test(String(v.body||''))||/suv|pickup/i.test(sz));
+  const nm=s=>(s.name||'')+' '+(s.ar||'');return (big?L.find(s=>/suv|4x4|pick|jeep|دفع|كبير/i.test(nm(s))):L.find(s=>/sedan|saloon|car|صالون|سيدان/i.test(nm(s))))||L[0];}
 function applyOilRecipe(j,mode,svc){const v=vehOf(j);const R=oilRecipe(v,mode);if(!R)return null;
   j.items=(j.items||[]).filter(i=>i.grp!=='rxoil');
-  if(!(j.items||[]).some(isOilSvc)){const s=svc||DB.services.find(s=>rxOf(s)==='oil');if(s){const it=svcItem(s,v);it.grp='rxoil';j.items.push(it);}}
+  if(!(j.items||[]).some(isOilSvc)){const s=svc||rxSvcFor('oil',v);if(s){const it=svcItem(s,v);it.grp='rxoil';j.items.push(it);}}
   if(R.filter&&!(j.items.some(i=>isFilterI(i,partOfItem(i))))){const p=R.filter;j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0,grp:'rxoil',by:S.user.name});}
   if(R.oil&&!(j.items.some(i=>isOilI(i,partOfItem(i))))){const p=R.oil;const lq=liqQ(p,R.qty);j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:lq.q,u:lq.L?'L':'',p:+p.price,cost:+p.cost||0,grp:'rxoil',by:S.user.name});}
   j.rx=j.rx||{};j.rx.oil={mode,at:now()};logJ(j,(mode==='maker'?'Maker recommendation':'Usual oil change')+' added · '+[R.filter&&R.filter.name,R.oil&&(R.qty+' L '+R.oil.name)].filter(Boolean).join(' + '));return R;}

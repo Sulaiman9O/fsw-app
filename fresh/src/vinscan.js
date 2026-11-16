@@ -162,7 +162,7 @@ async function vinUse(where,vin,draft){vin=String(vin||'').toUpperCase().replace
   finally{VIN_BUSY='';}}
 /* the line under the VIN: what was found, where from, and a button when it differs from what is already chosen */
 function vinNoteHtml(o,d){if(o.wait)return `<div class="vinnote wait">⏳ ${T_('Looking up the car…')}</div>`;
-  const diff=['make','model','year'].filter(k=>{const v=k==='year'?(o.year?String(o.year):''):o[k];return v&&d[k]&&String(d[k]).toLowerCase()!==String(v).toLowerCase();});
+  const diff=['make','model','year'].filter(k=>{const v=k==='year'?(o.year?String(o.year):''):o[k];return v&&d[k]&&String(d[k]).toLowerCase()!==String(v).toLowerCase()&&!(k==='model'&&vinSame(d[k],v));});
   const src=o.src.includes('online')?T_('from the VIN database'):o.src.includes('local')?T_('from your cars with the same VIN start'):T_('from the VIN start only — choose the model');
   return `<div class="vinnote${diff.length?' diff':''}"><b>🚗 ${esc(vinLabel(o))}</b><small>${esc(src)}${o.extra?' · '+esc(o.extra):''}${o.ch&&o.ch.length?' · ✓ '+T_('filled in'):''}</small>${diff.length?`<button class="btn sm" data-vinforce>${T_('Use this car')}</button>`:''}</div>`;}
 function vinAttach(root){(root||document).querySelectorAll('#nvin,#vv').forEach(inp=>{
@@ -175,7 +175,7 @@ function vinAttach(root){(root||document).querySelectorAll('#nvin,#vv').forEach(
   const val=inp.value.toUpperCase().trim();let o=null,d=null;
   if(inp.id==='nvin'){const N=S.p&&S.p.n;o=N&&N.vinInfo;d=N;}else{o=S.vinNote;d=vvDraft();}
   if(!o||o.vin!==val||!w)return;w.insertAdjacentHTML('afterend',vinNoteHtml(o,d||{}));const f=w.nextElementSibling.querySelector('[data-vinforce]');
-  if(f)f.onclick=()=>{if(inp.id==='nvin'){const N=nKeep();vinFill(N,o,true);N.engine=o.engine||'';o.ch=['make'];render();}else{const C=S.vinCtx||{};const dd=vvDraft();vinFill(dd,o,true);dd.engine=o.engine||'';o.ch=['make'];vehSheet(C.cust,C.v||null,dd);}};});}
+  if(f)f.onclick=()=>{if(inp.id==='nvin'){const N=nKeep();vinFill(N,o,true);if(o.engine)N.engine=o.engine;o.ch=['make'];render();}else{const C=S.vinCtx||{};const dd=vvDraft();vinFill(dd,o,true);if(o.engine)dd.engine=o.engine;o.ch=['make'];vehSheet(C.cust,C.v||null,dd);}};});}
 (function(){if(typeof vehSheet==='function'){const VS=vehSheet;window.vehSheet=vehSheet=function(cust,v,dr){S.vinCtx={cust,v,dr};return VS(cust,v,dr);};}
   const R=render;window.render=render=function(){const r=R.apply(this,arguments);try{vinAttach($('#main'));}catch(e){}return r;};
   const O=openSheet;window.openSheet=openSheet=function(h,bind){return O(h,el=>{bind&&bind(el);try{vinAttach(el);}catch(e){}});};})();
