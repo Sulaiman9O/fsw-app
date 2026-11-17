@@ -233,3 +233,5 @@ Object.assign(AR_DICT,{'You changed something. Save it?':'غيّرت شي. تح�
 Object.assign(AR_DICT,{'Search…':'بحث…','Nothing found.':'ما في نتائج.','Choose a supplier':'اختر المورّد','New supplier':'مورّد جديد','Add a part':'أضف قطعة','New part (not in the list yet)…':'قطعة جديدة (مو في القائمة)…','Search suppliers…':'ابحث عن مورّد…'});
 
 Object.assign(AR_DICT,{'Choose':'اختر'});
+
+Object.assign(AR_DICT,{'This car has an estimate':'هذي السيارة عندها عرض سعر','Customer agreed · use this estimate':'العميل وافق · حوّل عرض السعر لبطاقة','New job card (keep the estimate)':'بطاقة جديدة (خلّ عرض السعر)','customer agreed?':'العميل وافق؟','tap to turn it into the job card':'اضغط تحوّله لبطاقة شغل','job card':'بطاقة شغل','Cost each (what the supplier charges)':'سعر الحبة (سعر المورد)','Type the price':'اكتب السعر','Price':'السعر'});

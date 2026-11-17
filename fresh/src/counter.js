@@ -34,6 +34,7 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
     <span class="sub">${v.engine?'⚙️ '+esc(effEng(v)||v.engine)+' · ':''}${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${v.km?' · '+T_('last km')+' <bdi>'+kmf(v.km)+'</bdi>':''}</span>
     <label class="field-l">${T_('Km now (optional)')}<input class="field" id="ckm" inputmode="numeric" value="${esc(C.km)}" placeholder="${v.km?kmf(v.km):''}"></label></div>
    ${debtNote(v.cust)}
+   ${!oj&&estOf(v)?(e=>`<button class="ctra main" id="cest"><span class="ic">📋</span><div><b>${T_('Estimate')} #${e.no} · ${T_('customer agreed?')}</b><small>${(e.items||[]).length} ${T_('items')} · ${f3(jobTotals(e).total)} · ${T_('tap to turn it into the job card')}</small></div><em>›</em></button>`)(estOf(v)):''}
    ${oj?`<button class="ctra main" id="coj"><span class="ic">🔧</span><div><b>${T_('Open job')} #${oj.no}</b><small>${(oj.items||[]).length} ${T_('items')} · ${f3(jobTotals(oj).total)}</small></div><em>›</em></button>`:''}
    ${rep?`<button class="ctra${oj?'':' main'}" id="crep"><span class="ic">🔁</span><div><b>${T_('Same as last visit')}</b><small>${fmtDs(lv.t)} · ${esc(sum(rep))}</small></div><em>${f3(jobTotals(rep).total)}</em></button>`:''}
    ${oil?`<button class="ctra${oj||rep?'':' main'}" id="coil"><span class="ic">🛢</span><div><b>${T_('Oil change')}</b><small>${esc(sum(oil))}</small>${guess?`<small class="gw">⚠️ ${T_('Litres are a guess, check them')}</small>`:''}</div><em>${f3(jobTotals(oil).total)}</em></button>`:''}
@@ -41,7 +42,8 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
    <div class="two"><button class="btn ghost" data-go="custd:${v.cust}">📋 ${T_('History')}</button>${c.phone?`<button class="btn ghost" id="cwa">WhatsApp</button>`:'<span></span>'}</div>`;
   $('#cchg').onclick=()=>{C.vid=null;C.q='';render();};
   const km=$('#ckm');km.oninput=()=>{C.km=km.value;};
-  const start=fill=>{const j=newJobFor(v,C.km);if(fill)fill(j);save();C.km='';go('job',{id:j.id});};
+  const start=fill=>estGuard(v,()=>{const j=newJobFor(v,C.km);if(fill)fill(j);save();C.km='';go('job',{id:j.id});});
+  const ce=$('#cest');if(ce)ce.onclick=()=>{const e=estOf(v);if(!e)return;const x=num(C.km);if(x>0){e.km=x;if(x>(+v.km||0))v.km=x;}C.km='';estAgree(e);};
   const o1=$('#coj');if(o1)o1.onclick=()=>{const x=num(C.km);if(x>0){oj.km=x;if(x>(+v.km||0))v.km=x;save();}C.km='';go('job',{id:oj.id});};
   const r1=$('#crep');if(r1)r1.onclick=()=>start(j=>{repeatVisit(j,lv);});
   const o2=$('#coil');if(o2)o2.onclick=()=>start(j=>{applyOilRecipe(j,(DB.ws.rxMode)||'usual');});

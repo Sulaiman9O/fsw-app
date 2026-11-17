@@ -37,8 +37,8 @@ SCREENS.search=m=>{
 };
 /* ---------- WORK ---------- */
 SCREENS.work=m=>{
-  const f=S.p.f||'open';const cnt=k=>k==='all'?DB.jobs.length:DB.jobs.filter(j=>k==='open'?(j.stage!=='done'&&j.stage!=='estimate'):k==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):j.stage===k).length;
-  let list=DB.jobs.filter(j=>f==='open'?(j.stage!=='done'&&j.stage!=='estimate'):f==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):f==='all'?true:j.stage===f).sort((a,b)=>b.t-a.t);
+  const f=S.p.f||'open';const cnt=k=>k==='all'?DB.jobs.length:DB.jobs.filter(j=>k==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):k==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):j.stage===k).length;
+  let list=DB.jobs.filter(j=>f==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):f==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):f==='all'?true:j.stage===f).sort((a,b)=>b.t-a.t);
   m.innerHTML=head('Work')+`<div class="pipe">${[['new','New'],['work','Working'],['ready','Ready'],['today','Done today']].map(([k,l])=>`<button data-f="${k}" class="${f===k?'on':''}"><b>${cnt(k)}</b><span>${l}</span></button>`).join('')}</div>
   <div class="chips">${[['open','Open'],['estimate','Estimates'],['done','Done'],['all','All']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
   <button class="btn okb" data-go="newjob">＋ New car in</button>
@@ -103,7 +103,7 @@ SCREENS.newjob=m=>{
     if(!c){c={id:uid('c'),name:N.name||'Walk-in',phone:N.phone.replace(/[^\d+]/g,''),t:now()};DB.customers.push(c);}
     if(!v){v={id:uid('v'),cust:c.id,make:N.make.trim(),model:N.model.trim(),year:N.year.trim(),plate:N.plate.trim().toUpperCase(),vin:N.vin.trim().toUpperCase(),engine:N.engine||'',km:num(N.km),t:now()};DB.vehicles.push(v);}
     else if(num(N.km))v.km=num(N.km);
-    const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:c.id,veh:v.id,km:num(N.km)||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
+    const mk=()=>{const j={id:uid('j'),no:DB.ws.nextJob++,dev:(typeof syncDev==='function'?syncDev():''),cust:c.id,veh:v.id,km:num(N.km)||0,stage:N.est?'estimate':'new',items:[],disc:0,t:now(),by:S.user.name,log:[[now(),(N.est?'Estimate':'Job')+' opened · '+S.user.name]],pays:[]};
     if(S.pendQuote){j.items=S.pendQuote.items;if(S.pendQuote.kind==='oil')j.rx={oil:{mode:'usual',at:now()}};S.pendQuote=null;}
-    DB.jobs.push(j);save();S.freshJ=j.id;toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};
+    DB.jobs.push(j);save();S.freshJ=j.id;toast((N.est?'Estimate':'Job')+' #'+j.no+' opened');go('job',{id:j.id});};if(!N.est&&!S.pendQuote)estGuard(v,mk);else mk();};
 };

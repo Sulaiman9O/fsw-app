@@ -67,6 +67,15 @@ function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j
 const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
+/* a recent estimate waiting for this car (not older than 45 days) */
+const estOf=v=>v&&v.id?DB.jobs.filter(j=>j.veh===v.id&&j.stage==='estimate'&&!isInvoiced(j)&&Date.now()-(+j.t||0)<45*864e5).sort((a,b)=>b.t-a.t)[0]||null:null;
+const estRecent=j=>j.stage==='estimate'&&Date.now()-(+j.t||0)<14*864e5;
+function estAgree(e){e.stage='new';e.fromEst=true;e.t=now();try{logJ(e,'Customer agreed');}catch(x){}save();toast(T_('Estimate')+' #'+e.no+' → '+T_('job card'));go('job',{id:e.id});}
+/* opening a new card for a car that has an estimate: use the estimate instead? */
+function estGuard(v,goNew){const e=estOf(v);if(!e){goNew();return;}
+  openSheet(`<h3>📋 ${T_('This car has an estimate')} #${e.no}</h3><p class="hint">${(e.items||[]).length} ${T_('items')} · ${f3(jobTotals(e).total)} · ${fmtD(e.t)}</p>
+   <button class="btn" id="egu">✅ ${T_('Customer agreed · use this estimate')}</button><button class="btn ghost" id="egn">＋ ${T_('New job card (keep the estimate)')}</button>`,el=>{
+   el.querySelector('#egu').onclick=()=>{closeSheet();estAgree(e);};el.querySelector('#egn').onclick=()=>{closeSheet();goNew();};});}
 /* what a customer still owes: unpaid invoices, oldest first */
 /* jobs per customer, built once and dropped after this moment or on the next save: lists of all customers no longer scan every job per customer */
 let JBC=null;function jobsOfCust(cid){if(!JBC||JBC.src!==DB.jobs||JBC.n!==DB.jobs.length){JBC={src:DB.jobs,n:DB.jobs.length,m:new Map()};DB.jobs.forEach(j=>{const a=JBC.m.get(j.cust);a?a.push(j):JBC.m.set(j.cust,[j]);});setTimeout(()=>{JBC=null;},0);}return JBC.m.get(cid)||[];}
