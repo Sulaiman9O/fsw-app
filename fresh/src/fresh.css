@@ -633,3 +633,15 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .row .v{flex:none}.list .row>div,button.row>div,div.row>div{flex:1 1 auto;min-width:0}
 .xrow .xn{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;unicode-bidi:plaintext;text-align:start}
 .xrow .v small.bad{color:var(--bad)!important;white-space:nowrap}
+
+/* 2.42.0 expense sheet */
+.xlab{font-size:.8rem;font-weight:600;color:var(--mut);margin:10px 2px 6px}
+.xchips{margin-bottom:8px}.xchips button{min-height:42px}
+.xphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:8px}.xphs:empty{display:none}
+.xph1{position:relative;border-radius:12px;overflow:hidden;background:#fff;aspect-ratio:3/4}.xph1 img{width:100%;height:100%;object-fit:cover;display:block}
+.xph1.big{grid-column:1/-1;aspect-ratio:auto}.xph1.big img{height:auto;object-fit:contain}
+.xph1 .vpx{position:absolute;top:6px;inset-inline-end:6px;min-width:32px;height:32px;border-radius:999px;border:0;background:rgba(0,0,0,.6);color:#fff;font:700 .85rem var(--f-body);padding:0 8px}.xph1 .vpx.sure{background:var(--bad);color:#fff}
+.xpays .jb-r{align-items:center}.xpays .jb-r .xpx{flex:none;margin-inline-start:10px;border:0;background:none;color:var(--mut);font-size:1rem;min-width:36px;min-height:36px}
+.xowed{margin:8px 0}.xowed .in2{margin-top:6px}.xph{font-size:.8em}.xvexp{width:100%;margin:6px 0 10px}
+button.kpi{text-align:start;font:inherit;cursor:pointer}
+.xowed .bad,.xvexp .bad,.xowed b.bad{color:var(--bad)}.xowed>b{display:block;margin-bottom:6px}

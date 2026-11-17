@@ -24,17 +24,95 @@ function expNote(s){s=String(s||'').trim();if(!s)return {text:'',due:null};let d
   const keep=[];parts.forEach(x=>{const k=key(x);if(!k)return;const i=keep.findIndex(y=>{const a=key(y);if(a===k)return true;const sh=a.length<k.length?a:k;if(sh.length>=25&&(a.includes(k)||k.includes(a)))return true;let n=0;while(n<a.length&&n<k.length&&a[n]===k[n])n++;return n>=40;});
     if(i<0)keep.push(x);else if(key(x).length>key(keep[i]).length)keep[i]=x;});
   return {text:keep.join(' · '),due:due!=null&&due>0.0005?due:null};}
-SCREENS.exp=m=>{const f=rangeOf('month');const list=DB.expenses.slice().sort((a,b)=>b.t-a.t);const mon=DB.expenses.filter(e=>e.t>=f);
-  const byC={};mon.forEach(e=>byC[e.cat]=(byC[e.cat]||0)+e.amt);
+/* 2.42.0 expenses: the receipt date, a photo of the receipt, the shop it came from (a supplier), and how it was paid —
+   drawer / card / transfer / my pocket, or not paid yet (then pay it later, all or part).
+   e.pays=[{amt,m,t,by}] like an invoice; old expenses have no pays: they count as paid on their date (drawer unless cash:false).
+   e.cash is kept = "some of it came from the drawer" for anything older that still reads it. */
+const EXP_M=[['Cash','💵','Cash drawer'],['Card','💳','Card'],['Transfer','🏦','Transfer'],['Own','👛','My pocket']];
+const expMName=m=>{const x=EXP_M.find(y=>y[0]===m);return x?x[1]+' '+T_(x[2]):m==='Other'?T_('Paid (not from the drawer)'):esc(m||'');};
+function expPays(e){if(Array.isArray(e.pays))return e.pays;return [{amt:+e.amt||0,m:e.cash===false?'Other':'Cash',t:e.t}];}
+const expPaid=e=>Math.round(expPays(e).reduce((a,p)=>a+(+p.amt||0),0)*1000)/1000;
+const expOwed=e=>Array.isArray(e.pays)?Math.max(0,Math.round(((+e.amt||0)-expPaid(e))*1000)/1000):0;
+const expVend=e=>(e.vend&&byId('vendors',e.vend))||null;
+const expVName=e=>{const v=expVend(e);return v?v.name:(e.vname||'');};
+/* cash that left the drawer on a day (for the daily close) */
+const expCashOn=day=>DB.expenses.reduce((a,e)=>a+expPays(e).filter(p=>p.m==='Cash'&&dayKey(p.t)===day).reduce((x,p)=>x+(+p.amt||0),0),0);
+/* a date box (Muscat day) ↔ time: keep the time of day the expense already had */
+const MUS=4*3600e3;const expDayT=(day,t0)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(day||'');if(!m)return null;const tod=t0!=null?((t0+MUS)%864e5+864e5)%864e5:12*3600e3;return Date.UTC(+m[1],+m[2]-1,+m[3])-MUS+tod;};
+/* receipt pictures: bigger than car pictures so the small print can be read */
+function shrinkImg(file,max,q,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',q));};im.onerror=()=>{toast(T_('Could not read this picture'));cb(null);};im.src=r.result;};r.onerror=()=>{toast(T_('Could not read this picture'));cb(null);};r.readAsDataURL(file);}
+function pickImgs(mode,cb){const f=document.createElement('input');f.type='file';f.accept='image/*';if(mode==='cam')f.setAttribute('capture','environment');else f.multiple=true;try{trail('photo',mode==='cam'?'camera':'gallery');}catch(e){}
+  f.onchange=()=>{const L=[...(f.files||[])];if(!L.length)return;const out=[];let n=0;L.forEach(x=>shrinkImg(x,1400,.62,u=>{if(u)out.push(u);if(++n===L.length)cb(out);}));};f.click();}
+SCREENS.exp=m=>{const f=rangeOf('month');const P=S.p||{};const fv=P.vend?byId('vendors',P.vend):null;const fo=!!P.owed;
+  const all=DB.expenses.slice().sort((a,b)=>b.t-a.t);const list=all.filter(e=>(!fv||e.vend===fv.id)&&(!fo||expOwed(e)>0));const mon=DB.expenses.filter(e=>e.t>=f);
+  const owed=DB.expenses.reduce((a,e)=>a+expOwed(e),0);const byC={};mon.forEach(e=>byC[e.cat]=(byC[e.cat]||0)+e.amt);
   m.innerHTML=head('Expenses',`<button class="lnk" id="eadd">＋ Expense</button>`)+`
-  <div class="kpis2"><div class="kpi red"><b>${f3(mon.reduce((a,e)=>a+e.amt,0))}</b><span>This month</span></div><div class="kpi"><b>${mon.length}</b><span>Entries</span></div></div>
-  ${Object.keys(byC).length?sec('This month by type')+`<div class="list">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="row"><div><b>${esc(c)}</b></div><span class="v">${f3(v)}</span></div>`).join('')}</div>`:''}
-  ${sec('All')}<div class="list">${list.map(e=>{const n=expNote(e.note);return `<button class="row xrow" data-ee="${e.id}"><div><b>${esc(e.cat)}</b><span>${fmtD(e.t)}${e.monthly?' · '+T_('monthly'):''}</span>${n.text?`<span class="xn" dir="auto" data-notr>${esc(n.text)}</span>`:''}</div><span class="v">${f3(e.amt)}${n.due!=null?`<small class="bad">${T_('Unpaid')} ${f3(n.due)}</small>`:''}</span></button>`;}).join('')||empty('🧾','No expenses yet. Add rent and salaries first.')}</div>`;
-  const edit=e=>{const isNew=!e;e=e||{cat:DB.ecats[0],amt:0,t:now()};openSheet(`<h3>${isNew?'New expense':'Edit expense'}</h3><select class="field" id="ec">${DB.ecats.map(c=>`<option ${e.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select><input class="field" id="ea" inputmode="decimal" placeholder="Amount" value="${e.amt?f3(e.amt):''}"><input class="field" id="en" placeholder="Note" value="${esc(e.note||'')}"><label class="chk"><input type="checkbox" id="em" ${e.monthly?'checked':''}> Every month (rent, salaries…)</label><label class="chk"><input type="checkbox" id="ecsh" ${e.cash===false?'':'checked'}> Paid from the cash drawer</label>${(e.ph||[]).map(id=>{const p=photoOf(id);return p?`<img src="${p.img}" alt="" style="width:100%;border-radius:12px;margin:0 0 10px;background:#fff">`:'';}).join('')}<button class="btn" id="eok">Save</button>${!isNew?'<button class="btn ghost jb-del" id="edel">Delete</button>':''}`,el=>{
-    el.querySelector('#eok').onclick=()=>{const a=num($('#ea').value);if(!a){toast('Type the amount');return;}if(isNew){e.id=uid('e');e.by=S.user.name;DB.expenses.push(e);}e.cat=$('#ec').value;e.amt=a;e.note=$('#en').value.trim();e.monthly=$('#em').checked;e.cash=$('#ecsh').checked;save();closeSheet();render();};
-    const d=el.querySelector('#edel');if(d)d.onclick=()=>{audit('delete','Expense '+e.cat+' '+f3(e.amt));DB.expenses=DB.expenses.filter(x=>x!==e);save();closeSheet();render();};});};
-  $('#eadd').onclick=()=>edit();$$('[data-ee]').forEach(b=>b.onclick=()=>edit(DB.expenses.find(x=>x.id===b.dataset.ee)));};
-SCREENS.close=m=>{const td=sumRange(rangeOf('today'));const cash=td.byM.Cash||0;const cashExp=DB.expenses.filter(e=>dayKey(e.t)===today()&&e.cash!==false).reduce((a,e)=>a+e.amt,0);
+  <div class="kpis2"><div class="kpi red"><b>${f3(mon.reduce((a,e)=>a+e.amt,0))}</b><span>This month</span></div>${owed>0.0005?`<button class="kpi red" id="eowed"><b>${f3(owed)}</b><span>${T_('Owed to shops')} ›</span></button>`:`<div class="kpi"><b>${mon.length}</b><span>Entries</span></div>`}</div>
+  ${!fv&&!fo&&Object.keys(byC).length?sec('This month by type')+`<div class="list">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="row"><div><b>${esc(c)}</b></div><span class="v">${f3(v)}</span></div>`).join('')}</div>`:''}
+  ${sec(fv?'🚚 '+esc(fv.name):fo?T_('Not paid yet'):'All',fv||fo?`<button class="lnk" id="eflt">✕ ${T_('Show all')}</button>`:'')}<div class="list">${list.map(e=>{const n=expNote(e.note);const ow=expOwed(e);const vn=expVName(e);const due=ow>0.0005?ow:n.due;
+    return `<button class="row xrow" data-ee="${e.id}"><div><b>${esc(e.cat)}${(e.ph||[]).length?' <span class="xph">📎</span>':''}</b><span>${fmtD(e.t)}${vn?' · <span dir="auto">'+esc(vn)+'</span>':''}${e.monthly?' · '+T_('monthly'):''}</span>${n.text?`<span class="xn" dir="auto" data-notr>${esc(n.text)}</span>`:''}</div><span class="v">${f3(e.amt)}${due!=null&&due>0.0005?`<small class="bad">${T_('Unpaid')} ${f3(due)}</small>`:''}</span></button>`;}).join('')||empty('🧾',fv||fo?T_('Nothing here.'):'No expenses yet. Add rent and salaries first.')}</div>`;
+  const eo=$('#eowed');if(eo)eo.onclick=()=>go('exp',{owed:1});const ef=$('#eflt');if(ef)ef.onclick=()=>go('exp');
+  $('#eadd').onclick=()=>expSheet(null,fv?{vend:fv.id}:null);$$('[data-ee]').forEach(b=>b.onclick=()=>expSheet(DB.expenses.find(x=>x.id===b.dataset.ee)));};
+/* one sheet for a new or an old expense. Nothing is kept until Save: new photos, removed photos, payments added or removed. */
+function expSheet(e,pre){const isNew=!e;e=e||Object.assign({cat:DB.ecats.includes('Workshop supplies')?'Workshop supplies':DB.ecats[0],amt:0,t:now()},pre||{});
+  const st={ph:(e.ph||[]).slice(),add:[],pays:isNew?null:expPays(e).map(p=>Object.assign({},p)),m:isNew?'Cash':null,payM:'Cash'};
+  const vn=expVName(e);const vl=DB.vendors.map(v=>v.name).filter(Boolean);
+  openSheet(`<h3>${isNew?T_('New expense'):T_('Edit expense')}</h3>
+   <select class="field" id="ec">${DB.ecats.map(c=>`<option ${e.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+   <div class="in2"><input class="field" id="ea" inputmode="decimal" placeholder="${T_('Amount')}" value="${e.amt?f3(e.amt):''}"><input class="field" id="ed" type="date" max="${today()}" value="${dayKey(e.t)}" aria-label="${T_('Receipt date')}"></div>
+   <input class="field" id="ev" list="evl" dir="auto" autocomplete="off" placeholder="🚚 ${T_('Shop / supplier')}" value="${esc(vn)}"><datalist id="evl">${vl.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+   <input class="field" id="en" dir="auto" placeholder="${T_('Note (what you bought)')}" value="${esc(e.note||'')}">
+   <div class="xlab">${T_('Paid how?')}</div><div id="epay"></div>
+   <div class="xlab">${T_('Receipt photo')}</div><div id="ephs" class="xphs"></div><input type="hidden" id="eph" value="">
+   <div class="in2"><button class="btn ghost sm" id="ecam">📷 ${T_('Camera')}</button><button class="btn ghost sm" id="egal">🖼 ${T_('From gallery')}</button></div>
+   <label class="chk"><input type="checkbox" id="em" ${e.monthly?'checked':''}> ${T_('Every month (rent, salaries…)')}</label>
+   <button class="btn" id="eok">${T_('Save')}</button>${!isNew?`<button class="btn ghost jb-del" id="edel">🗑 ${T_('Delete expense')}</button>`:''}`,el=>{
+   const q=s=>el.querySelector(s);const amt=()=>num(q('#ea').value)||0;
+   const paidSum=()=>Math.round((st.pays||[]).reduce((a,p)=>a+(+p.amt||0),0)*1000)/1000;
+   const drawPay=()=>{const box=q('#epay');
+     if(isNew){box.innerHTML=`<div class="chips xchips">${EXP_M.map(([k,ic,t])=>`<button data-em="${k}" aria-pressed="${st.m===k}">${ic} ${T_(t)}</button>`).join('')}<button data-em="Due" aria-pressed="${st.m==='Due'}">⏳ ${T_('Not paid yet')}</button></div>`;
+       box.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{st.m=b.dataset.em;drawPay();});return;}
+     const ow=Math.max(0,Math.round((amt()-paidSum())*1000)/1000);
+     box.innerHTML=`<div class="jb-list xpays">${(st.pays||[]).map((p,i)=>`<div class="jb-r"><div>${expMName(p.m)}<small>${fmtD(p.t)}</small></div><b>${f3(p.amt)}</b><button class="xpx" data-epx="${i}" aria-label="${T_('Remove payment')}">✕</button></div>`).join('')||`<div class="jb-r"><div>${T_('No payment yet')}</div></div>`}</div>
+       ${ow>0.0005?`<div class="xowed nosnap"><b class="bad">${T_('Still owed')} ${f3(ow)}</b><div class="chips xchips">${EXP_M.map(([k,ic,t])=>`<button data-pm="${k}" aria-pressed="${st.payM===k}">${ic} ${T_(t)}</button>`).join('')}</div><div class="in2"><input class="field" id="epa" inputmode="decimal" value="${f3(ow)}" aria-label="${T_('Pay now')}"><button class="btn sm" id="epadd">＋ ${T_('Pay')}</button></div></div>`:`<p class="hint ok">✓ ${T_('Paid in full')}</p>`}`;
+     box.querySelectorAll('[data-epx]').forEach(b=>b.onclick=()=>{st.pays.splice(+b.dataset.epx,1);drawPay();});
+     box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{st.payM=b.dataset.pm;box.querySelectorAll('[data-pm]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+     const pa=q('#epadd');if(pa)pa.onclick=()=>{const v=num(q('#epa').value);const ow2=Math.max(0,Math.round((amt()-paidSum())*1000)/1000);if(!(v>0)){toast(T_('Type the amount paid'));return;}if(v>ow2+0.0005){toast(T_('More than what is owed')+' ('+f3(ow2)+')');return;}
+       st.pays.push({amt:Math.round(v*1000)/1000,m:st.payM,t:now(),by:S.user?S.user.name:''});drawPay();};};
+   const drawPh=()=>{const L=st.ph.map(id=>({id,img:(photoOf(id)||{}).img})).filter(x=>x.img).concat(st.add.map((img,i)=>({id:'new'+i,img})));
+     q('#ephs').innerHTML=L.map(x=>`<div class="xph1"><img src="${x.img}" alt=""><button class="vpx" data-xpx="${x.id}" aria-label="${T_('Delete photo')}">✕</button></div>`).join('');
+     q('#eph').value=st.ph.join(',')+'|'+st.add.length;
+     q('#ephs').querySelectorAll('[data-xpx]').forEach(b=>b.onclick=()=>{const id=b.dataset.xpx;if(b.dataset.sure!=='1'){b.dataset.sure='1';b.classList.add('sure');toast(T_('Tap ✕ again to delete the photo'));return;}
+       if(id.startsWith('new'))st.add.splice(+id.slice(3),1);else st.ph=st.ph.filter(x=>x!==id);el._touched=true;drawPh();});
+     q('#ephs').querySelectorAll('img').forEach(im=>im.onclick=()=>im.parentElement.classList.toggle('big'));};
+   const addPh=mode=>pickImgs(mode,L=>{if(!L.length)return;st.add.push(...L);el._touched=true;drawPh();});
+   q('#ecam').onclick=()=>addPh('cam');q('#egal').onclick=()=>addPh('gal');
+   q('#ea').addEventListener('input',()=>{if(!isNew)drawPay();});
+   drawPay();drawPh();
+   /* the payments and pictures are not form boxes: put them in the "changed?" check so leaving asks to save */
+   const snap0=JSON.stringify([st.pays,st.ph,st.add.length,st.m]);const sn=el._snapX=()=>JSON.stringify([st.pays,st.ph,st.add.length,st.m])!==snap0;
+   q('#eok').onclick=()=>{const a=Math.round(num(q('#ea').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}
+     const day=q('#ed').value;if(!day){toast(T_('Choose the receipt date'));return;}if(day>today()){toast(T_('The date is after today'));return;}
+     const nt=dayKey(e.t)===day?e.t:isNew&&day===today()?now():expDayT(day,isNew?null:e.t);if(nt==null){toast(T_('Choose the receipt date'));return;}
+     let pays;if(isNew)pays=st.m==='Due'?[]:[{amt:a,m:st.m,t:nt,by:S.user?S.user.name:''}];
+     else{pays=st.pays.map(p=>Object.assign({},p));const ps=pays.reduce((x,p)=>x+p.amt,0);
+       /* one payment that covered the old amount: the amount was corrected, so the payment follows it */
+       if(pays.length===1&&Math.abs(ps-(+e.amt||0))<0.0005&&Math.abs(a-(+e.amt||0))>0.0005)pays[0].amt=a;
+       else if(ps>a+0.0005){toast(T_('Paid is more than the amount')+' ('+f3(ps)+')');return;}
+       /* a payment dated with the old receipt date moves with the date */
+       pays.forEach(p=>{if(dayKey(p.t)===dayKey(e.t)&&nt!==e.t&&p.t<=e.t+864e5)p.t=nt;});}
+     /* the shop: an existing supplier (same name), or a new one added to Suppliers */
+     const vnm=q('#ev').value.trim().replace(/\s+/g,' ');let vend=null;
+     if(vnm){vend=DB.vendors.find(v=>String(v.name||'').trim().toLowerCase()===vnm.toLowerCase());if(!vend){vend={id:uid('d'),t:now(),name:vnm,what:e.cat};DB.vendors.push(vend);audit('add','Supplier '+vnm+' (from an expense)');}}
+     if(isNew){e.id=uid('e');e.by=S.user?S.user.name:'';DB.expenses.push(e);}
+     const gone=(e.ph||[]).filter(id=>!st.ph.includes(id));if(gone.length)DB.photos=(DB.photos||[]).filter(p=>!gone.includes(p.id));
+     const nph=st.add.map(img=>{const id=uid('ph');DB.photos=DB.photos||[];DB.photos.push({id,exp:e.id,img,t:now()});return id;});
+     Object.assign(e,{cat:q('#ec').value,amt:a,t:nt,note:q('#en').value.trim(),monthly:q('#em').checked,pays,cash:pays.some(p=>p.m==='Cash'),ph:st.ph.concat(nph)});
+     if(vend){e.vend=vend.id;e.vname=vend.name;}else{delete e.vend;delete e.vname;}
+     if(!e.ph.length)delete e.ph;audit(isNew?'add':'edit','Expense '+e.cat+' '+f3(e.amt)+(vend?' · '+vend.name:''));save();closeSheet();render();};
+   const d=q('#edel');if(d)d.onclick=()=>confirmSheet(T_('Delete this expense?')+' '+esc(e.cat)+' · '+f3(e.amt),'🗑 '+T_('Delete expense'),()=>{audit('delete','Expense '+e.cat+' '+f3(e.amt));
+     if((e.ph||[]).length)DB.photos=(DB.photos||[]).filter(p=>!e.ph.includes(p.id));DB.expenses=DB.expenses.filter(x=>x!==e);save();render();});});}
+SCREENS.close=m=>{const td=sumRange(rangeOf('today'));const cash=td.byM.Cash||0;const cashExp=expCashOn(today());
   const last=DB.closes.filter(c=>c.date!==today()).sort((a,b)=>b.t-a.t)[0];const opening=last?last.counted:(+DB.openingCash||0);const expect=opening+cash-cashExp;const done=DB.closes.find(c=>c.date===today());
   const openJ=openJobs();
   m.innerHTML=head('Daily close · '+fmtDs(now()))+`

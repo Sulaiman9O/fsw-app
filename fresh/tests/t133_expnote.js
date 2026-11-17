@@ -43,7 +43,7 @@ const ELEC='نماء • كهرباء الشقة - حساب 01732067 (flat elect
   const n0=await p.evaluate(()=>DB.expenses.length);await p.click('#eadd');await p.waitForTimeout(300);await p.fill('#ea','5');await p.fill('#en','Water');await p.click('#eok');await p.waitForTimeout(300);
   ok(await p.evaluate(n=>DB.expenses.length===n+1&&DB.expenses.some(e=>e.note==='Water'&&e.amt===5),n0),tag+'new expense added');
   /* delete */
-  await p.click('[data-ee="b1"]');await p.waitForTimeout(300);const d=await p.$('#edel');if(d){await d.click();await p.waitForTimeout(300);}
+  await p.click('[data-ee="b1"]');await p.waitForTimeout(300);const d=await p.$('#edel');if(d){await d.click();await p.waitForTimeout(300);ok(await p.evaluate(()=>DB.expenses.some(e=>e.id==='b1')),tag+'delete asks first');await p.click('#cfy');await p.waitForTimeout(300);}
   ok(await p.evaluate(()=>!DB.expenses.some(e=>e.id==='b1')&&!document.querySelector('[data-ee="b1"]')),tag+'delete removes it from the list');
   ok(errs.length===0,tag+'no page errors '+JSON.stringify(errs.slice(0,3)));
   if(vp.width===400||vp.width===1100&&lang==='en'){await p.evaluate(()=>{closeSheet();render();});await p.waitForTimeout(300);await p.screenshot({path:'/tmp/t133_'+vp.width+lang+'.png'});}
