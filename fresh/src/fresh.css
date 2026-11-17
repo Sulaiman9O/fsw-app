@@ -622,3 +622,6 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .spov .srchbox,.sheet .srchbox{position:sticky;top:0;z-index:2}
 
 .lnk.oc{font:inherit;color:var(--acc,#e53935);padding:0;background:none;border:0;text-decoration:underline}
+
+.oi .oie{cursor:pointer;flex:1;min-width:0}
+.oi .oied{font-size:.8em;opacity:.7}

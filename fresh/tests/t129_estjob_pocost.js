@@ -21,6 +21,12 @@ const {chromium}=require('playwright');const fs=require('fs');
  await p.evaluate(v=>go('counter',{vid:v}),ids.v);await p.waitForTimeout(300);ok(!(await p.$('#cest')),'old estimate is not offered');
  /* order cost edit */
  await p.evaluate(()=>{DB.vendors.push({id:'dv1',name:'Rayyan',t:now()});const pt=DB.parts[0];const o=newPo('dv1',[{part:pt.id,q:10,cost:3.41}]);go('po',{id:o.id});});await p.waitForTimeout(300);
- await p.click('[data-oc="0"]');await p.waitForTimeout(300);await p.fill('#ocv','4');await p.click('#ocok');await p.waitForTimeout(300);
- r=await p.evaluate(()=>({c:DB.pos[DB.pos.length-1].items[0].cost,t:document.querySelector('#potot').textContent}));ok(r.c===4&&/40\.000/.test(r.t),'order line cost edited → total 40 '+JSON.stringify(r));
+ await p.click('[data-ol="0"] b');await p.waitForTimeout(300);ok(await p.$('#olq')&&await p.$('#olc')&&await p.$('#olpt')&&await p.$('#olsw')&&await p.$('#oldel'),'tapping a line opens quantity, price, edit part, swap, remove');
+ await p.fill('#olq','12');await p.fill('#olc','4');await p.click('#olok');await p.waitForTimeout(300);
+ r=await p.evaluate(()=>({q:DB.pos[DB.pos.length-1].items[0].q,c:DB.pos[DB.pos.length-1].items[0].cost,t:document.querySelector('#potot').textContent}));ok(r.q===12&&r.c===4&&/48\.000/.test(r.t),'qty 12 × 4 = 48 '+JSON.stringify(r));
+ await p.click('[data-ol="0"] b');await p.waitForTimeout(300);await p.click('#olpt');await p.waitForTimeout(400);ok(await p.$('#pn'),'edit part opens the part');await p.fill('#pn','Renamed Filter ZZ');await p.click('#pok');await p.waitForTimeout(400);
+ ok(/Renamed Filter ZZ/.test(await p.textContent('#main')),'order shows the new part name');
+ await p.click('[data-ol="0"] b');await p.waitForTimeout(300);await p.click('#olsw');await p.waitForTimeout(300);await p.fill('#spq','a2701800109');await p.waitForTimeout(150);await p.click('[data-sp]');await p.waitForTimeout(300);
+ ok(/A2701800109/.test(await p.textContent('#main')),'swapped to another part');
+ await p.click('[data-ol="0"] b');await p.waitForTimeout(300);await p.click('#oldel');await p.waitForTimeout(300);ok(await p.evaluate(()=>DB.pos[DB.pos.length-1].items.length)===0,'removed from the order');
  ok(!errs.length,'no page errors '+errs.join('|'));console.log(R.every(x=>x)?'ALL PASS':'SOME FAIL');await b.close();})();

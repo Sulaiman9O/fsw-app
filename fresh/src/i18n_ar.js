@@ -235,3 +235,7 @@ Object.assign(AR_DICT,{'Search…':'بحث…','Nothing found.':'ما في نت�
 Object.assign(AR_DICT,{'Choose':'اختر'});
 
 Object.assign(AR_DICT,{'This car has an estimate':'هذي السيارة عندها عرض سعر','Customer agreed · use this estimate':'العميل وافق · حوّل عرض السعر لبطاقة','New job card (keep the estimate)':'بطاقة جديدة (خلّ عرض السعر)','customer agreed?':'العميل وافق؟','tap to turn it into the job card':'اضغط تحوّله لبطاقة شغل','job card':'بطاقة شغل','Cost each (what the supplier charges)':'سعر الحبة (سعر المورد)','Type the price':'اكتب السعر','Price':'السعر'});
+
+Object.assign(AR_DICT,{'Quantity':'الكمية','selling price':'سعر البيع','Edit the part (name, number, selling price, category…)':'عدّل القطعة (الاسم، الرقم، سعر البيع، الفئة…)','Swap for another part':'بدّلها بقطعة ثانية','Remove from this order':'شيلها من الطلب','Type how many':'اكتب الكمية'});
+
+Object.assign(AR_DICT,{'This order is received: the stock is already in. Quantity and price of the order stay as they were; you can still fix the part itself.':'هذا الطلب مستلم والكمية دخلت المخزن. كمية وسعر الطلب ما يتغيرون، بس تقدر تعدّل القطعة نفسها.'});
