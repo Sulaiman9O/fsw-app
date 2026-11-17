@@ -26,7 +26,7 @@ function go(r,p){S.hist=S.hist||[];if(!(S.r===r&&((S.p&&S.p.id)||'')===((p&&p.id
   if(!GO_BACK){if(NAV.some(n=>n[0]===r)){S.hist=[];S.freshJ=null;}
     else if(S.r&&S.r!==r){if(!NOHIST.has(S.r))S.hist.push({r:S.r,p:S.p});const pid=p&&p.id;const i=S.hist.findIndex(h=>h.r===r&&((h.p&&h.p.id)||undefined)===(pid||undefined));if(i>=0)S.hist=S.hist.slice(0,i);}
     if(S.hist.length>40)S.hist=S.hist.slice(-40);}S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;if($('#sheet'))sheetLeave();else closeSheet();return true;}
   /* back first undoes what is open on this screen (strip, selection, undo bar) before leaving it */
   if(document.getElementById('qs')){try{closeQs();}catch(e){}return true;}
   if(S.selJ||S.sel){S.selJ=null;S.sel=null;render();return true;}
@@ -78,8 +78,23 @@ const empty=(ic,t)=>`<div class="empty"><span style="font-size:2rem">${ic}</span
 
 /* ---------- sheets ---------- */
 function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el){el=document.createElement('div');el.id='sheet';el.className='sheet';document.body.appendChild(el);}
-  el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)closeSheet();};
-  el.querySelector('[data-close]').onclick=closeSheet;S.sheet=true;S.sheetBack=null;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}}
+  el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)sheetLeave();};
+  el.querySelector('[data-close]').onclick=sheetLeaveBtn;S.sheet=true;S.sheetBack=null;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}
+  el._touched=false;el._snap=sheetSnap(el);if(!el._lsn){el._lsn=1;['input','change','pointerdown','keydown'].forEach(ev=>el.addEventListener(ev,()=>{el._touched=true;},true));}
+  if(S._forceDirty){el._snap='';el._touched=true;S._forceDirty=false;}
+  setTimeout(()=>{if(!el._touched&&el.isConnected)el._snap=sheetSnap(el);},400);}
+/* leaving a sheet that has a Save button with changes not saved: ask (Save / Don't save / Keep editing) */
+function sheetSnap(el){try{return [...el.querySelectorAll('input,select,textarea,[aria-pressed]')].filter(x=>!x.closest('.leaveask')&&x.type!=='file').map(x=>x.matches('[aria-pressed]')?x.getAttribute('aria-pressed'):(x.type==='checkbox'||x.type==='radio')?x.checked:x.value).join('\u0001');}catch(e){return null;}}
+function sheetSaveBtn(el){return [...el.querySelectorAll('.pnl button.btn:not(.ghost)')].find(b=>!b.disabled&&b.offsetParent!==null&&/^\s*(💾\s*)?(save|حفظ|احفظ)/i.test(b.textContent));}
+function sheetLeave(){const el=$('#sheet');if(!el)return;if(el._skipAsk){closeSheet();return;}const ask=el.querySelector('.leaveask');if(ask){ask.remove();return;}
+  /* not saving: run the sheet's own Close (it may tidy up, e.g. stop the camera), which comes back here and closes */
+  const cb=el.querySelector('[data-close]');const discard=()=>{el._skipAsk=true;if(cb)cb.click();if(document.getElementById('sheet')===el)closeSheet();};
+  const sb=sheetSaveBtn(el);if(!sb||el._snap==null||sheetSnap(el)===el._snap){discard();return;}
+  const box=document.createElement('div');box.className='leaveask';
+  box.innerHTML=`<b>${T_('You changed something. Save it?')}</b><div class="in2"><button class="btn" data-la="s">${T_('Save')}</button><button class="btn ghost" data-la="d">${T_("Don't save")}</button></div><button class="lnk" data-la="k">${T_('Keep editing')}</button>`;
+  el.querySelector('.pnl').appendChild(box);try{box.scrollIntoView({block:'end',behavior:'smooth'});}catch(e){}try{trail('leave-ask','');}catch(e){}
+  box.querySelector('[data-la=s]').onclick=()=>{box.remove();sb.click();};box.querySelector('[data-la=d]').onclick=()=>{box.remove();discard();};box.querySelector('[data-la=k]').onclick=()=>box.remove();}
+const sheetLeaveBtn=()=>sheetLeave();
 function closeSheet(){const el=$('#sheet');if(el){try{el.querySelectorAll('video').forEach(v=>{const s=v.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop());});}catch(e){}try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 

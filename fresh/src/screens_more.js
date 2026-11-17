@@ -49,7 +49,8 @@ SCREENS.count=m=>{const list=countToday().slice(0,Math.max(5,DB.counts.filter(c=
   $$('[data-cs]').forEach(b=>b.onclick=()=>{const p=byId('parts',b.dataset.cs);const v=$('#cn_'+p.id).value.trim();if(v==='')return;DB.counts.push({id:uid('k'),date:today(),t:now(),part:p.id,sys:+p.stock||0,counted:num(v),by:S.user.name});save();render();});
   $$('[data-adj]').forEach(b=>b.onclick=()=>{const c=DB.counts.find(x=>x.id===b.dataset.adj);const p=byId('parts',c.part);if(p)mv(p,c.counted-(+p.stock||0),'Count by '+c.by);c.adj=now();save();render();});};
 /* suppliers + orders */
-SCREENS.vendors=m=>{const pos=DB.pos.slice().sort((a,b)=>b.t-a.t);
+SCREENS.vendors=m=>{/* an order left with no parts is removed */const emp=DB.pos.filter(p=>p.status==='open'&&!(p.items||[]).length);if(emp.length){emp.forEach(p=>{DB.pos.splice(DB.pos.indexOf(p),1);audit('order','Empty order #'+p.no+' removed');});save();}
+  const pos=DB.pos.slice().sort((a,b)=>b.t-a.t);
   m.innerHTML=head('Suppliers',`<button class="lnk" id="vadd">＋ Supplier</button>`)+`
   <div class="list">${DB.vendors.map(v=>`<button class="row" data-ve="${v.id}"><div><b>${esc(v.name)}</b><span>${esc(v.phone||'')}${v.rep?' · '+esc(v.rep):''}${v.what?' · '+esc(v.what):''}</span></div><span class="v">Edit</span></button>`).join('')||empty('🚚','No suppliers yet.')}</div>
   ${sec('Orders · '+pos.length,DB.vendors.length?'<button class="lnk" id="poadd">＋ New order</button>':'')}

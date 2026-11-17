@@ -83,7 +83,7 @@ function bindRows(box,press){const R=box.matches&&box.matches('[data-pe]')?[box]
 function partRow(p){const st=stState(p),u=p.unit==='L'?'L':unitS(p)||'pc';const adj=canAdj()&&sx('adj')!==false;
   return `<div class="row prow" role="button" tabindex="0" data-pe="${p.id}"><i class="sd ${st}"></i><div class="pm"><b>${esc(p.name)}</b><span>${sx('loc')&&p.loc?'📍 '+esc(p.loc)+' · ':''}${f3(p.price)}${p.unit==='L'?'/L':''}${p.num&&!p.name.includes(p.num)?' · <bdi>'+esc(p.num)+'</bdi>':''}</span></div>
    <div class="pq">${adj?`<button class="adj" data-adj="-1" data-id="${p.id}" aria-label="−1">−</button>`:''}<span class="v ${st}">${+p.stock||0}<small>${u}</small></span>${adj?`<button class="adj" data-adj="1" data-id="${p.id}" aria-label="+1">+</button>`:''}</div></div>`;}
-function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:DB.pcats[0],unit:'pc'};const w=JSON.parse(JSON.stringify(draft||p));w.alts=w.alts||[];w.vprices=w.vprices||{};
+function partSheet(p,onSaved,forceNew,draft){S._forceDirty=!!draft;const isNew=!p||forceNew;p=p||{cat:DB.pcats[0],unit:'pc'};const w=JSON.parse(JSON.stringify(draft||p));w.alts=w.alts||[];w.vprices=w.vprices||{};
   const mvs=(DB.moves||[]).filter(x=>x.part===p.id).sort((a,b)=>b.t-a.t);
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(w.name||'')}">
    <div class="in2"><div class="srow"><input class="field" id="pnum" placeholder="Part number / barcode" value="${esc(w.num||'')}">${sx('scan')?'<button class="scanb" id="pnsc">📷</button>':''}</div><select class="field" id="pcat">${DB.pcats.map(c=>`<option ${w.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
@@ -112,7 +112,7 @@ function partSheet(p,onSaved,forceNew,draft){const isNew=!p||forceNew;p=p||{cat:
    const drawVp=()=>{const b=el.querySelector('#pvp');if(!b)return;const best=bestVendor(w);b.innerHTML=Object.entries(w.vprices).filter(([v])=>byId('vendors',v)).sort((a,c)=>a[1].cost-c[1].cost).map(([v,x])=>`<div class="row"><div><b>${esc(byId('vendors',v).name)}${best&&best.v===v?' <span class="tg tgr">cheapest</span>':''}</b><span>${fmtD(x.t)}</span></div><span class="v">${f3(x.cost)}</span><button class="lnk" data-vx="${v}">✕</button></div>`).join('')||'<p class="hint">Fills in by itself when you receive orders.</p>';b.querySelectorAll('[data-vx]').forEach(x=>x.onclick=()=>{delete w.vprices[x.dataset.vx];drawVp();});};drawVp();
    const vo=el.querySelector('#pvok');if(vo)vo.onclick=()=>{const c=num($('#pvc').value);if(!c)return;w.vprices[$('#pvv').value]={cost:c,t:now()};$('#pvc').value='';drawVp();};
    const rc=el.querySelector('#prcv');if(rc)rc.onclick=()=>receiveSheet(p);
-   el.querySelector('#pok').onclick=()=>{const n=$('#pn').value.trim();if(!n){toast('Type a name');return;}const nm=$('#pnum').value.trim();
+   el.querySelector('#pok').onclick=()=>{const n=$('#pn').value.trim();if(!n){toast('Type a name');return;}{const pc=el.querySelector('#pvc'),pv=el.querySelector('#pvv');if(pc&&pv&&num(pc.value)>0)w.vprices[pv.value]={cost:num(pc.value),t:now()};}const nm=$('#pnum').value.trim();
      const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||(nm&&x.num===nm)));if(dup){toast('This part already exists: '+dup.name);return;}
      let t=p;if(isNew){t={id:uid('p'),t:now(),stock:0};DB.parts.push(t);}
      const os=+t.stock||0,pse=$('#pst'),ns=pse?num(pse.value):os;

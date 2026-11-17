@@ -227,3 +227,5 @@ Object.assign(AR_DICT,{'Type the km first':'اكتب الكيلومتر أول'}
 Object.assign(AR_DICT,{'Unticked lines do not show in the report.':'اللي تشيل علامته ما يطلع في التقرير.'});
 
 Object.assign(AR_DICT,{'Stock goes in when it arrives: order → ✓ Received, or 📥 Received stock.':'الكمية تدخل المخزن لما توصل: من الطلب ← ✓ Received، أو من 📥 Received stock.'});
+
+Object.assign(AR_DICT,{'You changed something. Save it?':'غيّرت شي. تحفظه؟',"Don't save":'لا تحفظ','Keep editing':'كمّل التعديل'});

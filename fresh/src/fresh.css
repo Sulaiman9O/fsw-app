@@ -610,3 +610,6 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .qrow+.qrow{margin-top:8px}
 .jb-r .en2{display:block;font-size:.72rem;font-weight:500;color:var(--muted);direction:ltr;text-align:start}
 .jb-r.tot.tot2{padding-top:6px;padding-bottom:6px}.jb-r.tot.tot2 small{font-size:.8rem}
+
+.leaveask{position:sticky;bottom:0;margin-top:12px;padding:14px;border-radius:16px;background:var(--card,#fff);box-shadow:0 -6px 24px rgba(0,0,0,.18);border:2px solid var(--acc,#e53935);display:grid;gap:10px;text-align:center}
+.leaveask .lnk{justify-self:center}
