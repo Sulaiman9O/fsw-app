@@ -231,3 +231,5 @@ Object.assign(AR_DICT,{'Stock goes in when it arrives: order → ✓ Received, o
 Object.assign(AR_DICT,{'You changed something. Save it?':'غيّرت شي. تحفظه؟',"Don't save":'لا تحفظ','Keep editing':'كمّل التعديل'});
 
 Object.assign(AR_DICT,{'Search…':'بحث…','Nothing found.':'ما في نتائج.','Choose a supplier':'اختر المورّد','New supplier':'مورّد جديد','Add a part':'أضف قطعة','New part (not in the list yet)…':'قطعة جديدة (مو في القائمة)…','Search suppliers…':'ابحث عن مورّد…'});
+
+Object.assign(AR_DICT,{'Choose':'اختر'});

@@ -26,7 +26,7 @@ function go(r,p){S.hist=S.hist||[];if(!(S.r===r&&((S.p&&S.p.id)||'')===((p&&p.id
   if(!GO_BACK){if(NAV.some(n=>n[0]===r)){S.hist=[];S.freshJ=null;}
     else if(S.r&&S.r!==r){if(!NOHIST.has(S.r))S.hist.push({r:S.r,p:S.p});const pid=p&&p.id;const i=S.hist.findIndex(h=>h.r===r&&((h.p&&h.p.id)||undefined)===(pid||undefined));if(i>=0)S.hist=S.hist.slice(0,i);}
     if(S.hist.length>40)S.hist=S.hist.slice(-40);}S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;if($('#sheet'))sheetLeave();else closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(document.getElementById('spov')){closeSelSearch();return true;}if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;if($('#sheet'))sheetLeave();else closeSheet();return true;}
   /* back first undoes what is open on this screen (strip, selection, undo bar) before leaving it */
   if(document.getElementById('qs')){try{closeQs();}catch(e){}return true;}
   if(S.selJ||S.sel){S.selJ=null;S.sel=null;render();return true;}
@@ -67,6 +67,7 @@ function render(){
   m.querySelectorAll('[data-eye]').forEach(b=>b.onclick=e=>{e.stopPropagation();e.preventDefault();S.eye=showCost()?0:Date.now();render();});
   try{motionAfterRender(m);}catch(e){}
   try{attachPress(m);}catch(e){}
+  try{autoPageSearch(m);}catch(e){}
 }
 /* search boxes: hide rows that do not match instead of drawing the screen again (drawing again resets the phone keyboard) */
 function liveFilter(inp,sel,after){if(!inp)return;const run=()=>{const q=inp.value.trim().toLowerCase();S.p.q=inp.value;
@@ -81,10 +82,11 @@ function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el
   el.innerHTML=`<div class="pnl">${html}<button class="btn ghost" data-close>Close</button></div>`;el.onclick=e=>{if(e.target===el)sheetLeave();};
   el.querySelector('[data-close]').onclick=sheetLeaveBtn;S.sheet=true;S.sheetBack=null;document.documentElement.classList.add('sheet-open');if(bind)bind(el);if(isNew)try{motionSheetIn(el);}catch(e){}
   el._touched=false;el._snap=sheetSnap(el);if(!el._lsn){el._lsn=1;['input','change','pointerdown','keydown'].forEach(ev=>el.addEventListener(ev,()=>{el._touched=true;},true));}
+  try{autoListSearch(el);}catch(e){}
   if(S._forceDirty){el._snap='';el._touched=true;S._forceDirty=false;}
   setTimeout(()=>{if(!el._touched&&el.isConnected)el._snap=sheetSnap(el);},400);}
 /* leaving a sheet that has a Save button with changes not saved: ask (Save / Don't save / Keep editing) */
-function sheetSnap(el){try{return [...el.querySelectorAll('input,select,textarea,[aria-pressed]')].filter(x=>!x.closest('.leaveask')&&x.type!=='file').map(x=>x.matches('[aria-pressed]')?x.getAttribute('aria-pressed'):(x.type==='checkbox'||x.type==='radio')?x.checked:x.value).join('\u0001');}catch(e){return null;}}
+function sheetSnap(el){try{return [...el.querySelectorAll('input,select,textarea,[aria-pressed]')].filter(x=>!x.closest('.leaveask')&&!x.classList.contains('srchbox')&&x.type!=='file').map(x=>x.matches('[aria-pressed]')?x.getAttribute('aria-pressed'):(x.type==='checkbox'||x.type==='radio')?x.checked:x.value).join('\u0001');}catch(e){return null;}}
 function sheetSaveBtn(el){return [...el.querySelectorAll('.pnl button.btn:not(.ghost)')].find(b=>!b.disabled&&b.offsetParent!==null&&/^\s*(💾\s*)?(save|حفظ|احفظ)/i.test(b.textContent));}
 function sheetLeave(){const el=$('#sheet');if(!el)return;if(el._skipAsk){closeSheet();return;}const ask=el.querySelector('.leaveask');if(ask){ask.remove();return;}
   /* not saving: run the sheet's own Close (it may tidy up, e.g. stop the camera), which comes back here and closes */
@@ -95,6 +97,38 @@ function sheetLeave(){const el=$('#sheet');if(!el)return;if(el._skipAsk){closeSh
   el.querySelector('.pnl').appendChild(box);try{box.scrollIntoView({block:'end',behavior:'smooth'});}catch(e){}try{trail('leave-ask','');}catch(e){}
   box.querySelector('[data-la=s]').onclick=()=>{box.remove();sb.click();};box.querySelector('[data-la=d]').onclick=()=>{box.remove();discard();};box.querySelector('[data-la=k]').onclick=()=>box.remove();}
 const sheetLeaveBtn=()=>sheetLeave();
+/* ---------- search everywhere a list is long ---------- */
+const SRCH_MIN=8;
+const srchNorm=t=>String(t||'').toLowerCase().replace(/[\u064B-\u0652]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي');
+const srchHit=(txt,q)=>{const w=srchNorm(q).trim().split(/\s+/).filter(Boolean);const t=srchNorm(txt);return w.every(x=>t.includes(x));};
+/* a sheet with a long list of choices and no box to type in gets a search box on top of the list */
+function autoListSearch(el){if(el.querySelector('input[type=text],input:not([type]),input[type=search],textarea'))return;
+  el.querySelectorAll('.pnl .list').forEach(list=>{const rows=[...list.children].filter(r=>r.matches('button,.row,[role=button]'));if(rows.length<=SRCH_MIN||list.dataset.srch)return;list.dataset.srch=1;
+    const q=document.createElement('input');q.className='field srchbox';q.placeholder='🔍 '+T_('Search…');q.autocomplete='off';list.parentNode.insertBefore(q,list);
+    q.oninput=()=>{rows.forEach(r=>{r.style.display=srchHit(r.textContent,q.value)?'':'none';});};});}
+/* a screen with a long list and no search box gets one (the words stay while the screen redraws) */
+S.pq=S.pq||{};
+const NOPGSRCH=['home','more','job','inv','newjob','settings','setup','lists','menu','reports','money','close','inspj','inspr','counter','sale','quote','invstyle','stkset'];
+function autoPageSearch(m){if(NOPGSRCH.includes(S.r))return;if(m.querySelector('input[type=text]:not(.qin),input:not([type]):not(.qin),input[type=search]'))return;
+  const list=[...m.querySelectorAll('.list')].find(l=>[...l.children].filter(r=>r.matches('button,.row,[role=button],[data-go]')).length>SRCH_MIN+4);if(!list)return;
+  const rows=[...list.children].filter(r=>r.matches('button,.row,[role=button],[data-go]'));const key=S.r;
+  const q=document.createElement('input');q.className='field srchbox pgsrch';q.placeholder='🔍 '+T_('Search…');q.autocomplete='off';q.value=S.pq[key]||'';list.parentNode.insertBefore(q,list);
+  const f=()=>{S.pq[key]=q.value;rows.forEach(r=>{r.style.display=srchHit(r.textContent,q.value)?'':'none';});};q.oninput=f;if(q.value)f();}
+/* any drop-down with many choices opens as a list you can search */
+function selSearch(sel){closeSelSearch();const opts=[...sel.options].map((o,i)=>({i,o})).filter(x=>!x.o.disabled&&!(x.o.value===''&&x.i===0&&sel.options.length>1&&/…|\.\.\.|choose|select|اختر|＋/i.test(x.o.textContent)));
+  const head=sel.options[0]&&sel.options[0].value===''?sel.options[0].textContent:'';const lab=(sel.closest('label')&&sel.closest('label').childNodes[0]&&sel.closest('label').childNodes[0].textContent||'').trim()||head||T_('Choose');
+  const ov=document.createElement('div');ov.id='spov';ov.className='sheet spov';
+  ov.innerHTML=`<div class="pnl"><h3>${esc(lab.replace(/[＋…]/g,'').trim())}</h3><input class="field srchbox" id="spovq" placeholder="🔍 ${T_('Search…')}" autocomplete="off"><div class="list" id="spovl"></div><button class="btn ghost" id="spovx">${T_('Close')}</button></div>`;
+  document.body.appendChild(ov);const box=ov.querySelector('#spovl'),q=ov.querySelector('#spovq');
+  const draw=()=>{const R=opts.filter(x=>srchHit(x.o.textContent+' '+x.o.value+' '+(x.o.parentNode.label||''),q.value)).slice(0,150);
+    box.innerHTML=R.map(x=>`<button class="row" data-si="${x.i}"><div><b>${esc(x.o.textContent)}</b>${x.o.parentNode.label?`<span>${esc(x.o.parentNode.label)}</span>`:''}</div><span class="v">${x.o.selected&&x.o.value!==''?'✓':'›'}</span></button>`).join('')||`<p class="hint">${T_('Nothing found.')}</p>`;
+    box.querySelectorAll('[data-si]').forEach(b=>b.onclick=()=>{closeSelSearch();sel.selectedIndex=+b.dataset.si;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}));});};
+  q.oninput=draw;draw();ov.onclick=e=>{if(e.target===ov)closeSelSearch();};ov.querySelector('#spovx').onclick=closeSelSearch;setTimeout(()=>{try{q.focus();}catch(e){}},120);try{trail('sheet','🔍 '+lab);}catch(e){}}
+function closeSelSearch(){const o=document.getElementById('spov');if(o)o.remove();}
+const selBig=s=>s&&s.tagName==='SELECT'&&!s.disabled&&!s.multiple&&!s.dataset.nosearch&&s.options.length>SRCH_MIN;
+['mousedown','pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{const s=e.target&&e.target.closest&&e.target.closest('select');if(!selBig(s))return;e.preventDefault();e.stopPropagation();},true));
+document.addEventListener('click',e=>{const s=e.target&&e.target.closest&&e.target.closest('select');if(!selBig(s))return;e.preventDefault();e.stopPropagation();s.blur();selSearch(s);},true);
+document.addEventListener('keydown',e=>{const s=e.target;if(selBig(s)&&(e.key==='Enter'||e.key===' '||e.key==='ArrowDown')){e.preventDefault();selSearch(s);}},true);
 function closeSheet(){const el=$('#sheet');if(el){try{el.querySelectorAll('video').forEach(v=>{const s=v.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop());});}catch(e){}try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
 function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
 
