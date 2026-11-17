@@ -36,7 +36,7 @@ function catalogSheet(){if(!can.settings())return;openSheet(`<h3>📥 Import ser
     el.querySelector('#cfi').innerHTML=cat?`<div class="card note"><b>${cat.services.length} services · ${cat.parts.length} parts</b><span class="sub">Now on this device: ${DB.services.length} services · ${DB.parts.length} parts. They will be removed.</span></div>`:'<p class="err">That is not a services and parts list.</p>';el.querySelector('#cfok').disabled=!cat;};
   el.querySelector('#cfok').onclick=()=>{if(!cat)return;const old={services:DB.services,parts:DB.parts,scats:DB.scats,pcats:DB.pcats};
     DB.services=cat.services;DB.parts=cat.parts;try{fitsFix();}catch(e){}if(cat.scats)DB.scats=cat.scats;try{mergeScats(true);}catch(e){}DB.pcats=[...new Set([...(cat.pcats||[]),...cat.parts.map(p=>p.cat)])];
-    const ids=new Set(DB.parts.map(p=>p.id));(DB.pos||[]).forEach(o=>{if(o.status!=='received')o.items=(o.items||[]).filter(i=>ids.has(i.part));});
+    const ids=new Set(DB.parts.map(p=>p.id));(DB.pos||[]).forEach(o=>{if(o.status!=='received')o.items=(o.items||[]).filter(i=>ids.has(i.part)||i.np);});
     DB.ws.svcReviewed=true;audit('import','Imported '+cat.services.length+' services and '+cat.parts.length+' parts (replaced '+old.services.length+' services, '+old.parts.length+' parts)');save();closeSheet();render();
     undoBar('Imported '+cat.services.length+' services and '+cat.parts.length+' parts',()=>{Object.assign(DB,old);save();render();});};});}
 
