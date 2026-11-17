@@ -97,5 +97,12 @@ SCREENS.invstyle=m=>{if(!can.settings()){go('more');return;}const I=invS();const
   const IV=SCREENS.inv;SCREENS.inv=m=>{IV(m);if(!can.settings())return;const pv=m.querySelector('.inv-pv');if(!pv)return;const a=document.createElement('button');a.className='lnk';a.style.margin='4px 0 8px';a.textContent='🎨 '+T_('Change the invoice look');a.onclick=()=>go('invstyle');pv.after(a);};})();
 
 /* the invoice is drawn at A4 width and scaled to fit the screen, so it looks like the printed page */
-function fitInv(root){(root||document).querySelectorAll('.inv-pv').forEach(pv=>{const iv=pv.querySelector('.iv2');if(!iv)return;iv.style.zoom='';const cs=getComputedStyle(pv);const w=pv.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0)-2,iw=iv.offsetWidth;if(w&&iw>w)iv.style.zoom=(w/iw).toFixed(3);});}
-(function(){const R=render;window.render=render=function(){R.apply(this,arguments);try{fitInv();}catch(e){}};addEventListener('resize',()=>{try{fitInv();}catch(e){}});})();
+function fitInv(root){(root||document).querySelectorAll('.inv-pv').forEach(pv=>{fitInv1(pv);
+  /* the preview can change width after it is drawn (tablet two-column layout, rotation): fit again whenever it does */
+  if(!pv._ro&&window.ResizeObserver){let w=pv.clientWidth;pv._ro=new ResizeObserver(()=>{if(pv.clientWidth!==w){w=pv.clientWidth;fitInv1(pv);}});pv._ro.observe(pv);}});}
+function fitInv1(pv){const iv=pv.querySelector('.iv2');if(!iv)return;iv.style.zoom='1';const cs=getComputedStyle(pv);const w=pv.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0)-2,iw=iv.offsetWidth;iv.style.zoom=w&&iw>w?(w/iw).toFixed(3):'';}
+/* big numbers and titles in tiles (money boxes, home tiles) get a smaller font instead of running past the tile edge */
+function fitText(root){(root||document).querySelectorAll('.kpi>b,.g>b').forEach(el=>{el.style.fontSize='';const pa=el.parentElement,cs=getComputedStyle(pa);
+  const avail=pa.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0);const r=document.createRange();r.selectNodeContents(el);const need=r.getBoundingClientRect().width;
+  if(avail>0&&need>avail+0.5){const f=parseFloat(getComputedStyle(el).fontSize);el.style.fontSize=Math.max(f*0.6,Math.floor(f*avail/need*10)/10)+'px';}});}
+(function(){const R=render;window.render=render=function(){R.apply(this,arguments);try{fitInv();}catch(e){}try{fitText();requestAnimationFrame(()=>fitText());}catch(e){}};addEventListener('resize',()=>{try{fitInv();}catch(e){}try{fitText();}catch(e){}});try{document.fonts.addEventListener('loadingdone',()=>{try{fitText();fitInv();}catch(e){}});}catch(e){}})();

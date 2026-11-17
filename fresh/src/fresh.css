@@ -628,3 +628,8 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 
 .stkro{display:grid;gap:2px;padding:12px 14px;border-radius:14px;background:var(--card2,rgba(0,0,0,.04))}
 .stkro small{opacity:.65}
+
+/* a number on the right of a row (amount, price, count) never shrinks or gets cut: the text beside it wraps instead */
+.row .v{flex:none}.list .row>div,button.row>div,div.row>div{flex:1 1 auto;min-width:0}
+.xrow .xn{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;unicode-bidi:plaintext;text-align:start}
+.xrow .v small.bad{color:var(--bad)!important;white-space:nowrap}
