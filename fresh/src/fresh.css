@@ -645,3 +645,19 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 .xowed{margin:8px 0}.xowed .in2{margin-top:6px}.xph{font-size:.8em}.xvexp{width:100%;margin:6px 0 10px}
 button.kpi{text-align:start;font:inherit;cursor:pointer}
 .xowed .bad,.xvexp .bad,.xowed b.bad{color:var(--bad)}.xowed>b{display:block;margin-bottom:6px}
+/* 2.42.0 parts-shop card: white, big, nothing else from the workshop */
+.pcard{background:#fff;color:#111;border-radius:18px;padding:18px 18px 14px;margin-bottom:12px;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.pc-top{font:700 .78rem var(--f-body);color:#e8322b;letter-spacing:.02em;margin-bottom:6px}
+.pc-car{font:800 1.45rem/1.2 var(--f-body);color:#111}
+.pc-spec{font:500 .95rem/1.35 var(--f-body);color:#444;margin-top:4px}
+.pc-lab{font:600 .72rem var(--f-body);color:#777;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.pc-vin{font:700 min(2rem,calc((100vw - 92px)/13))/1.2 "Roboto Mono",Menlo,Consolas,monospace;color:#000;white-space:nowrap;user-select:all}
+.pcqr{display:block;width:min(62vw,240px);height:auto;margin:12px auto 2px}
+.pc-warn,.pc-novin{color:#c00;font:600 .9rem var(--f-body);margin-top:8px}
+.pc-parts{display:grid;gap:6px}.pc-p{display:flex;align-items:center;gap:10px;color:#111;font:500 .95rem var(--f-body);padding:6px 0;border-bottom:1px solid #eee}
+.pc-p span{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}.pc-p b{flex:none;white-space:nowrap}.pc-p.off{opacity:.4}.pc-p input{width:22px;height:22px;flex:none;accent-color:#111}
+.pc-ws{font:500 .75rem var(--f-body);color:#999;margin-top:12px}
+.pc-acts{display:grid;gap:8px}
+.pcard.pc-full{position:fixed;inset:0;z-index:9999;border-radius:0;margin:0;overflow:auto;padding:28px 22px;display:flex;flex-direction:column;justify-content:center}
+.pcard.pc-full .pc-car{font-size:2rem}.pcard.pc-full .pc-vin{font-size:min(3rem,calc((100vw - 56px)/13))}.pcard.pc-full .pcqr{width:min(70vw,60vh,360px)}
+.pcbtn{width:100%;margin-top:8px}.pcchip{white-space:nowrap}

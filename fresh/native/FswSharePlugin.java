@@ -13,7 +13,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** ShopFlo: hands a file (the invoice PDF) to WhatsApp or the share sheet. */
+/** ShopFlo: hands a file (the invoice PDF, or a picture such as the parts-shop card) to WhatsApp or the share sheet. */
 @CapacitorPlugin(name = "FswShare")
 public class FswSharePlugin extends Plugin {
     /** Sends a PDF (base64) straight to the customer's WhatsApp chat; if WhatsApp is not there, the Android share sheet. */
@@ -24,6 +24,8 @@ public class FswSharePlugin extends Plugin {
             String name = call.getString("name", "Invoice.pdf").replaceAll("[^A-Za-z0-9._-]", "_");
             String phone = call.getString("phone", "").replaceAll("[^0-9]", "");
             String text = call.getString("text", "");
+            String mime = call.getString("mime", "application/pdf");
+            if (!mime.matches("(application/pdf|image/png|image/jpeg)")) mime = "application/pdf";
             File dir = new File(getContext().getCacheDir(), "share");
             dir.mkdirs();
             File[] old = dir.listFiles();
@@ -32,7 +34,7 @@ public class FswSharePlugin extends Plugin {
             try (FileOutputStream fo = new FileOutputStream(out)) { fo.write(Base64.decode(b64, Base64.DEFAULT)); }
             Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out);
             Intent in = new Intent(Intent.ACTION_SEND);
-            in.setType("application/pdf");
+            in.setType(mime);
             in.putExtra(Intent.EXTRA_STREAM, uri);
             if (!text.isEmpty()) in.putExtra(Intent.EXTRA_TEXT, text);
             in.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
