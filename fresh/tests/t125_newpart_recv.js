@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
  const key=async s=>{for(const k of s){await p.locator('.key',{hasText:new RegExp('^'+k+'$')}).first().click();await p.waitForTimeout(40);}};const R=[];const ok=(c,m)=>{R.push(!!c);console.log((c?'PASS ':'FAIL ')+m);};
  await p.fill('#obn','FSW');await p.locator('.btn').first().click();await p.locator('input.field').first().fill('S');await p.locator('.btn').first().click();await key('1234');await key('1234');await p.waitForTimeout(900);await p.click('#nwl').catch(()=>{});
  await p.evaluate(()=>{DB.vendors.push({id:'dV1',name:'German Parts',phone:'91234567',t:now()});save();go('vendors');});await p.waitForTimeout(300);
- await p.click('#poadd');await p.waitForTimeout(300);await p.selectOption('#poadd','__new');await p.waitForTimeout(300);
+ await p.click('#poadd');await p.waitForTimeout(300);await p.click('#poadd');await p.waitForTimeout(300);await p.click('#sptop');await p.waitForTimeout(300);
  ok(!(await p.$('#pst')),'new part: no In stock box');ok(/Received/.test(await p.textContent('.sheet')),'hint says stock goes in on Received');
  await p.fill('#pn','Mann Oil Filter HU 7020 z Mercedes');await p.selectOption('#pcat','Oil filters');await p.fill('#ppr','5');const co=await p.$('#pco');if(co)await p.fill('#pco','3.41');
  await p.click('#pok');await p.waitForTimeout(400);

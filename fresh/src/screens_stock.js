@@ -123,7 +123,7 @@ function partSheet(p,onSaved,forceNew,draft){S._forceDirty=!!draft;const isNew=!
      if(el.querySelector('#pvp'))t.vprices=w.vprices;
      if(Math.abs(ns-os)>0.0001){mv(t,ns-os,isNew?'Opening stock':'Changed by hand');if(!isNew)audit('stock','Stock of '+t.name+' changed by hand: '+os+' → '+ns);}
      save();closeSheet();if(onSaved)onSaved(t);else render();};
-   const d=el.querySelector('#pdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(p.name)+'?','Delete part',()=>{audit('delete','Part '+p.name+' (stock '+(+p.stock||0)+')');DB.parts=DB.parts.filter(x=>x!==p);save();render();});});}
+   const d=el.querySelector('#pdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(p.name)+'?','Delete part',()=>{audit('delete','Part '+p.name+' (stock '+(+p.stock||0)+')');DB.parts=DB.parts.filter(x=>x!==p);DB.parts.forEach(x=>{if(x.alts&&x.alts.includes(p.id))x.alts=x.alts.filter(y=>y!==p.id);});save();render();});});}
 /* received stock: add the quantity; the cost becomes the average of what was on the shelf and what came in */
 function receiveSheet(p){if(!p)return;const cc=can.cost();openSheet(`<h3>📥 Received · ${esc(p.name)}</h3><p class="hint">Now ${+p.stock||0} ${p.unit==='L'?'L':unitS(p)||'pc'} on the shelf.</p>
   <div class="in2"><label class="field-l">How many came<input class="field" id="rq" inputmode="decimal"></label>${cc?`<label class="field-l">Cost each<input class="field" id="rc" inputmode="decimal" value="${p.cost?f3(p.cost):''}"></label>`:'<span></span>'}</div><div id="rinfo"></div><button class="btn" id="rok">Add to stock</button>`,el=>{
