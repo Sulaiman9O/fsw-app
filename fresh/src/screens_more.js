@@ -68,7 +68,15 @@ function searchPick(title,items,cb,top){const L=items.map(x=>Object.assign({},x,
     q.oninput=draw;draw();const tb=el.querySelector('#sptop');if(tb)tb.onclick=()=>{closeSheet();top.fn();};setTimeout(()=>{try{q.focus();}catch(e){}},150);});}
 function newPo(vendor,items){const p={id:uid('o'),no:(DB.pos.length?Math.max(...DB.pos.map(x=>x.no)):0)+1,vendor,items:items||[],status:'open',t:now(),by:S.user.name};DB.pos.push(p);save();return p;}
 function newPoFromLow(){if(!DB.vendors.length){toast('Add a supplier first');go('vendors');return;}const it=lowParts().map(p=>({part:p.id,q:Math.max(1,Math.round(((+p.reorder||0)*2-(+p.stock||0)))),cost:+p.cost||0}));const p=newPo(DB.vendors[0].id,it);go('po',{id:p.id});}
-SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=byId('vendors',p.vendor)||{};const tot=p.items.reduce((a,i)=>a+i.q*(i.cost||0),0);const rec=p.status==='received',part=p.status==='partial';
+/* order page: remember how it was when opened, so back can ask "save?" and "don't save" puts it back */
+const poState=p=>JSON.stringify({v:p.vendor,i:p.items});
+function poLeave(){const s=S.poSnap;if(!s||S.r!=='po')return false;const p=byId('pos',s.id);if(!p||p.status!=='open'){S.poSnap=null;return false;}if(poState(p)===s.s){S.poSnap=null;return false;}
+  openSheet(`<h3>${T_('You changed this order. Save the changes?')}</h3><p class="hint">#${p.no} · ${esc((byId('vendors',p.vendor)||{}).name||'')}</p>
+   <button class="btn" id="plsv">${T_('Save')}</button><button class="btn ghost" id="plno">${T_("Don't save (put it back as it was)")}</button><button class="lnk" id="plk">${T_('Keep editing')}</button>`,el=>{
+   el.querySelector('#plsv').onclick=()=>{S.poSnap=null;closeSheet();back();};
+   el.querySelector('#plno').onclick=()=>{const o=JSON.parse(s.s);p.vendor=o.v;p.items=o.i;audit('order','Order #'+p.no+' · changes not saved (put back)');save();S.poSnap=null;closeSheet();back();};
+   el.querySelector('#plk').onclick=()=>closeSheet();});return true;}
+SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}if(!S.poSnap||S.poSnap.id!==p.id)S.poSnap={id:p.id,s:poState(p)};const v=byId('vendors',p.vendor)||{};const tot=p.items.reduce((a,i)=>a+i.q*(i.cost||0),0);const rec=p.status==='received',part=p.status==='partial';
   m.innerHTML=head('Order #'+p.no,rec?'<span class="tag t-ok">Received</span>':part?'<span class="tag t-warn">Part received</span>':'<span class="tag t-warn">Open</span>')+`
   <label class="field-l">Supplier<button class="field selb" id="pov" ${rec?'disabled':''}>${esc(v.name||T_('Choose a supplier'))}<span>▾</span></button></label>
   <div class="list">${p.items.map((i,k)=>{const pt=byId('parts',i.part)||{name:i.name||'(deleted part)'};return `<div class="oi"><div class="oie" role="button" data-ol="${k}"><b>${esc(pt.name)} <span class="oied">✏️</span></b><span>stock ${+pt.stock||0}${i.rec?' · got '+i.rec:''}${can.cost()?' · cost '+f3(i.cost||0):''}${(()=>{if(!sx('vprices')||!can.cost())return '';const bv=bestVendor(pt);return bv&&bv.v!==p.vendor&&bv.cost<(+i.cost||Infinity)-0.0005?` · <b style="color:var(--ok)">cheaper: ${esc(byId('vendors',bv.v).name)} ${f3(bv.cost)}</b>`:'';})()}</span></div>${rec?`<em>${i.q}</em>`:`<div class="st"><button data-q="${k}|-1">−</button><input class="qin" data-qi="${k}" inputmode="decimal" value="${i.q}"><button data-q="${k}|1">+</button></div>`}</div>`;}).join('')||empty('📄','No items. Add parts below.')}</div>
@@ -100,8 +108,8 @@ SCREENS.po=m=>{const p=byId('pos',S.p.id);if(!p){go('vendors');return;}const v=b
   if(pa)pa.onclick=()=>searchPick(T_('Add a part'),DB.parts.map(x=>({id:x.id,name:x.name,sub:T_('stock')+' '+(+x.stock||0)+(x.num&&!x.name.includes(x.num)?' · '+x.num:''),key:(x.num||'')+' '+(x.fits||'')+' '+(x.cat||'')})),id=>{const pt=byId('parts',id);if(!pt)return;const ex=p.items.find(i=>i.part===id);if(ex)ex.q=r2(ex.q+1);else p.items.push({part:pt.id,q:1,cost:+(((pt.vprices||{})[p.vendor]||{}).cost||pt.cost||0)});save();render();},{name:'✏️ '+T_('New part (not in the list yet)…'),fn:addNew});
   
   $('#pomsg').onclick=()=>shareText(v.phone,msg('po',{supplier:v.name||'',no:p.no,items:p.items.map(i=>{const pt=byId('parts',i.part)||{};return '• '+(pt.name||'')+(pt.num?' ('+pt.num+')':'')+' × '+i.q+(pt.unit&&pt.unit!=='pc'?' '+pt.unit:'');}).join('\n')}));
-  const rc=$('#porec');if(rc)rc.onclick=()=>receivePo(p);
-  const dl=$('#podel');if(dl)dl.onclick=()=>{audit('delete','Supplier order #'+p.no);DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
+  const rc=$('#porec');if(rc)rc.onclick=()=>{S.poSnap=null;receivePo(p);};
+  const dl=$('#podel');if(dl)dl.onclick=()=>{S.poSnap=null;audit('delete','Supplier order #'+p.no);DB.pos=DB.pos.filter(x=>x!==p);save();go('vendors');};};
 /* ---------- SERVICES (2.14): one list, group chips filter it, most used first, details folded ---------- */
 const SCAT_MERGE=[['Engine','🔧',['Engine','Tune up','Belts']],['Brakes','🛑',['Brakes','Turning']],['Transmission','⚙️',['Transmission']],['Suspension & tires','🛞',['Suspension','Tires','Alignment']],['Electrical & checks','⚡',['Electrical','Inspection','Scanner','Sensor']],['Cooling & AC','❄️',['Cooling','AC']],['Detailing & other','🧽',['Detailing','Cover','Other']]];
 function mergeScats(force){if(!DB.ws||(!force&&DB.ws.scatV>=1))return 0;const lc2=x=>String(x||'').trim().toLowerCase();let ch=0;

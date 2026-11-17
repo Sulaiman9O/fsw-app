@@ -239,3 +239,7 @@ Object.assign(AR_DICT,{'This car has an estimate':'هذي السيارة عند�
 Object.assign(AR_DICT,{'Quantity':'الكمية','selling price':'سعر البيع','Edit the part (name, number, selling price, category…)':'عدّل القطعة (الاسم، الرقم، سعر البيع، الفئة…)','Swap for another part':'بدّلها بقطعة ثانية','Remove from this order':'شيلها من الطلب','Type how many':'اكتب الكمية'});
 
 Object.assign(AR_DICT,{'This order is received: the stock is already in. Quantity and price of the order stay as they were; you can still fix the part itself.':'هذا الطلب مستلم والكمية دخلت المخزن. كمية وسعر الطلب ما يتغيرون، بس تقدر تعدّل القطعة نفسها.'});
+
+Object.assign(AR_DICT,{'Category':'الفئة','Choose the category':'اختر الفئة','In stock':'في المخزن','Changes only by receiving, selling or the stock count':'تتغير بس بالاستلام أو البيع أو جرد المخزن'});
+
+Object.assign(AR_DICT,{'You changed this order. Save the changes?':'غيّرت في هذا الطلب. تحفظ التعديلات؟',"Don't save (put it back as it was)":'لا تحفظ (رجّعه مثل ما كان)'});

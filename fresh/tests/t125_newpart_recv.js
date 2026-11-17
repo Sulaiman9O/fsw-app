@@ -12,6 +12,6 @@ const {chromium}=require('playwright');
  ok(r1.stock===0&&r1.inOrder===1&&r1.moves===0,'part saved with 0 stock and is in the order '+JSON.stringify(r1));
  await p.evaluate(()=>render());await p.waitForTimeout(200);await p.click('#porec');await p.waitForTimeout(300);const cf=await p.$('.sheet .btn');if(cf)await cf.click();await p.waitForTimeout(400);
  const r2=await p.evaluate(()=>{const pt=DB.parts.find(x=>/HU 7020/.test(x.name));return +pt.stock;});ok(r2===10,'after Received: stock 10 (not 20) → '+r2);
- await p.evaluate(()=>partSheet(DB.parts.find(x=>/HU 7020/.test(x.name))));await p.waitForTimeout(300);ok(await p.$('#pst'),'editing the part still shows stock');
+ await p.evaluate(()=>partSheet(DB.parts.find(x=>/HU 7020/.test(x.name))));await p.waitForTimeout(300);ok(await p.$('.stkro'),'editing the part shows stock (read-only)');
  await p.click('#pok');await p.waitForTimeout(300);ok(await p.evaluate(()=>+DB.parts.find(x=>/HU 7020/.test(x.name)).stock)===10,'saving the edit keeps 10');
  ok(!errs.length,'no page errors '+errs.join('|'));console.log(R.every(x=>x)?'ALL PASS':'SOME FAIL');await b.close();})();

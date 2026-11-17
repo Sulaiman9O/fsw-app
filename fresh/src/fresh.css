@@ -625,3 +625,6 @@ i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align
 
 .oi .oie{cursor:pointer;flex:1;min-width:0}
 .oi .oied{font-size:.8em;opacity:.7}
+
+.stkro{display:grid;gap:2px;padding:12px 14px;border-radius:14px;background:var(--card2,rgba(0,0,0,.04))}
+.stkro small{opacity:.65}
