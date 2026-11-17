@@ -92,6 +92,10 @@ function catGuess(n){n=String(n||'').toLowerCase();const has=c=>DB.pcats.include
   if(/differential|75w|80w|85w|دفرنس/.test(n))return has('Differential oil');if(/atf|cvt|gear oil|gearbox|transmission|زيت جير/.test(n))return has('Gearbox oil');
   if(/\d+w-?\d+|motor oil|engine oil|زيت (محرك|مكينة)/.test(n))return has('Engine oil');if(/cleaner|منظف/.test(n))return has('Cleaners');
   if(/bulb|لمبة/.test(n))return has('Bulbs');if(/gasket|جسكيت|وصلة/.test(n))return has('Gaskets');if(/additive|flush|treatment|booster|إضافة/.test(n))return has('Additives');return '';}
+/* the part is already in the list: use it (e.g. add it to the order) or open it — no dead end */
+function partDupSheet(dup,isNew,onSaved){openSheet(`<h3>${T_('This part is already in your stock')}</h3><div class="card"><b>${esc(dup.name)}</b><div class="hint">${esc(dup.cat||'')}${dup.num?' · '+esc(dup.num):''} · ${T_('stock')} ${+dup.stock||0} · ${f3(dup.price||0)}</div></div>
+   ${isNew&&onSaved?`<button class="btn" id="pdu">✅ ${T_('Use this part')}</button>`:''}<button class="btn ghost" id="pdo">🛠 ${T_('Open it to edit')}</button>`,el=>{
+   const u=el.querySelector('#pdu');if(u)u.onclick=()=>{closeSheet();onSaved(dup);};el.querySelector('#pdo').onclick=()=>{closeSheet();partSheet(dup,onSaved&&!isNew?onSaved:null);};});}
 function partSheet(p,onSaved,forceNew,draft){S._forceDirty=!!draft;const isNew=!p||forceNew;p=p||{cat:'',unit:'pc'};const w=JSON.parse(JSON.stringify(draft||p));w.alts=w.alts||[];w.vprices=w.vprices||{};
   const mvs=(DB.moves||[]).filter(x=>x.part===p.id).sort((a,b)=>b.t-a.t);
   openSheet(`<h3>${isNew?'New part':'Edit part'}</h3><input class="field" id="pn" placeholder="Name · brand type size (e.g. Toyota Oil Filter 90915-YZZN2)" value="${esc(w.name||'')}">
@@ -123,7 +127,7 @@ function partSheet(p,onSaved,forceNew,draft){S._forceDirty=!!draft;const isNew=!
    const vo=el.querySelector('#pvok');if(vo)vo.onclick=()=>{const c=num($('#pvc').value);if(!c)return;w.vprices[$('#pvv').value]={cost:c,t:now()};$('#pvc').value='';drawVp();};
    const rc=el.querySelector('#prcv');if(rc)rc.onclick=()=>receiveSheet(p);
    el.querySelector('#pok').onclick=()=>{const n=$('#pn').value.trim();if(!n){toast('Type a name');return;}if(!$('#pcat').value){toast(T_('Choose the category'));try{$('#pcat').focus();}catch(e){}return;}{const pc=el.querySelector('#pvc'),pv=el.querySelector('#pvv');if(pc&&pv&&num(pc.value)>0)w.vprices[pv.value]={cost:num(pc.value),t:now()};}const nm=$('#pnum').value.trim();
-     const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||(nm&&x.num===nm)));if(dup){toast('This part already exists: '+dup.name);return;}
+     const dup=DB.parts.find(x=>x!==p&&(x.name.toLowerCase()===n.toLowerCase()||(nm&&x.num===nm)));if(dup){partDupSheet(dup,isNew,onSaved);return;}
      let t=p;if(isNew){t={id:uid('p'),t:now(),stock:0};DB.parts.push(t);}
      const os=+t.stock||0,pse=$('#pst'),ns=pse?num(pse.value):os;
      if(!isNew&&(Math.abs(num($('#ppr').value)-(+t.price||0))>0.0005))audit('price','Part '+t.name+': '+f3(t.price)+' → '+f3(num($('#ppr').value)));
@@ -133,7 +137,8 @@ function partSheet(p,onSaved,forceNew,draft){S._forceDirty=!!draft;const isNew=!
      if(el.querySelector('#pvp'))t.vprices=w.vprices;
      if(Math.abs(ns-os)>0.0001){mv(t,ns-os,isNew?'Opening stock':'Changed by hand');if(!isNew)audit('stock','Stock of '+t.name+' changed by hand: '+os+' → '+ns);}
      save();closeSheet();if(onSaved)onSaved(t);else render();};
-   const d=el.querySelector('#pdel');if(d)d.onclick=()=>confirmSheet('Delete '+esc(p.name)+'?','Delete part',()=>{audit('delete','Part '+p.name+' (stock '+(+p.stock||0)+')');DB.parts=DB.parts.filter(x=>x!==p);DB.parts.forEach(x=>{if(x.alts&&x.alts.includes(p.id))x.alts=x.alts.filter(y=>y!==p.id);});save();render();});});}
+   const d=el.querySelector('#pdel');if(d)d.onclick=()=>{const inPo=DB.pos.filter(o=>o.status!=='received'&&o.items.some(i=>i.part===p.id&&!(+i.rec>0)));
+     confirmSheet(esc(T_('Delete'))+' '+esc(p.name)+'?'+(inPo.length?'<br><small>'+T_('It is in open supplier order')+' '+inPo.map(o=>'#'+o.no).join(', ')+' — '+T_('it will be taken out of it.')+'</small>':'')+((+p.stock||0)?'<br><small>'+T_('Stock on the shelf')+': '+(+p.stock)+'</small>':''),T_('Delete part'),()=>{inPo.forEach(o=>{o.items=o.items.filter(i=>!(i.part===p.id&&!(+i.rec>0)));audit('order','Order #'+o.no+' · removed '+p.name+' (part deleted)');});audit('delete','Part '+p.name+' (stock '+(+p.stock||0)+')');DB.parts=DB.parts.filter(x=>x!==p);DB.parts.forEach(x=>{if(x.alts&&x.alts.includes(p.id))x.alts=x.alts.filter(y=>y!==p.id);});save();render();});};});}
 /* received stock: add the quantity; the cost becomes the average of what was on the shelf and what came in */
 function receiveSheet(p){if(!p)return;const cc=can.cost();openSheet(`<h3>📥 Received · ${esc(p.name)}</h3><p class="hint">Now ${+p.stock||0} ${p.unit==='L'?'L':unitS(p)||'pc'} on the shelf.</p>
   <div class="in2"><label class="field-l">How many came<input class="field" id="rq" inputmode="decimal"></label>${cc?`<label class="field-l">Cost each<input class="field" id="rc" inputmode="decimal" value="${p.cost?f3(p.cost):''}"></label>`:'<span></span>'}</div><div id="rinfo"></div><button class="btn" id="rok">Add to stock</button>`,el=>{
@@ -168,13 +173,13 @@ SCREENS.stocktools=m=>{if(!can.settings()){go('stock');return;}DB.ws.sxOff=DB.ws
     openSheet(`<h3>New prices · ${L.length}</h3><div class="list">${L.map(p=>`<label class="lrow tgl2"><span class="lname"><div><b>${esc(p.name)}</b><span>${f3(p.price||0)} → <b>${f3(suggestPrice(p))}</b></span></div></span><input type="checkbox" data-np="${p.id}" checked></label>`).join('')}</div><button class="btn" id="npok">Apply</button>`,el=>el.querySelector('#npok').onclick=()=>{el.querySelectorAll('[data-np]:checked').forEach(c=>{const p=byId('parts',c.dataset.np);p.price=suggestPrice(p);});save();closeSheet();toast('Prices updated');});};};
 /* receive a supplier order (all or part) */
 function receivePo(p){const v=byId('vendors',p.vendor)||{};const left=p.items.map(i=>({i,rest:r2(i.q-(+i.rec||0))})).filter(x=>x.rest>0);
-  const apply=got=>{const changed=[];got.forEach(([i,q,c])=>{if(!q)return;const pt=byId('parts',i.part);if(!pt)return;mv(pt,q,'Supplier order #'+p.no+(v.name?' · '+v.name:''),p.id);i.rec=r2((+i.rec||0)+q);
+  const apply=got=>{const changed=[];got.forEach(([i,q,c])=>{if(!q)return;const pt=byId('parts',i.part);if(!pt){i.rec=i.q;i.gone=1;return;}mv(pt,q,'Supplier order #'+p.no+(v.name?' · '+v.name:''),p.id);i.rec=r2((+i.rec||0)+q);
       if(c){if(Math.abs(c-(+pt.cost||0))>0.0005)changed.push(pt);pt.cost=c;i.cost=c;}if(c&&p.vendor){pt.vprices=pt.vprices||{};pt.vprices[p.vendor]={cost:c,t:now()};}});
-    p.status=p.items.every(i=>(+i.rec||0)>=i.q-0.0001)?'received':'partial';p.rt=now();save();
+    p.items.forEach(i=>{if(!byId('parts',i.part)){i.rec=i.q;i.gone=1;}});p.status=p.items.every(i=>(+i.rec||0)>=i.q-0.0001)?'received':'partial';p.rt=now();save();
     const sug=sx('markup')?changed.filter(pt=>suggestPrice(pt)&&Math.abs(suggestPrice(pt)-(+pt.price||0))>0.0005):[];
     if(sug.length&&can.cost()){openSheet(`<h3>Cost changed · new selling prices?</h3><div class="list">${sug.map(pt=>`<label class="lrow tgl2"><span class="lname"><div><b>${esc(pt.name)}</b><span>${f3(pt.price||0)} → <b>${f3(suggestPrice(pt))}</b></span></div></span><input type="checkbox" data-np="${pt.id}" checked></label>`).join('')}</div><button class="btn" id="npok">Apply</button>`,el=>el.querySelector('#npok').onclick=()=>{el.querySelectorAll('[data-np]:checked').forEach(c=>{const x=byId('parts',c.dataset.np);x.price=suggestPrice(x);});save();closeSheet();render();});}
     render();toast(p.status==='received'?'Stock updated':'Received part of the order. The rest stays open.');};
   if(!sx('partial')){confirmSheet('Mark order #'+p.no+' as received? Stock goes up.','Received',()=>apply(left.map(x=>[x.i,x.rest,+x.i.cost||0])));return;}
   openSheet(`<h3>Receive order #${p.no}</h3><p class="hint">Type what arrived. Leave less if some did not come; the rest stays open.</p><div class="list">${left.map((x,k)=>{const pt=byId('parts',x.i.part)||{name:'?'};return `<div class="oi"><div><b>${esc(pt.name)}</b><span>ordered ${x.i.q}${x.i.rec?' · got '+x.i.rec:''}</span></div><div class="st">${can.cost()?`<input class="qin" style="width:76px" data-rc="${k}" inputmode="decimal" placeholder="cost" value="${x.i.cost?f3(x.i.cost):''}">`:''}<input class="qin" data-rq="${k}" inputmode="decimal" value="${x.rest}"></div></div>`;}).join('')}</div><button class="btn okb" id="rcok">✓ Save received</button>`,el=>{
     el.querySelectorAll('.qin').forEach(b=>b.onfocus=()=>b.select());
-    el.querySelector('#rcok').onclick=()=>{const got=left.map((x,k)=>{const q=Math.min(x.rest,num(el.querySelector(`[data-rq="${k}"]`).value));const ce=el.querySelector(`[data-rc="${k}"]`);return [x.i,q,ce?num(ce.value):(+x.i.cost||0)];});closeSheet();apply(got);};});}
+    el.querySelector('#rcok').onclick=()=>{const got=left.map((x,k)=>{const q=Math.max(0,num(el.querySelector(`[data-rq="${k}"]`).value));const ce=el.querySelector(`[data-rc="${k}"]`);return [x.i,q,ce?num(ce.value):(+x.i.cost||0)];});closeSheet();apply(got);};});}

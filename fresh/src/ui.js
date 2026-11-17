@@ -88,7 +88,7 @@ function openSheet(html,bind){const isNew=!$('#sheet');let el=$('#sheet');if(!el
   setTimeout(()=>{if(!el._touched&&el.isConnected)el._snap=sheetSnap(el);},400);}
 /* leaving a sheet that has a Save button with changes not saved: ask (Save / Don't save / Keep editing) */
 function sheetSnap(el){try{return [...el.querySelectorAll('input,select,textarea,[aria-pressed]')].filter(x=>!x.closest('.leaveask')&&!x.classList.contains('srchbox')&&x.type!=='file').map(x=>x.matches('[aria-pressed]')?x.getAttribute('aria-pressed'):(x.type==='checkbox'||x.type==='radio')?x.checked:x.value).join('\u0001');}catch(e){return null;}}
-function sheetSaveBtn(el){return [...el.querySelectorAll('.pnl button.btn:not(.ghost)')].find(b=>!b.disabled&&b.offsetParent!==null&&/^\s*(💾\s*)?(save|حفظ|احفظ)/i.test(b.textContent));}
+function sheetSaveBtn(el){return [...el.querySelectorAll('.pnl button.btn:not(.ghost)')].find(b=>!b.disabled&&b.offsetParent!==null&&/^[\s✓✅💾]*(save|حفظ|احفظ)/i.test(b.textContent));}
 function sheetLeave(){const el=$('#sheet');if(!el)return;if(el._skipAsk){closeSheet();return;}const ask=el.querySelector('.leaveask');if(ask){ask.remove();return;}
   /* not saving: run the sheet's own Close (it may tidy up, e.g. stop the camera), which comes back here and closes */
   const cb=el.querySelector('[data-close]');const discard=()=>{el._skipAsk=true;if(cb)cb.click();if(document.getElementById('sheet')===el)closeSheet();};
