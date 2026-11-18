@@ -61,6 +61,11 @@ function payNow(j){const T=jobTotals(j);if(!(j.items||[]).length){toast('Add ser
       else if(T2.due>0){j.pays.push({m:mth,amt:T2.due,t:now(),by:S.user.name});audit('pay','Payment '+f3(T2.due)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(T2.due)+' · '+mth);}
       closeJob(j);save();closeSheet();go('inv',{id:j.id});toast(T_('Done ✓'));});
     el.querySelector('#pmlater').onclick=()=>{issueInvoice(j);save();closeSheet();go('inv',{id:j.id});};});}
+/* 2.42.2: an invoice not paid yet («pay later») gets the same bar: due + 💵 Take payment */
+(function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j||!isInvoiced(j)||!canPay())return;const d=jobDue(j);if(!(d>0.0005))return;
+  const tot=m.querySelector('.jb-r.tot');const bar=document.createElement('div');bar.className='paybar due';
+  bar.innerHTML=`<div><small>${T_('Not paid yet')} · #${j.inv.no}</small><b class="bad">${f3(d)} <span>${esc(DB.ws.currency)}</span></b></div><button class="btn okb" id="jtake">💵 ${T_('Take payment')}</button>`;
+  const list=tot&&tot.closest('.jb-list');(list||m).after(bar);bar.querySelector('#jtake').onclick=()=>jobPaySheet(j);};})();
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j||isInvoiced(j)||!can.invoice()||!(j.items||[]).length)return;const T=jobTotals(j);
   const tot=m.querySelector('.jb-r.tot');const bar=document.createElement('div');bar.className='paybar';
   bar.innerHTML=`<div><small>${T_('Total')}</small><b>${f3(T.total)} <span>${esc(DB.ws.currency)}</span></b></div><button class="btn okb" id="jpay">💵 ${T_('Invoice & pay')}</button>`;

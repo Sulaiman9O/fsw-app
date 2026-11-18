@@ -64,7 +64,7 @@ const jobTot=j=>r3((j.items||[]).reduce((a,i)=>a+(+i.q)*(+i.p),0)-(+j.disc||0));
     if(!st.inv)iss(j,'no invoice made');
     n++;if(n%25===0)console.log(n,'jobs',Math.round((Date.now()-t00)/1000)+'s','issues',issues.length,'errors',errs.length);}
    else if(e.k==='pay'){if(e.skip)continue;const j=e.j;cur=j.no;const jid=map[j.id];if(!jid)continue;await setNow(e.t);await p.evaluate(id=>{closeSheet();go('inv',{id});},jid);await W(100);
-    const pb=await p.$('[data-pay="Cash"]');if(!pb){iss(j,'no payment button on the invoice',{});continue;}await pb.click();await W(80);await p.fill('#pam',String(e.amt));await p.click('#pok');await W(100);}
+    const pb=await p.$('[data-pay="Cash"]');if(!pb){iss(j,'no payment button on the invoice',{});continue;}await pb.click();await W(80);await p.fill('#jpa',String(e.amt));await p.click('#jpok');await W(100);}
    else if(e.k==='close'){cur='close '+e.d;await setNow(e.t);await p.evaluate(()=>{closeSheet();go('close');});await W(120);
     const exp=await p.evaluate(()=>{const td=sumRange(rangeOf('today'));return td.byM.Cash||0;});const c=await p.$('#ccnt');
     if(c){const opening=await p.evaluate(()=>{const last=DB.closes.filter(c=>c.date!==today()).sort((a,b)=>b.t-a.t)[0];return last?last.counted:(+DB.openingCash||0);});await p.fill('#ccnt',String(r3(opening+exp)));await p.click('#cok');await W(100);

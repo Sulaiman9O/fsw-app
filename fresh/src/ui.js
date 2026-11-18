@@ -63,7 +63,8 @@ function render(){
   if(!routeOk(S.r)){toast('Not allowed for '+S.user.name);S.r='home';}
   (SCREENS[S.r]||SCREENS.home)(m);
   m.querySelectorAll('[data-go]').forEach(b=>{if(!routeOk(b.dataset.go.split(':')[0]))b.remove();});
-  m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
+  m.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{const pj=e&&e.target&&e.target.closest&&e.target.closest('[data-pj]');if(pj&&typeof jobPaySheet==='function'){e.stopPropagation();jobPaySheet(byId('jobs',pj.dataset.pj));return;}const [r,id]=b.dataset.go.split(':');go(r,id?{id}:{});});
+  m.querySelectorAll('[data-dpay]').forEach(b=>b.onclick=e=>{e.stopPropagation();const c=byId('customers',b.dataset.dpay);if(!c)return;const L=custDebt(c.id).list;if(L.length===1)jobPaySheet(L[0].j);else debtPaySheet(c);});
   m.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>back());
   m.querySelectorAll('[data-eye]').forEach(b=>b.onclick=e=>{e.stopPropagation();e.preventDefault();S.eye=showCost()?0:Date.now();render();});
   try{motionAfterRender(m);}catch(e){}

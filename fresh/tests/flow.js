@@ -23,9 +23,9 @@ const moved=await p.evaluate(([id,s0])=>{const before=new Map(JSON.parse(s0));co
 // partial payment
 await p.evaluate(()=>{});const payBtn=p.locator('[data-pay]').first();await payBtn.click();await p.waitForTimeout(400);await p.screenshot({path:'F1.png'});
 const sheetTxt=await p.evaluate(()=>document.querySelector('#sheet')?document.querySelector('#sheet').innerText.slice(0,300):'nosheet');console.log('pay sheet:',sheetTxt.replace(/\n/g,' | '));
-await p.fill('#pam','5');await p.click('#pok');await p.waitForTimeout(300);
+await p.fill('#jpa','5');await p.click('#jpok');await p.waitForTimeout(300);
 let T=await p.evaluate(id=>jobTotals(byId('jobs',id)),jid);ok(Math.abs(T.due-(T.total-5))<0.001,'partial pay due '+T.due);const TOT=T.total;
-await p.locator('[data-pay]').first().click();await p.waitForTimeout(300);await p.click('#pok');await p.waitForTimeout(300);
+await p.locator('[data-pay]').first().click();await p.waitForTimeout(300);await p.click('#jpok');await p.waitForTimeout(300);
 T=await p.evaluate(id=>jobTotals(byId('jobs',id)),jid);ok(T.due<0.0005,'paid full due '+T.due);
 await p.evaluate(id=>go('job',{id}),jid);await p.waitForTimeout(300);await p.click('#jnext').catch(()=>{});await p.waitForTimeout(300);
 const st=await p.evaluate(id=>{const j=byId('jobs',id);return j.stage+' rem:'+DB.reminders.filter(r=>r.job===id).map(r=>r.kind+'@'+new Date(r.due).toISOString().slice(0,10)+'/'+r.dueKm).join(',');},jid);ok(/done/.test(st)&&/oil/.test(st),'done + reminder: '+st);

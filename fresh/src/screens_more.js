@@ -243,18 +243,33 @@ function debtPaySheet(c){const d=custDebt(c.id);if(!d.list.length)return;const p
       const t=now(),by=S.user.name,done=[];for(const x of custDebt(c.id).list){if(a<=0.0005)break;const amt=Math.round(Math.min(a,x.due)*1000)/1000;x.j.pays.push({m,amt,t,by});a=Math.round((a-amt)*1000)/1000;
         logJ(x.j,'Payment '+f3(amt)+' · '+m);if(jobTotals(x.j).due<=0.0005)closeJob(x.j);done.push('#'+x.j.inv.no+' '+f3(amt));}
       audit('pay','Debt payment · '+(c.name||'')+' · '+done.join(', '));save();closeSheet();render();toast(T_('Saved')+' · '+done.length+' '+T_('invoices'));};});}
+/* 2.42.2: take a payment on ONE invoice straight from a list (home, work, debts, the job) — before, a "pay later"
+   invoice had to be opened, then the invoice page, then the payment chips at the bottom (Sulaiman 18 Nov). */
+const canPay=()=>can.invoice()||can.money();
+const jobDue=j=>j&&isInvoiced(j)&&!j.returned?Math.round(jobTotals(j).due*1000)/1000:0;
+function jobPaySheet(j,m0){if(!j)return;const due=jobDue(j);if(!(due>0.0005)){toast(T_('Paid in full'));return;}if(!canPay())return;
+  const pm=(DB.ws.pay||['Cash','Card','Transfer']).filter(m=>!isCreditM(m));let m=pm.includes(m0)?m0:pm[0];const v=vehOf(j)||{},c=custOf(j)||{};
+  try{trail('pay','sheet #'+j.inv.no);}catch(e){}
+  openSheet(`<h3>💵 ${T_('Take payment')} · #${j.inv.no}</h3><p class="hint"><b>${esc(c.name||'Walk-in')}</b> · ${esc(carName(v)||'')}${v.plate?' · '+esc(v.plate):''}<br>${fmtD(j.inv.t||j.t)} · ${T_('due')} <b class="bad"><bdi>${f3(due)}</bdi></b></p>
+   <div class="chips big" id="jpm">${pm.map(x=>`<button data-m="${esc(x)}" aria-pressed="${x===m}">${esc(T_(x))}</button>`).join('')}</div>
+   <input class="field" id="jpa" inputmode="decimal" value="${f3(due)}" aria-label="${T_('Amount')}"><button class="btn okb" id="jpok">💵 ${T_('Save payment')}</button>
+   <button class="btn ghost" data-go="inv:${j.id}">🧾 ${T_('Open the invoice')}</button>`,el=>{
+    el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{m=b.dataset.m;el.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+    el.querySelector('#jpok').onclick=()=>{const d=jobDue(j);let a=Math.round(num(el.querySelector('#jpa').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}if(a>d+0.0005){toast(T_('More than what is owed')+' ('+f3(d)+')');return;}
+      j.pays=j.pays||[];j.pays.push({m,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+m+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+m);
+      const left=jobDue(j);if(left<=0.0005)closeJob(j);save();closeSheet();render();toast(left>0.0005?T_('Saved')+' · '+T_('still due')+' '+f3(left):T_('Paid in full')+' ✓');};});}
 function debtNote(cid){if(!can.money())return '';const d=custDebt(cid);if(!d.list.length)return '';const o=d.list[0];
-  return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}</div>`;}
+  return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}${canPay()?` <button class="btn sm okb" data-dpay="${cid}">💵 ${T_('Take payment')}</button>`:''}</div>`;}
 SCREENS.debts=m=>{if(!can.money()){go('home');return;}
   const rows=DB.customers.map(c=>({c,d:custDebt(c.id)})).filter(x=>x.d.list.length).sort((a,b)=>b.d.list[0].days-a.d.list[0].days);
   const tot=totalDue();const sel=S.debtSel||(S.debtSel=null);
   m.innerHTML=head('Debts',rows.length?`<button class="lnk" id="dsel">${sel?'Cancel':'Select'}</button>`:'')+`
   <div class="kpis2"><div class="kpi org"><b>${f3(tot)}</b><span>Due · ${esc(DB.ws.currency)}</span></div><div class="kpi"><b>${rows.length}</b><span>Customers</span></div></div>
-  ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}
+  ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&canPay()?`<button class="btn sm okb" data-dpay="${c.id}" aria-label="${T_('Take payment')}">💵</button>`:''}${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}
   ${sel?`<div class="selb2"><b>${sel.size} ${T_('selected')}</b><button class="btn sm" id="dsend" ${sel.size?'':'disabled'}>💳 ${T_('Send reminders')}</button></div>`:''}`;
   const ds=$('#dsel');if(ds)ds.onclick=()=>{S.debtSel=sel?null:new Set();render();};
   $$('[data-dc]').forEach(r=>{let tm=0,long=false;const id=r.dataset.dc;
-    r.onclick=e=>{if(e.target.closest('[data-dw]'))return;if(long){long=false;return;}if(S.debtSel){S.debtSel.has(id)?S.debtSel.delete(id):S.debtSel.add(id);render();}else go('custd',{id});};
+    r.onclick=e=>{if(e.target.closest('[data-dw],[data-dpay]'))return;if(long){long=false;return;}if(S.debtSel){S.debtSel.has(id)?S.debtSel.delete(id):S.debtSel.add(id);render();}else go('custd',{id});};
     r.addEventListener('pointerdown',()=>{tm=setTimeout(()=>{long=true;if(!S.debtSel)S.debtSel=new Set();S.debtSel.add(id);try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}render();},500);});
     ['pointerup','pointerleave','pointercancel'].forEach(ev=>r.addEventListener(ev,()=>clearTimeout(tm)));});
   $$('[data-dw]').forEach(b=>b.onclick=()=>{const c=byId('customers',b.dataset.dw);shareText(c.phone,debtText(c));c.payRem=now();save();render();});

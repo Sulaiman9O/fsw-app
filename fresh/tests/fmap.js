@@ -49,11 +49,11 @@ const ONLY=process.argv[3]?new RegExp(process.argv[3]):null;
  /* ---------- payments ---------- */
  let J2;
  await step('invoice only, pay later; partial payment; then the rest by card',async()=>{J2=await openJob(1,50000);await addCustom('Labour A','labour',1,10);await p.click('#jpay');await W(100);await p.click('#pmlater');await W(150);
-   await E(id=>go('inv',{id}),J2);await W(120);await p.click('[data-pay="Cash"]');await W(80);await p.fill('#pam','4');await p.click('#pok');await W(120);let T=await E(id=>jobTotals(byId('jobs',id)),J2);if(Math.abs(T.due-6)>1e-6)return {ok:false,note:'due after partial '+T.due};
-   const card=await p.$('[data-pay="Card"]');if(!card)return {ok:false,note:'no Card button'};await card.click();await W(80);await p.click('#pok');await W(120);T=await E(id=>jobTotals(byId('jobs',id)),J2);return {ok:T.due<=0.0005,note:'due '+T.due};});
+   await E(id=>go('inv',{id}),J2);await W(120);await p.click('[data-pay="Cash"]');await W(80);await p.fill('#jpa','4');await p.click('#jpok');await W(120);let T=await E(id=>jobTotals(byId('jobs',id)),J2);if(Math.abs(T.due-6)>1e-6)return {ok:false,note:'due after partial '+T.due};
+   const card=await p.$('[data-pay="Card"]');if(!card)return {ok:false,note:'no Card button'};await card.click();await W(80);await p.click('#jpok');await W(120);T=await E(id=>jobTotals(byId('jobs',id)),J2);return {ok:T.due<=0.0005,note:'due '+T.due};});
  let J3;
  await step('on credit → shows in debts → pay the debt',async()=>{J3=await openJob(2,1000);await addCustom('Labour B','labour',1,7);await p.click('#jpay');await W(100);const cr=await p.$('#sheet [data-pm="Credit"]');if(!cr)return {ok:false,note:'no Credit method'};await cr.click();await W(150);
-   await E(()=>go('debts'));await W(150);const t=await E(()=>document.querySelector('#main').innerText);const has=/7\.000|7\.00/.test(t);await E(id=>go('inv',{id}),J3);await W(100);await p.click('[data-pay="Transfer"]').catch(()=>p.click('[data-pay]:not([data-pay="Credit"])'));await W(80);await p.click('#pok');await W(100);const T=await E(id=>jobTotals(byId('jobs',id)),J3);
+   await E(()=>go('debts'));await W(150);const t=await E(()=>document.querySelector('#main').innerText);const has=/7\.000|7\.00/.test(t);await E(id=>go('inv',{id}),J3);await W(100);await p.click('[data-pay="Transfer"]').catch(()=>p.click('[data-pay]:not([data-pay="Credit"])'));await W(80);await p.click('#jpok');await W(100);const T=await E(id=>jobTotals(byId('jobs',id)),J3);
    return {ok:has&&T.due<=0.0005,note:'debt listed '+has+' · due now '+T.due};});
  await step('edit an issued invoice',async()=>{await E(id=>go('inv',{id}),J2);await W(100);const b=await p.locator('button',{hasText:/Edit the invoice/}).first();if(!(await b.count()))return {ok:false,note:'no edit button'};await b.click();await W(150);const sh=await p.$('#sheet');return {ok:!!sh||(await E(()=>S.r))==='job',note:'route '+(await E(()=>S.r))};});
 

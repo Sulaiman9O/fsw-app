@@ -2,7 +2,7 @@
 const SCREENS={};
 function carRow(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let [sl,sc]=STAGE[j.stage];const unpaid=isInvoiced(j)&&!j.returned&&T.due>=0.005&&j.stage!=='ready';if(unpaid){sl='Not paid';sc='var(--bad)';}
   const right=unpaid?f3(T.due):j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
-  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div>${typeof vehThumb==='function'?vehThumb(v):''}<div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small></div></button>`;}
+  return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div>${typeof vehThumb==='function'?vehThumb(v):''}<div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small>${(unpaid||(j.stage==='ready'&&isInvoiced(j)&&T.due>0.0005&&!j.returned))&&canPay()?`<span class="cpay" role="button" data-pj="${j.id}">💵 ${T_('Pay')}</span>`:''}</div></button>`;}
 SCREENS.home=m=>{
   const open=openJobs(),[pd,pt]=stepsProgress(),due=totalDue(),low=lowParts().length,rem=remindersDue().length;
   const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
@@ -13,6 +13,8 @@ SCREENS.home=m=>{
   ${false&&pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
   ${sec(`In the workshop now · ${open.length}`,open.length?'<a data-go="work">All ›</a>':'')}
   ${open.length?`<div class="list">${open.slice().sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,window.innerWidth>=1100?8:4).map(carRow).join('')}</div>`:empty('🚗','No cars in the workshop. Tap <b>New car in</b> when one arrives.')}
+  ${(()=>{if(!canPay())return '';const oid=new Set(open.map(j=>j.id));const U=DB.jobs.filter(j=>!oid.has(j.id)&&jobDue(j)>0.0005).sort((a,b)=>((b.inv&&b.inv.t)||b.t)-((a.inv&&a.inv.t)||a.t));if(!U.length)return '';
+    return sec(`💳 ${T_('Not paid yet')} · ${U.length} · ${f3(U.reduce((a,j)=>a+jobDue(j),0))}`,can.money()?'<a data-go="debts">All ›</a>':'')+`<div class="list">${U.slice(0,window.innerWidth>=1100?6:3).map(carRow).join('')}</div>`;})()}
   <div class="kpis3">${can.money()?`<button class="kpi org" data-go="debts"><b>${f3(due)}</b><span>Due · ${DB.ws.currency}</span></button>`:''}<button class="kpi ${low?'red':''}" data-go="stock"><b>${low}</b><span>To order</span></button><button class="kpi" data-go="cust"><b>${rem}</b><span>Reminders</span></button></div>
   <div class="grp">
    <button class="g" data-go="work" style="--tc:color-mix(in srgb,var(--red) 20%,var(--panel));--glow:color-mix(in srgb,var(--red) 28%,transparent)"><span class="ic">🔧</span><b>Work</b><div class="sub"><span><i>${open.length}</i> in workshop</span><span><i>${est.length}</i> estimates open</span><span><i>${todayInv.length}</i> invoices today</span></div></button>
