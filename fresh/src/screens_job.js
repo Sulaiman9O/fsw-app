@@ -135,7 +135,8 @@ function addItemSheet(j,opt){opt=opt||{};
     mbar();};
   openSheet(`<h3>Add to ${j.stage==='estimate'?'estimate':'job'} #${j.no}</h3>${opt.manual?`<div class="mbar">✋ Manual choice: pick the parts yourself</div>`:''}<div class="field-l">Car size</div><div class="chips" id="asz"></div><div class="srow"><input class="field" id="aq" placeholder="Search services and parts" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(q)}">${sx('scan')?'<button class="scanb" id="ascan">📷</button>':''}</div><button class="btn ghost sm" id="acust">✏️ Something else (type name and price)</button><div id="atabs"></div><p class="hint ahint">👆 Hold an item to pick several and add them together.</p><div id="alist"></div>`,el=>{
     el.querySelector('#aq').oninput=e=>{q=e.target.value;draw(el);};const asc=el.querySelector('#ascan');if(asc)asc.onclick=()=>scanSheet(c=>{const p=findByCode(c);if(!p){toast('No part with '+c);return;}j.items.push({k:'part',ref:p.id,d:p.name,num:p.num,q:1,u:p.unit==='L'?'L':'',p:+p.price,cost:+p.cost||0});save();editItemSheet(j,j.items.length-1,true);});
-    el.querySelector('#acust').onclick=()=>{j.items.push({k:'part',d:'',q:1,u:'',p:0,cost:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
+    /* 2.42.2: a typed item starts as Labour / service (parts are usually picked from the list): «Check for leak» and «معايرة زيت الجير» were saved as parts */
+    el.querySelector('#acust').onclick=()=>{j.items.push({k:'labour',d:'',q:1,u:'',p:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);};
     draw(el);});
 }
 const isSuv=v=>/land cruiser|patrol|prado|fortuner|pajero|tahoe|yukon|suburban|lx|gx|range|x5|x7|gle|q7|explorer|expedition|sequoia|armada|4runner|fj|tundra|sierra|silverado|ram|f-150/i.test((v&&v.model)||'');
@@ -155,7 +156,7 @@ function editItemSheet(j,i,isNew,priceNow){
   const it=j.items[i];if(!it)return;const before=jobItemsSnap(j),was={q:+it.q,p:+it.p,pend:!!it.pend};
   openSheet(`<h3>${isNew&&!it.ref?'New item':'Item'}</h3>
    <input class="field" id="ed" placeholder="Name" value="${esc(it.d)}">
-   <div class="chips"><button data-k="part" aria-pressed="${it.k==='part'}">Part</button><button data-k="labour" aria-pressed="${it.k!=='part'}">Labour / service</button></div>
+   ${isNew&&!it.ref?`<div class="field-l">${T_('What is it?')}</div>`:''}<div class="chips"><button data-k="labour" aria-pressed="${it.k!=='part'}">🔧 ${T_('Labour / service')}</button><button data-k="part" aria-pressed="${it.k==='part'}">⚙️ ${T_('Part')}</button></div>
    <div class="in2"><label class="field-l">Qty${it.u?' ('+esc(it.u)+')':''}<input class="field" id="eq" inputmode="decimal" value="${+it.q}"></label><label class="field-l">Price each${it.from?' (starts from '+f3(it.p)+')':''}<input class="field" id="ep" inputmode="decimal" value="${it.pend&&!(+it.p)?'':f3(it.p)}" ${it.lockP&&!can.discount()?'disabled':''}></label></div>
    ${showCost()&&it.k==='part'?`<label class="field-l">Cost each (owner only)<input class="field" id="ec" inputmode="decimal" value="${it.cost?f3(it.cost):''}"></label>`:''}
    ${!it.ref?`<label class="chk"><input type="checkbox" id="eo" ${it.outside?'checked':''}> Bought outside (not from our stock)</label>`:''}

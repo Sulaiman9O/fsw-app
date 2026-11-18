@@ -68,14 +68,21 @@ const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['
 const isInvoiced=j=>!!(j.inv&&!j.inv.void);
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
 /* a recent estimate waiting for this car (not older than 45 days) */
-const estOf=v=>v&&v.id?DB.jobs.filter(j=>j.veh===v.id&&j.stage==='estimate'&&!isInvoiced(j)&&Date.now()-(+j.t||0)<45*864e5).sort((a,b)=>b.t-a.t)[0]||null:null;
+/* 2.42.2: the same car can be saved twice (e.g. «camry 27084» by the worker and «Camry 27084 R4» under the customer):
+   an estimate on the other copy counts too — same VIN, or same plate number and make (letters missing on one side is OK) */
+const plKey=p=>{const s=String(p||'').toUpperCase().replace(/\bOM\b/g,'');const ns=(s.match(/\d+/g)||[]).sort((a,b)=>b.length-a.length);return {n:ns[0]||'',l:(s.match(/[A-Z]+/g)||[]).join('')};};
+function sameCar(a,b){if(!a||!b)return false;if(a.id===b.id)return true;const va=String(a.vin||'').toUpperCase().replace(/[^A-Z0-9]/g,''),vb=String(b.vin||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(va.length===17&&va===vb)return true;const pa=plKey(a.plate),pb=plKey(b.plate);if(!pa.n||pa.n.length<3||pa.n!==pb.n)return false;
+  if(pa.l&&pb.l&&pa.l!==pb.l)return false;return !!a.make&&String(a.make).trim().toLowerCase()===String(b.make||'').trim().toLowerCase();}
+const estOf=v=>v&&v.id?DB.jobs.filter(j=>j.stage==='estimate'&&!isInvoiced(j)&&Date.now()-(+j.t||0)<45*864e5&&(j.veh===v.id||sameCar(byId('vehicles',j.veh),v))).sort((a,b)=>(b.veh===v.id)-(a.veh===v.id)||b.t-a.t)[0]||null:null;
 const estRecent=j=>j.stage==='estimate'&&Date.now()-(+j.t||0)<14*864e5;
-function estAgree(e){e.stage='new';e.fromEst=true;e.t=now();try{logJ(e,'Customer agreed');}catch(x){}save();toast(T_('Estimate')+' #'+e.no+' → '+T_('job card'));go('job',{id:e.id});}
+/* agreed from the other saved copy of the same car: the job goes on the car and customer that were picked now */
+function estAgree(e,v){if(v&&v.id&&e.veh!==v.id){const was=carName(byId('vehicles',e.veh)||{})+' · '+((byId('customers',e.cust)||{}).name||'');e.veh=v.id;if(v.cust)e.cust=v.cust;try{logJ(e,'Moved from '+was);}catch(x){}}e.stage='new';e.fromEst=true;e.t=now();try{logJ(e,'Customer agreed');}catch(x){}save();toast(T_('Estimate')+' #'+e.no+' → '+T_('job card'));go('job',{id:e.id});}
 /* opening a new card for a car that has an estimate: use the estimate instead? */
 function estGuard(v,goNew){const e=estOf(v);if(!e){goNew();return;}
   openSheet(`<h3>📋 ${T_('This car has an estimate')} #${e.no}</h3><p class="hint">${(e.items||[]).length} ${T_('items')} · ${f3(jobTotals(e).total)} · ${fmtD(e.t)}</p>
    <button class="btn" id="egu">✅ ${T_('Customer agreed · use this estimate')}</button><button class="btn ghost" id="egn">＋ ${T_('New job card (keep the estimate)')}</button>`,el=>{
-   el.querySelector('#egu').onclick=()=>{closeSheet();estAgree(e);};el.querySelector('#egn').onclick=()=>{closeSheet();goNew();};});}
+   el.querySelector('#egu').onclick=()=>{closeSheet();estAgree(e,v);};el.querySelector('#egn').onclick=()=>{closeSheet();goNew();};});}
 /* what a customer still owes: unpaid invoices, oldest first */
 /* jobs per customer, built once and dropped after this moment or on the next save: lists of all customers no longer scan every job per customer */
 let JBC=null;function jobsOfCust(cid){if(!JBC||JBC.src!==DB.jobs||JBC.n!==DB.jobs.length){JBC={src:DB.jobs,n:DB.jobs.length,m:new Map()};DB.jobs.forEach(j=>{const a=JBC.m.get(j.cust);a?a.push(j):JBC.m.set(j.cust,[j]);});setTimeout(()=>{JBC=null;},0);}return JBC.m.get(cid)||[];}

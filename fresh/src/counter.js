@@ -43,7 +43,7 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
   $('#cchg').onclick=()=>{C.vid=null;C.q='';render();};
   const km=$('#ckm');km.oninput=()=>{C.km=km.value;};
   const start=fill=>estGuard(v,()=>{const j=newJobFor(v,C.km);if(fill)fill(j);save();C.km='';go('job',{id:j.id});});
-  const ce=$('#cest');if(ce)ce.onclick=()=>{const e=estOf(v);if(!e)return;const x=num(C.km);if(x>0){e.km=x;if(x>(+v.km||0))v.km=x;}C.km='';estAgree(e);};
+  const ce=$('#cest');if(ce)ce.onclick=()=>{const e=estOf(v);if(!e)return;const x=num(C.km);if(x>0){e.km=x;if(x>(+v.km||0))v.km=x;}C.km='';estAgree(e,v);};
   const o1=$('#coj');if(o1)o1.onclick=()=>{const x=num(C.km);if(x>0){oj.km=x;if(x>(+v.km||0))v.km=x;save();}C.km='';go('job',{id:oj.id});};
   const r1=$('#crep');if(r1)r1.onclick=()=>start(j=>{repeatVisit(j,lv);});
   const o2=$('#coil');if(o2)o2.onclick=()=>start(j=>{applyOilRecipe(j,(DB.ws.rxMode)||'usual');});

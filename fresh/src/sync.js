@@ -99,8 +99,16 @@ function applyRemote(t,k,v){
   else{const val=v==null?undefined:JSON.parse(v);
     if(k==='ws'&&val&&DB.ws&&(+val.resetAt||0)<=(+DB.ws.resetAt||0)){val.nextInv=Math.max(+val.nextInv||0,+DB.ws.nextInv||0);val.nextJob=Math.max(+val.nextJob||0,+DB.ws.nextJob||0);}
     if(val===undefined)delete DB[k];else DB[k]=val;}}
-const tsGet=()=>{try{return +localStorage.getItem('ws_sync_ts')||0;}catch(e){return 0;}};
-const tsSet=v=>{try{if(v>tsGet())localStorage.setItem('ws_sync_ts',String(v));}catch(e){}};
+/* "this device has everything up to time X". 2.42.2: the mark is written only AFTER the changes it covers are saved on the
+   device. Before, it was written the moment they arrived: Android closed the tablet's app 1 s after it received 14 changes
+   (18 Nov 08:23), the changes were never saved, the next start asked only for newer ones — so the tablet never got the
+   laptop's invoice #1022 and gave #1022 again. Now a device closed in between asks again for those changes next time. */
+let TSM=0,TSC=null;
+const tsStored=()=>{try{return +localStorage.getItem('ws_sync_ts')||0;}catch(e){return 0;}};
+const tsGet=()=>Math.max(tsStored(),TSM);
+const tsSet=v=>{if(v>TSM)TSM=v;clearTimeout(TSC);TSC=setTimeout(tsCommit,400);};
+async function tsCommit(){const v=TSM;if(!(v>tsStored()))return;try{await flushNow();}catch(e){return;}if(STORE.err)return;try{if(v>tsStored())localStorage.setItem('ws_sync_ts',String(v));}catch(e){}}
+function tsReset(){TSM=0;clearTimeout(TSC);try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}
 /* only changes since the last time this phone looked (keeps Firebase free-plan reads low) */
 function syncListen(){syncUnlisten();SYNC.unsub.push(wsRef().collection('meta').onSnapshot(qs=>{qs.forEach(d=>{if(d.id==='reset'){const at=+((d.data()||{}).at)||0;if(at>sinceGet()&&DB.ws)wipeLocal(T_('All data was deleted from another device. Sign in again or set up the workshop.'));}});},()=>{}));const since=firebase.firestore.Timestamp.fromMillis(Math.max(0,tsGet()-120000));
   ['kv','rec'].forEach(t=>{SYNC.unsub.push(wsRef().collection(t).where('t','>',since).onSnapshot(qs=>{let n=0;const me=syncDev();
@@ -129,7 +137,7 @@ const sinceGet=()=>{try{return +localStorage.getItem('ws_sync_since')||0;}catch(
 const sinceSet=()=>{try{localStorage.setItem('ws_sync_since',String(Date.now()));}catch(e){}};
 async function resetAt(){try{const r=await wsRef().collection('meta').doc('reset').get();return r.exists?(+((r.data()||{}).at)||0):0;}catch(e){return 0;}}
 /* the workshop was deleted from another device: this device's copy belongs to the deleted workshop, so it is removed too */
-async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));lastDrop();}catch(e){}
+async function wipeLocal(msg){syncStop();try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));TSM=0;lastDrop();}catch(e){}
   try{await FBA.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}DB=blankDB();save();await flushNow();S.user=null;Object.assign(OB,{step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''});closeSheet();render();if(msg)toast(msg);}
 async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await SYNC.ready;}catch(e){}SYNC.status='starting';SYNC.last=null;SYNC.startSend=0;SYNC.startAt=Date.now();SYNC.stage='check';trail('sync','start');
   try{const ra=await resetAt();
@@ -137,7 +145,7 @@ async function syncStart(){if(SYNC.on||!SYNC.user)return;SYNC.on=true;try{await 
     const any=await wsRef().collection('kv').limit(1).get(),seeded=localStorage.getItem('ws_sync_seeded')==='1';
     if(any.empty){if(DB.ws){SYNC.last=null;SYNC.startSend=1;await syncPushNow();sinceSet();}}   /* online copy is empty: send everything from this device */
     else if(!seeded){await syncPull();sinceSet();}                              /* first time on this device: take the online data */
-    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=await syncLoadLast();{let od=0,n=0;if(SYNC.last)SYNC.last.rec.forEach(v=>{n++;if(v==='\u0000old')od++;});trail('sync','start: last-sent copy '+(SYNC.last?n+' records, '+od+' changed here':'MISSING (all will be sent)')+' · storage '+lsKB()+' KB');}if(SYNC.reload){trail('sync','start: '+SYNC.reload+' records missing here, taking all again');try{localStorage.setItem('ws_sync_ts','0');}catch(e){}}SYNC.stage='catch-up';await syncCatchUp();SYNC.stage='send';SYNC.startSend=1;await syncPushNow();}
+    else{SYNC.reload=0;try{SYNC.base=JSON.parse(localStorage.getItem('ws_sync_base')||'{}');}catch(e){SYNC.base={};}SYNC.last=await syncLoadLast();{let od=0,n=0;if(SYNC.last)SYNC.last.rec.forEach(v=>{n++;if(v==='\u0000old')od++;});trail('sync','start: last-sent copy '+(SYNC.last?n+' records, '+od+' changed here':'MISSING (all will be sent)')+' · storage '+lsKB()+' KB');}if(SYNC.reload){trail('sync','start: '+SYNC.reload+' records missing here, taking all again');tsReset();}SYNC.stage='catch-up';await syncCatchUp();SYNC.stage='send';SYNC.startSend=1;await syncPushNow();}
     localStorage.setItem('ws_sync_seeded','1');try{localStorage.setItem('ws_sync_em',SYNC.user.email||'');}catch(e){}
     if(!SYNC.rescued)syncListen();SYNC.rescued=0;SYNC.status='ok';SYNC.stage='';trail('sync','started in '+Math.round((Date.now()-SYNC.startAt)/1000)+' s');}catch(e){SYNC.status='err';SYNC.err=String(e&&e.message||e);SYNC.stage='';trail('SYNC-ERR','start: '+SYNC.err);}
   try{if(S.r==='settings')render();}catch(e){}}
@@ -194,7 +202,7 @@ function syncSection(){
    <label class="chk"><input type="checkbox" id="symst" ${DB.ws.mainStockOff?'':'checked'}> Daily update from the main system: take the stock too</label>${DB.ws.mainAt?`<p class="hint">Last daily update ${fmtDs(DB.ws.mainAt)}</p>`:''}`;}
 function syncBind(){const i=$('#syin');if(i)i.onclick=async()=>{const em=$('#syem').value.trim(),pw=$('#sypw').value;if(!em||!pw)return;if(!fbInit())return;
     try{localStorage.setItem('ws_sync','1');const same=localStorage.getItem('ws_sync_em')===em&&localStorage.getItem('ws_sync_seeded')==='1'&&localStorage.getItem('ws_sync_last');
-      if(!same){['ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_base'].forEach(k=>localStorage.removeItem(k));lastDrop();sinceSet();}await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
+      if(!same){['ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_base'].forEach(k=>localStorage.removeItem(k));TSM=0;lastDrop();sinceSet();}await FBA.signInWithEmailAndPassword(em,pw);audit('settings','Online sync signed in');toast('Signed in. Syncing…');}catch(e){$('#syer').textContent='Could not sign in: '+(e&&e.code||e);}};
   const ms=$('#symst');if(ms)ms.onchange=e=>{DB.ws.mainStockOff=!e.target.checked;save();};
   const r=$('#syre');if(r)r.onclick=async()=>{await syncPushNow();toast('Synced');render();};
   const o=$('#syout');if(o)o.onclick=()=>confirmSheet('Sign out of online sync on this phone? The data stays on the phone.','Sign out',async()=>{try{await syncPushNow();}catch(e){}localStorage.setItem('ws_sync','0');syncStop();await FBA.signOut();render();});}
@@ -202,7 +210,7 @@ function syncBind(){const i=$('#syin');if(i)i.onclick=async()=>{const em=$('#sye
 async function syncWipeCloud(){if(!SYNC.user||!FBS)return 0;syncStop();let n=0;
   for(const c of ['kv','rec']){for(;;){const q=await wsRef().collection(c).limit(400).get();if(q.empty)break;const bt=FBS.batch();q.forEach(d=>bt.delete(d.ref));await bt.commit();n+=q.size;}}
   await wsRef().collection('meta').doc('reset').set({at:Date.now(),t:firebase.firestore.FieldValue.serverTimestamp(),d:syncDev()});
-  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));lastDrop();}catch(e){}
+  try{['ws_sync','ws_sync_seeded','ws_sync_last','ws_sync_ts','ws_sync_since','ws_sync_base','ws_sync_em'].forEach(k=>localStorage.removeItem(k));TSM=0;lastDrop();}catch(e){}
   SYNC.last=null;try{await FBA.signOut();}catch(e){}return n;}
 /* first screen of a new phone/tablet: join an existing workshop by signing in (no local workshop yet) */
 function joinSheet(){if(!fbInit()){toast('Online sync is not available');return;}
