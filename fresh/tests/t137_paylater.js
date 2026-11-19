@@ -1,5 +1,6 @@
 /* 2.42.2: an invoice "paid later" can be paid straight from the lists — Home «Not paid yet» + 💵 on the car row,
-   the job page bar, Debts 💵, the counter warning — one sheet: method, amount, Save. Partial, too much, zero, rights. */
+   and the job page bar only (19 Nov: not on every list — fewer buttons) — one sheet: method, amount, Save. Partial, too much,
+   zero, rights. A payment saved by mistake: the owner presses and holds it on the invoice → cancel (asks first, logged). */
 const {chromium}=require('playwright');const PORT=process.env.PORT||8811;
 const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};
 async function start(vp){const b=await chromium.launch();const p=await (await b.newContext({viewport:vp||{width:400,height:868}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept().catch(()=>{}));
@@ -16,11 +17,13 @@ const W=t=>new Promise(r=>setTimeout(r,t));
  /* home: Not paid yet section with 💵 */
  await ev(()=>go('home'));await W(400);const home=await p.textContent('#main');
  ok(!/Not paid yet ·|ما انسدد بعد ·/.test(home),tag+'still in the workshop → shown there (not twice)');
+ ok(!(await p.$(`[data-pj="${jid}"]`)),tag+'still in the workshop: no 💵 on its row (pay from the job page)');
  await ev(id=>{const j=byId('jobs',id);j.stage='done';save();render();},jid);await W(300);
  ok(/Not paid yet|ما انسدد بعد/.test(await p.textContent('#main'))&&(await p.$$(`[data-pj="${jid}"]`)).length===1,tag+'car left the workshop → Home «Not paid yet» section with it');
- const pj=await p.$(`[data-pj="${jid}"]`);ok(!!pj,tag+'💵 Pay on the car row');
+ const pj=await p.$(`[data-pj="${jid}"]`);
+ await ev(()=>go('work'));await W(300);ok(!(await p.$('[data-pj]')),tag+'Work list: no 💵 buttons');await ev(()=>go('home'));await W(300);
  /* 💵 opens the payment sheet, not the job */
- await pj.click();await W(400);ok(await ev(()=>S.r)==='home'&&!!(await p.$('#jpok')),tag+'💵 opens the payment sheet right there');
+ await (await p.$(`[data-pj="${jid}"]`)).click();await W(400);ok(await ev(()=>S.r)==='home'&&!!(await p.$('#jpok')),tag+'💵 opens the payment sheet right there');
  ok(await p.inputValue('#jpa')===await ev(d=>f3(d),due0),tag+'amount starts at what is due');
  ok(await p.$eval('#jpm [aria-pressed="true"]',e=>e.dataset.m)!=='',tag+'a payment method is chosen');
  ok(!(await p.$('#jpm [data-m="Credit"]'))&&!(await p.$$eval('#jpm [data-m]',L=>L.some(x=>/later|credit|آجل/i.test(x.dataset.m)))),tag+'no "pay later" choice inside "take payment"');
@@ -43,14 +46,24 @@ const W=t=>new Promise(r=>setTimeout(r,t));
  await ev(id=>go('job',{id}),jid);await W(400);await p.click('#jtake');await W(300);await p.click('#jpm [data-m="Cash"]');await p.click('#jpok');await W(400);
  ok(await ev(id=>{const j=byId('jobs',id);return jobDue(j)===0&&j.stage==='done';},jid),tag+'rest paid cash → nothing due, job done');ok(!(await p.$('#jtake')),tag+'bar gone');
  await ev(()=>go('home'));await W(300);ok(!(await p.$(`[data-pj="${jid}"]`))&&!/Not paid yet|ما انسدد بعد/.test(await p.textContent('#main')),tag+'Home section gone');
- /* debts: one invoice → its sheet; two invoices → the customer sheet (oldest first) */
- const two=await ev(id=>{const j=byId('jobs',id);const c=custOf(j);const k=JSON.parse(JSON.stringify(j));k.id='jK';k.no=99901;k.pays=[];k.inv=Object.assign({},j.inv,{no:99901,t:now()});DB.jobs.push(k);save();go('debts');return {c:c.id,due:jobDue(k)};},jid);await W(400);
- let dp=await p.$(`[data-dpay="${two.c}"]`);ok(!!dp,tag+'Debts: 💵 on the customer');await dp.click();await W(300);ok(/99901/.test(await p.textContent('#sheet'))&&!!(await p.$('#jpok')),tag+'one invoice → its payment sheet');await ev(()=>closeSheet());
- await ev(()=>{const k=byId('jobs','jK');const m=JSON.parse(JSON.stringify(k));m.id='jK2';m.no=99902;m.inv=Object.assign({},k.inv,{no:99902,t:now()-864e5});DB.jobs.push(m);save();render();});await W(300);
- dp=await p.$(`[data-dpay="${two.c}"]`);await dp.click();await W(300);ok(!!(await p.$('#dpok')),tag+'two invoices → the customer\'s pay sheet');await ev(()=>closeSheet());
- /* counter: search the car → warning with 💵 */
- await ev(id=>{const v=vehOf(byId('jobs','jK'));go('counter');S.p={};},jid);await W(300);
- const shown=await ev(()=>{const k=byId('jobs','jK');const v=vehOf(k);return typeof debtNote==='function'?debtNote(v.cust):'';});ok(/data-dpay/.test(shown),tag+'counter warning has the 💵 button');
+ /* debts and the counter warning: no 💵 there any more (one place less) */
+ await ev(()=>go('debts'));await W(300);ok(!(await p.$('[data-dpay]')),tag+'Debts: no 💵 button');
+ /* a payment saved by mistake: owner presses and holds it on the invoice → asks → cancelled, due again, logged */
+ await ev(id=>go('inv',{id}),jid);await W(400);const rows=await p.$$('[data-pyi]');ok(rows.length>=2,tag+'invoice lists the payments ('+rows.length+')');
+ ok(/press and hold|ضغطة طويلة/i.test(await p.textContent('#main')),tag+'owner sees the hint how to cancel');
+ const n0=await ev(id=>byId('jobs',id).pays.length,jid);const last=rows[rows.length-1];await last.evaluate(e=>e.scrollIntoView({block:'center'}));await W(200);const bb=await last.boundingBox();
+ await p.mouse.move(bb.x+bb.width/2,bb.y+bb.height/2);await p.mouse.down();await W(900);await p.mouse.up();await W(300);
+ ok(/Cancel this payment|تلغي هالدفعة/.test(await p.textContent('#sheet')),tag+'hold → asks first');
+ await ev(()=>back());await W(300);ok(await ev(([id,n])=>byId('jobs',id).pays.length===n,[jid,n0]),tag+'back → nothing cancelled');
+ await p.mouse.move(bb.x+bb.width/2,bb.y+bb.height/2);await p.mouse.down();await W(900);await p.mouse.up();await W(300);await p.click('#cfy');await W(400);
+ const after=await ev(id=>{const j=byId('jobs',id);return {n:j.pays.length,due:jobDue(j),st:j.stage,log:JSON.stringify(j.log||[]).includes('Payment cancelled'),aud:DB.audit.slice(-3).some(a=>/Payment cancelled/.test(a.d))};},jid);
+ ok(after.n===n0-1&&after.due>0&&after.st==='done'&&after.log&&after.aud,tag+'cancelled → due again '+after.due+', stays done, in the job log and the audit');
+ await ev(()=>go('home'));await W(300);ok(!!(await p.$(`[data-pj="${jid}"]`)),tag+'shows again under «Not paid yet»');
+ /* a worker: no hint, hold does nothing */
+ await ev(()=>{window.__r=S.user.role;S.user.role='worker';});await ev(id=>go('inv',{id}),jid);await W(400);
+ ok(!/press and hold|ضغطة طويلة/i.test(await p.textContent('#main')),tag+'worker: no cancel hint');
+ const r2=await p.$('[data-pyi]');if(r2){await r2.evaluate(e=>e.scrollIntoView({block:'center'}));await W(200);const b2=await r2.boundingBox();await p.mouse.move(b2.x+b2.width/2,b2.y+b2.height/2);await p.mouse.down();await W(900);await p.mouse.up();await W(300);}
+ ok(!/Cancel this payment|تلغي هالدفعة/.test(await ev(()=>(document.querySelector('#sheet')||{}).textContent||'')),tag+'worker: hold does not cancel');await ev(()=>{S.user.role=window.__r;closeSheet();});
  /* rights: someone who cannot invoice nor see money → no 💵 anywhere */
  await ev(()=>{window.__ci=can.invoice;window.__cm=can.money;can.invoice=()=>false;can.money=()=>false;go('home');});await W(300);
  ok(!(await p.$('[data-pj]'))&&!/Not paid yet|ما انسدد بعد/.test(await p.textContent('#main')),tag+'no rights → no pay buttons, no section');await ev(()=>{can.invoice=window.__ci;can.money=window.__cm;});

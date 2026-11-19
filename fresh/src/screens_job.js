@@ -190,7 +190,7 @@ SCREENS.inv=m=>{
   m.innerHTML=head('Invoice <bdi dir="ltr">#'+j.inv.no+'</bdi>',j.returned?'<span class="tag t-bad">Returned</span>':T.wo&&T.due<=0.0005?'<span class="tag t-warn">'+T_('Written off')+'</span>':T.due<=0.0005?'<span class="tag t-ok">Paid</span>':`<span class="tag t-warn">Due ${f3(T.due)}</span>`)+`
   <div class="inv-pv">${invoiceHtml(j)}</div>
   ${!j.returned&&T.due>0.0005&&(can.invoice()||can.money())?`${sec('Take payment',`due ${f3(T.due)}`)}<div class="chips big">${DB.ws.pay.map(p=>`<button data-pay="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
-  ${(j.pays||[]).length?sec('Payments')+`<div class="jb-list">${j.pays.map(p=>`<div class="jb-r"><div>${esc(p.m)}<small>${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by)}</small></div><b>${f3(p.amt)}</b></div>`).join('')}</div>`:''}
+  ${(j.pays||[]).length?sec('Payments')+`<div class="jb-list">${j.pays.map((p,i)=>`<div class="jb-r" data-pyi="${i}"><div>${esc(T_(p.m))}<small>${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by)}</small></div><b>${f3(p.amt)}</b></div>`).join('')}</div>${S.user&&S.user.role==='owner'?`<p class="hint">${T_('Wrong payment? Press and hold it to cancel.')}</p>`:''}`:''}
   ${DB.ws.stamp&&invS().stamp&&invS().t!=='classic'?`<label class="chk inv-stp"><input type="checkbox" id="istp" ${j.nost?'':'checked'}> 🔵 ${T_('Stamp on this invoice')}</label>`:''}
   <div class="two"><button class="btn wa" id="iwa">📄 WhatsApp PDF</button><button class="btn ghost" id="ipr">🖨 Print</button></div>
   <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>

@@ -47,8 +47,8 @@ SCREENS.sale=m=>{const Q=S.sale||(S.sale={items:[],q:'',phone:'',name:''});const
       else{j.pays.push({m:mth,amt:T2.due,t:now(),by:S.user.name});audit('pay','Payment '+f3(T2.due)+' '+mth+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(T2.due)+' · '+mth);}
       S.sale=null;save();closeSheet();go('inv',{id:j.id});toast(T_('Done ✓'));});});};
 /* a sale in the lists: no car, opens its invoice */
-(function(){const CR=carRow;window.carRow=carRow=function(j){if(!isSale(j))return CR(j);const c=custOf(j),T=jobTotals(j);const unpaid=!j.returned&&T.due>0;
-  return `<button class="car" data-go="inv:${j.id}" style="--sc:${unpaid?'var(--bad)':'var(--dim)'}"><div class="no">#${j.no}</div><div class="tx"><b>🛒 ${T_('Quick sale')}</b><span>${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${unpaid?T_('Not paid').toUpperCase():T_('Done').toUpperCase()} <small>${f3(unpaid?T.due:T.total)}</small></div></button>`;};
+(function(){const CR=carRow;window.carRow=carRow=function(j,pay){if(!isSale(j))return CR(j,pay);const c=custOf(j),T=jobTotals(j);const unpaid=!j.returned&&T.due>0;
+  return `<button class="car" data-go="inv:${j.id}" style="--sc:${unpaid?'var(--bad)':'var(--dim)'}"><div class="no">#${j.no}</div><div class="tx"><b>🛒 ${T_('Quick sale')}</b><span>${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${unpaid?T_('Not paid').toUpperCase():T_('Done').toUpperCase()} <small>${f3(unpaid?T.due:T.total)}</small>${pay===true&&unpaid&&isInvoiced(j)&&canPay()?`<span class="cpay" role="button" data-pj="${j.id}">💵 ${T_('Pay')}</span>`:''}</div></button>`;};
   /* the job screen is for cars: a sale opens its invoice */
   const J=SCREENS.job;SCREENS.job=m=>{const j=byId('jobs',S.p&&S.p.id);if(isSale(j)&&j.inv){go('inv',{id:j.id});return;}J(m);};
   /* the way in: the counter */

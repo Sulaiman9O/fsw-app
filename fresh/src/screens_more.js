@@ -258,14 +258,20 @@ function jobPaySheet(j,m0){if(!j)return;const due=jobDue(j);if(!(due>0.0005)){to
     el.querySelector('#jpok').onclick=()=>{const d=jobDue(j);let a=Math.round(num(el.querySelector('#jpa').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}if(a>d+0.0005){toast(T_('More than what is owed')+' ('+f3(d)+')');return;}
       j.pays=j.pays||[];j.pays.push({m,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+m+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+m);
       const left=jobDue(j);if(left<=0.0005)closeJob(j);save();closeSheet();render();toast(left>0.0005?T_('Saved')+' · '+T_('still due')+' '+f3(left):T_('Paid in full')+' ✓');};});}
+/* 2.42.2: a payment saved by mistake — the owner presses and holds it on the invoice page (no extra button) */
+function payCancel(j,i){const p=j&&(j.pays||[])[i];if(!p||!(S.user&&S.user.role==='owner'))return;const day=dayKey(p.t);const closed=(DB.closes||[]).some(c=>c.date===day);
+  confirmSheet(`${T_('Cancel this payment?')}<br><small>#${j.inv?j.inv.no:j.no} · ${esc(T_(p.m))} · <bdi>${f3(p.amt)}</bdi> · ${fmtD(p.t)} ${hm(p.t)} · ${esc(p.by||'')}</small>${closed&&p.m==='Cash'?`<br><small class="bad">⚠️ ${T_('That day was already closed — the counted cash will not match.')}</small>`:''}`,'✕ '+T_('Cancel the payment'),()=>{
+    const x=j.pays.indexOf(p);if(x<0)return;j.pays.splice(x,1);audit('pay','Payment cancelled '+f3(p.amt)+' '+p.m+' · invoice #'+(j.inv?j.inv.no:j.no)+' (was by '+(p.by||'')+' '+fmtD(p.t)+')');logJ(j,'Payment cancelled '+f3(p.amt)+' · '+p.m);
+    save();render();toast(T_('Payment cancelled'));});}
+(function(){const I=SCREENS.inv;if(!I)return;SCREENS.inv=m=>{I(m);const j=byId('jobs',S.p&&S.p.id);if(!j||!(S.user&&S.user.role==='owner'))return;m.querySelectorAll('[data-pyi]').forEach(r=>longPress(r,()=>payCancel(j,+r.dataset.pyi)));};})();
 function debtNote(cid){if(!can.money())return '';const d=custDebt(cid);if(!d.list.length)return '';const o=d.list[0];
-  return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}${canPay()?` <button class="btn sm okb" data-dpay="${cid}">💵 ${T_('Take payment')}</button>`:''}</div>`;}
+  return `<div class="debtnote">⚠️ ${T_('This customer owes '+f3(d.due)+' OMR')} · ${T_('invoice')} #${o.j.inv.no}${d.list.length>1?' +'+(d.list.length-1):''} · ${T_(o.days+' days')}</div>`;}
 SCREENS.debts=m=>{if(!can.money()){go('home');return;}
   const rows=DB.customers.map(c=>({c,d:custDebt(c.id)})).filter(x=>x.d.list.length).sort((a,b)=>b.d.list[0].days-a.d.list[0].days);
   const tot=totalDue();const sel=S.debtSel||(S.debtSel=null);
   m.innerHTML=head('Debts',rows.length?`<button class="lnk" id="dsel">${sel?'Cancel':'Select'}</button>`:'')+`
   <div class="kpis2"><div class="kpi org"><b>${f3(tot)}</b><span>Due · ${esc(DB.ws.currency)}</span></div><div class="kpi"><b>${rows.length}</b><span>Customers</span></div></div>
-  ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&canPay()?`<button class="btn sm okb" data-dpay="${c.id}" aria-label="${T_('Take payment')}">💵</button>`:''}${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}
+  ${rows.length?`<div class="list">${rows.map(({c,d})=>`<div class="drow${sel&&sel.has(c.id)?' on':''}" data-dc="${c.id}">${sel?`<i class="ck">${sel.has(c.id)?'✓':''}</i>`:''}<div class="dt"><b>${esc(c.name||'')}</b><span>${d.list.length} ${T_(d.list.length===1?'invoice':'invoices')} · ${T_('oldest')} ${T_(d.list[0].days+' days')}${c.payRem?' · '+T_('Reminded')+' '+fmtD(c.payRem):''}</span></div><b class="da">${f3(d.due)}</b>${!sel&&c.phone?`<button class="btn wa sm" data-dw="${c.id}">💳</button>`:''}</div>`).join('')}</div>`:empty('✅','Nobody owes money.')}
   ${sel?`<div class="selb2"><b>${sel.size} ${T_('selected')}</b><button class="btn sm" id="dsend" ${sel.size?'':'disabled'}>💳 ${T_('Send reminders')}</button></div>`:''}`;
   const ds=$('#dsel');if(ds)ds.onclick=()=>{S.debtSel=sel?null:new Set();render();};
   $$('[data-dc]').forEach(r=>{let tm=0,long=false;const id=r.dataset.dc;
