@@ -22,7 +22,7 @@ SCREENS.job=m=>{
   ${(j.ph||[]).length?`<div class="lbl">📎 ${T_('Pictures')}</div><div class="jph">${(j.ph||[]).map(id=>{const p=photoOf(id);return p?`<button data-jph="${id}"><img src="${p.img}" alt="" loading="lazy">${p.kind==='sig'?`<small>${T_('Customer signature')}</small>`:''}</button>`:'';}).join('')}</div>`:''}
   <label class="field-l">Notes<textarea class="field" id="jnotes" rows="2" placeholder="What the customer said, what we found…">${esc(j.notes||'')}</textarea></label>
   <div class="two">${j.stage==='estimate'?`<button class="btn ghost" id="jsendest">📤 Send estimate</button>`:isInvoiced(j)?`<button class="btn ghost" data-go="inv:${j.id}">🧾 Invoice #${j.inv.no}</button>`:can.invoice()?`<button class="btn ghost" id="jinv">🧾 Make invoice</button>`:`<span></span>`}
-   <button class="btn ghost" id="jstk">🏷️ Sticker</button></div>
+   ${j.stage==='estimate'?'':'<button class="btn ghost" id="jstk">🏷️ Sticker</button>'}</div>
   ${c.phone&&(j.stage==='ready'||j.stage==='done')?`<button class="btn wa" id="jwa">WhatsApp: car is ready</button>`:''}
   ${sec('Timeline')}<div class="jb-log">${j.log.slice().reverse().map(l=>`<div><span>${hm(l[0])}</span>${esc(l[1])}</div>`).join('')}</div>
   ${can.del()&&!isInvoiced(j)?`<button class="btn ghost jb-del" id="jdel">Delete ${j.stage==='estimate'?'estimate':'job'}</button>`:''}`;
@@ -48,7 +48,7 @@ SCREENS.job=m=>{
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
   const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);
-  $('#jstk').onclick=()=>stickerSheet(j);
+  if($('#jstk'))$('#jstk').onclick=()=>stickerSheet(j);
   const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));
   const dl=$('#jdel');if(dl)dl.onclick=()=>confirmSheet('Delete '+(j.stage==='estimate'?'estimate':'job')+' #'+j.no+'?','Delete',()=>{audit('delete',(j.stage==='estimate'?'Estimate':'Job')+' #'+j.no+' deleted ('+carName(vehOf(j))+')');DB.jobs=DB.jobs.filter(x=>x!==j);save();go('work');});
 };

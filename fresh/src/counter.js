@@ -68,8 +68,12 @@ function payNow(j){const T=jobTotals(j);if(!(j.items||[]).length){toast('Add ser
   const list=tot&&tot.closest('.jb-list');(list||m).after(bar);bar.querySelector('#jtake').onclick=()=>jobPaySheet(j);};})();
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j||isInvoiced(j)||!can.invoice()||!(j.items||[]).length)return;const T=jobTotals(j);
   const tot=m.querySelector('.jb-r.tot');const bar=document.createElement('div');bar.className='paybar';
-  bar.innerHTML=`<div><small>${T_('Total')}</small><b>${f3(T.total)} <span>${esc(DB.ws.currency)}</span></b></div><button class="btn okb" id="jpay">💵 ${T_('Invoice & pay')}</button>`;
-  const list=tot&&tot.closest('.jb-list');(list||m).after(bar);bar.querySelector('#jpay').onclick=()=>payNow(j);
+  /* 2.42.3: an ESTIMATE is not invoiced or paid — its bar sends the estimate (it said «Invoice & pay») */
+  const est=j.stage==='estimate';
+  bar.innerHTML=`<div><small>${T_(est?'Estimate total':'Total')}</small><b>${f3(T.total)} <span>${esc(DB.ws.currency)}</span></b></div>${est?`<button class="btn okb" id="jsendest2">📤 ${T_('Send estimate')}</button>`:`<button class="btn okb" id="jpay">💵 ${T_('Invoice & pay')}</button>`}`;
+  const list=tot&&tot.closest('.jb-list');(list||m).after(bar);
+  if(est){bar.querySelector('#jsendest2').onclick=()=>{const o=m.querySelector('#jsendest');if(o)o.click();};const o=m.querySelector('#jsendest');if(o)o.style.display='none';}
+  else bar.querySelector('#jpay').onclick=()=>payNow(j);
   /* the total shows once (in the bar): the list's last row keeps only parts · labour (and the profit eye) */
   if(tot){tot.classList.add('tot2');const b=tot.querySelector('b');if(b)[...b.childNodes].forEach(n=>{if(n.nodeType===3)n.remove();});const d=tot.querySelector('div');if(d)[...d.childNodes].forEach(n=>{if(n.nodeType===3)n.remove();});}
   /* the old "Make invoice" button stays for "invoice now, payment later", but quieter */

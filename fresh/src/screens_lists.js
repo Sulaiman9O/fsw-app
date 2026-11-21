@@ -93,7 +93,7 @@ SCREENS.outw=m=>{if(!can.money()){go('home');return;}const o=outwData();const ks
 /* ---------- WhatsApp message templates ---------- */
 const MSGS=[
  ['ready','🚗','Car is ready','Customer',['name','car','plate','total','due','workshop','phone'],'السلام عليكم {name}،\nسيارتكم {car} جاهزة للاستلام.\nالمبلغ: {total}\n\n{workshop}'],
- ['estimate','🧾','Estimate','Customer',['name','car','plate','no','date','items','total','warranty','workshop','phone'],'السلام عليكم {name}،\nتقدير سعر رقم {no} لسيارتكم {car} {plate}:\n\n{items}\n\nالمجموع: {total}\n\n{workshop} · {phone}'],
+ ['estimate','🧾','Estimate','Customer',['name','car','plate','no','date','items','total','warranty','workshop','phone'],'السلام عليكم {name}،\nعرض سعر رقم {no} لسيارتكم {car} {plate}:\n\n{items}\n\nالمجموع: {total}\n(هذا عرض سعر وليس فاتورة)\n\n{workshop} · {phone}'],
  ['invoice','🧾','Invoice','Customer',['name','car','plate','no','date','items','total','paid','due','warranty','workshop','phone'],'{workshop}\nفاتورة رقم {no} · {date}\nالعميل: {name}\nالسيارة: {car} {plate}\n\n{items}\n\nالمجموع: {total}\nالمدفوع: {paid}\nالمتبقي: {due}\n\n{warranty}\n{phone}'],
  ['remind','🔔','Service reminder','Customer',['name','car','plate','service','workshop','phone'],'السلام عليكم {name}،\nوفقاً لسجلاتنا قد يكون حان موعد {service} لسيارتكم {car}.\nوفي حال أُجريت الخدمة مؤخراً فنعتذر عن هذا التذكير.\n\n{workshop}'],
  ['payreq','💳','Payment reminder','Customer',['name','due','items','workshop','phone'],'السلام عليكم {name}،\nنود تذكيركم بوجود مبلغ متبقٍ قدره {due}:\n{items}\n\nشاكرين لكم تعاونكم.\n{workshop} · {phone}'],
