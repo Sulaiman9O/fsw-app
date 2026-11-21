@@ -74,6 +74,10 @@ const plKey=p=>{const s=String(p||'').toUpperCase().replace(/\bOM\b/g,'');const 
 function sameCar(a,b){if(!a||!b)return false;if(a.id===b.id)return true;const va=String(a.vin||'').toUpperCase().replace(/[^A-Z0-9]/g,''),vb=String(b.vin||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(va.length===17&&va===vb)return true;const pa=plKey(a.plate),pb=plKey(b.plate);if(!pa.n||pa.n.length<3||pa.n!==pb.n)return false;
   if(pa.l&&pb.l&&pa.l!==pb.l)return false;return !!a.make&&String(a.make).trim().toLowerCase()===String(b.make||'').trim().toLowerCase();}
+/* 2.42.3: cars whose odometer counts MILES (old US imports). Their readings are kept as the car shows them (miles);
+   only the label says «mi», and every «after X km» interval (oil 10,000 km…) becomes miles for them (÷1.609, to 100). */
+const MI=1.609344;const isMi=v=>!!(v&&v.odo==='mi');const odoU=v=>isMi(v)?'mi':'km';const odoAr=v=>isMi(v)?'ميل':'كم';
+const kmU=(n,v)=>kmf(n)+' '+odoU(v);const intU=(km,v)=>isMi(v)&&km?Math.max(100,Math.round(km/MI/100)*100):(+km||0);
 const estOf=v=>v&&v.id?DB.jobs.filter(j=>j.stage==='estimate'&&!isInvoiced(j)&&Date.now()-(+j.t||0)<45*864e5&&(j.veh===v.id||sameCar(byId('vehicles',j.veh),v))).sort((a,b)=>(b.veh===v.id)-(a.veh===v.id)||b.t-a.t)[0]||null:null;
 const estRecent=j=>j.stage==='estimate'&&Date.now()-(+j.t||0)<14*864e5;
 /* agreed from the other saved copy of the same car: the job goes on the car and customer that were picked now */

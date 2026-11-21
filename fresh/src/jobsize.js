@@ -23,13 +23,15 @@ function jobSizeSheet(j,i){const v=vehOf(j);const it=j.items[i];const s=svcOfIte
     const c=document.createElement('span');c.className='szc';c.dataset.szc=i;c.textContent='🚙 '+T_(DB.sizes[sizeOf(v)]||'')+' ▾';sm.appendChild(c);
     c.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();jobSizeSheet(j,i);});});};})();
 /* the job's km: tap the km under the car to type / fix it (before, the km could only be typed on the counter) */
-function jobKmSheet(j){const v=vehOf(j);openSheet(`<h3>🛣 ${T_('Km now')}</h3><input class="field" id="jkm" inputmode="numeric" autocomplete="off" value="${j.km?kmf(j.km):''}" placeholder="${v&&v.km?kmf(v.km):''}">
-   ${v&&v.km?`<p class="hint">${T_('last km')} <bdi>${kmf(v.km)}</bdi></p>`:''}<button class="btn" id="jkmok">${T_('Save')}</button>`,el=>{const i=el.querySelector('#jkm');setTimeout(()=>{i.focus();i.select();},80);
+function jobKmSheet(j){const v=vehOf(j);let mi=isMi(v);openSheet(`<h3>🛣 ${T_('Odometer now')}</h3><div class="chips" id="jodo"><button data-odo="km" aria-pressed="${!mi}">km</button><button data-odo="mi" aria-pressed="${mi}">${T_('miles')}</button></div><input class="field" id="jkm" inputmode="numeric" autocomplete="off" value="${j.km?kmf(j.km):''}" placeholder="${v&&v.km?kmf(v.km):''}">
+   ${v&&v.km?`<p class="hint">${T_('last km')} <bdi>${kmU(v.km,v)}</bdi></p>`:''}<button class="btn" id="jkmok">${T_('Save')}</button>`,el=>{const i=el.querySelector('#jkm');setTimeout(()=>{i.focus();i.select();},80);
+    /* the car's odometer counts miles (old imports): the reading stays as the car shows it, reminders count in miles */
+    el.querySelectorAll('[data-odo]').forEach(b=>b.onclick=()=>{mi=b.dataset.odo==='mi';el.querySelectorAll('[data-odo]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
     const ok=()=>{const x=Math.round(num(i.value));if(x<=0){toast(T_('Type the km'));return;}
       /* compare with the car's km from its OTHER visits: this job's own typo must not count */
       const prev=v?Math.max(0,...DB.jobs.filter(o=>o!==j&&o.veh===v.id).map(o=>+o.km||0)):0;
       if(prev&&x<prev*0.5&&!confirm(T_('That is much less than the last km. Save anyway?')))return;
-      const old=+j.km||0;j.km=x;if(v&&(+v.km===old||x>(+v.km||0)))v.km=Math.max(prev,x);(j.rems||[]).forEach(r=>{delete r.atKm;});logJ(j,'Km → '+x);if(j.stage==='done'&&typeof makeReminders==='function')makeReminders(j);save();closeSheet();render();toast(T_('Saved'));};
+      if(v&&isMi(v)!==mi){if(mi)v.odo='mi';else delete v.odo;logJ(j,'Odometer in '+(mi?'miles':'km'));}const old=+j.km||0;j.km=x;if(v&&(+v.km===old||x>(+v.km||0)))v.km=Math.max(prev,x);(j.rems||[]).forEach(r=>{delete r.atKm;});logJ(j,'Km → '+x);if(j.stage==='done'&&typeof makeReminders==='function')makeReminders(j);save();closeSheet();render();toast(T_('Saved'));};
     el.querySelector('#jkmok').onclick=ok;i.onkeydown=e=>{if(e.key==='Enter')ok();};});}
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);const b=m.querySelector('[data-kmj]');if(!j||!b)return;b.onclick=e=>{e.stopPropagation();jobKmSheet(j);};};
   const st=document.createElement('style');st.textContent='.kmchip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:1px 9px;border-radius:999px;border:1px dashed hsl(214 85% 55% / .7);color:hsl(214 85% 62%);font-weight:800;font-size:.85em}html.m-light .kmchip{color:hsl(214 85% 42%)}';document.head.appendChild(st);})();

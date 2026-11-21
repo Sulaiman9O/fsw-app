@@ -31,7 +31,7 @@ SCREENS.counter=m=>{const C=S.ctr||(S.ctr={q:'',vid:null,km:''});if(S.p&&S.p.vid
   const sum=t=>t.items.map(i=>i.d.replace(/\s+F\/S.*$/i,'').slice(0,34)).join(' + ');
   m.innerHTML=head('Counter',`<button class="lnk" id="cchg">${T_('Change')}</button>`)+`
    <div class="card ctrcar"><div class="h">${typeof vehThumb==='function'?vehThumb(v,'big'):''}<b>${esc(carName(v)||T_('Car'))}</b>${v.plate?`<span class="pl"><bdi>${esc(v.plate)}</bdi></span>`:''}</div>
-    <span class="sub">${v.engine?'⚙️ '+esc(effEng(v)||v.engine)+' · ':''}${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${v.km?' · '+T_('last km')+' <bdi>'+kmf(v.km)+'</bdi>':''}</span>
+    <span class="sub">${v.engine?'⚙️ '+esc(effEng(v)||v.engine)+' · ':''}${esc(isWalk(c)?T_('Walk-in'):c.name||'')}${c.phone?' · <bdi dir="ltr">'+esc(c.phone)+'</bdi>':''}${v.km?' · '+T_('last km')+' <bdi>'+kmU(v.km,v)+'</bdi>':''}</span>
     <label class="field-l">${T_('Km now (optional)')}<input class="field" id="ckm" inputmode="numeric" value="${esc(C.km)}" placeholder="${v.km?kmf(v.km):''}"></label></div>
    ${debtNote(v.cust)}
    ${!oj&&estOf(v)?(e=>`<button class="ctra main" id="cest"><span class="ic">📋</span><div><b>${T_('Estimate')} #${e.no} · ${T_('customer agreed?')}</b><small>${(e.items||[]).length} ${T_('items')} · ${f3(jobTotals(e).total)} · ${T_('tap to turn it into the job card')}</small></div><em>›</em></button>`)(estOf(v)):''}

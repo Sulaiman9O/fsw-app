@@ -253,3 +253,5 @@ Object.assign(AR_DICT,{'What is it?':'وش هو؟'});
 Object.assign(AR_DICT,{'Open the invoice':'افتح الفاتورة','still due':'الباقي','Take payment':'استلام دفعة'});
 Object.assign(AR_DICT,{'Wrong payment? Press and hold it to cancel.':'دفعة غلط؟ اضغط عليها ضغطة طويلة عشان تلغيها.','Cancel this payment?':'تلغي هالدفعة؟','That day was already closed — the counted cash will not match.':'هذاك اليوم انقفل — الكاش المعدود ما بيطابق.','Cancel the payment':'إلغاء الدفعة','Payment cancelled':'انلغت الدفعة'});
 Object.assign(AR_DICT,{'Estimate total':'مجموع عرض السعر','Send estimate':'إرسال عرض السعر'});
+Object.assign(AR_DICT,{'miles':'ميل','Odometer':'العداد','or after (mi)':'أو بعد (ميل)','Next mi':'الميل القادم'});
+Object.assign(AR_DICT,{'Odometer now':'العداد الحين'});

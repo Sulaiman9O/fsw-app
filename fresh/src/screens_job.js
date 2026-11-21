@@ -7,7 +7,7 @@ SCREENS.job=m=>{
   const stages=['new','work','ready','done'];const si=stages.indexOf(j.stage);
   m.innerHTML=head((j.stage==='estimate'?'Estimate':'Job')+' <bdi dir="ltr">#'+j.no+'</bdi>',`<span class="tag" style="background:${sc};color:#000">${sl}</span>`)+`
   <div class="card"><div class="h"><b>${esc(carName(v)||'Car')} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><button class="lnk" data-go="custd:${c.id}">${esc(c.name||'')} ›</button></div>
-   <span class="sub">${v.engine?'⚙️ <bdi data-notr>'+esc(engShort(v.engine))+'</bdi><br>':''}${c.phone?'<bdi dir="ltr">'+esc(c.phone)+'</bdi> · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> km':T_('Add km')} ✎</button> · opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
+   <span class="sub">${v.engine?'⚙️ <bdi data-notr>'+esc(engShort(v.engine))+'</bdi><br>':''}${c.phone?'<bdi dir="ltr">'+esc(c.phone)+'</bdi> · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> '+odoU(v):T_('Add km')} ✎</button> · opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
   ${j.stage!=='estimate'?`<div class="jb-steps">${stages.map((s,i)=>`<div class="${i<=si?'on':''}" style="--sc:${STAGE[s][1]}"><i></i><span>${STAGE[s][0]}</span></div>`).join('')}</div>`:''}
   ${nx?`<button class="btn okb" id="jnext">${nx[1]}</button>`:''}
   ${sec('Services & parts',`${(j.items||[]).length} items`)}
@@ -56,7 +56,7 @@ function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?t
 function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
   return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
     items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
-    total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km):'',warranty:DB.ws.warranty||''};}
+    total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km)+(isMi(vehOf(j))?' ميل':''):'',warranty:DB.ws.warranty||''};}
 function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;return msg(kind,x);}
 /* add / edit items */
 /* how often each service was used: by its id, or for old imported lines by the name ("Sedan Engine Oil Change Service" = "Engine Oil Change") */
@@ -206,7 +206,7 @@ function invoiceHtml(j,print){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let n=
   const pa=tr('part'),la=tr('labour');
   return `<div class="inv"><div class="inv-hd">${DB.ws.logo?`<img src="${DB.ws.logo}" alt="">`:`<b style="font-size:6mm">${esc(DB.ws.name)}</b>`}<div class="inv-ws"><b>${esc(DB.ws.name)}</b><span>${[DB.ws.addr,DB.ws.phone,DB.ws.cr?'CR '+DB.ws.cr:''].filter(Boolean).map(esc).join(' · ')}</span></div></div>
   <div class="inv-ttl"><b>INVOICE <span class="ar">فاتورة</span></b><span>#${j.inv.no} · ${fmtD(j.inv.t)}</span></div>
-  <div class="inv-meta"><div><small>Customer</small>${esc(c.name||'—')}</div><div><small>Phone</small>${esc(c.phone||'—')}</div><div><small>Car</small>${esc(carName(v)||'—')}</div><div><small>Plate</small>${esc(v.plate||'—')}</div><div><small>Km</small>${j.km?kmf(j.km):'—'}</div><div><small>VIN</small><span class="mono">${esc(v.vin||'—')}</span></div></div>
+  <div class="inv-meta"><div><small>Customer</small>${esc(c.name||'—')}</div><div><small>Phone</small>${esc(c.phone||'—')}</div><div><small>Car</small>${esc(carName(v)||'—')}</div><div><small>Plate</small>${esc(v.plate||'—')}</div><div><small>Km</small>${j.km?kmU(j.km,v):'—'}</div><div><small>VIN</small><span class="mono">${esc(v.vin||'—')}</span></div></div>
   <table class="inv-t"><thead><tr><th>#</th><th>Description</th><th class="q">Qty</th><th class="u">Unit</th><th class="a">${DB.ws.currency}</th></tr></thead><tbody>${pa?`<tr class="grp"><td colspan="5">Parts · <span class="ar0">قطع</span></td></tr>${pa}`:''}${la?`<tr class="grp"><td colspan="5">Labour · <span class="ar0">أجرة</span></td></tr>${la}`:''}</tbody></table>
   <div class="inv-sum">${T.parts&&T.labour?`<div><span>Parts</span><span>${f3(T.parts)}</span></div><div><span>Labour</span><span>${f3(T.labour)}</span></div>`:''}${T.disc?`<div><span>${j.discOn==='labour'?'Discount on labour · خصم على الأجور':'Discount · خصم'}</span><span>−${f3(T.disc)}</span></div>`:''}<div class="tot"><span>Total <span class="ar">المجموع</span></span><span>${f3(T.total)} ${DB.ws.currency}</span></div>${T.paid?`<div><span>Paid</span><span>${f3(T.paid)}</span></div><div><span>Due</span><span>${f3(T.due)}</span></div>`:''}${T.wo?`<div><span>Written off · مشطوب</span><span>${f3(T.wo)}</span></div>`:''}</div>
   ${j.returned?'<div class="inv-paid">RETURNED · مرتجع</div>':T.wo&&T.due<=0.0005?'<div class="inv-paid">WRITTEN OFF · مشطوب</div>':T.due<=0.0005&&T.total>0?`<div class="inv-paid">PAID · مدفوع</div>`:''}
@@ -219,7 +219,7 @@ function printHtml(doc,w,h,name){const P=window.Capacitor&&window.Capacitor.Plug
 /* reminders */
 function makeReminders(j){const v=vehOf(j);(j.items||[]).forEach(it=>{const s=it.ref&&byId('services',it.ref);const tag=it.tag||(s&&s.tag)||'';
   if(tag==='oil'||tag==='gear'){const mo=tag==='gear'?36:(+DB.ws.remMonths||6),km=tag==='gear'?70000:(oilKm(j)||+it.nextKm||+DB.ws.remKm||7000);const d=new Date(j.inv?j.inv.t:now());d.setMonth(d.getMonth()+mo);
-    DB.reminders=DB.reminders.filter(r=>!(r.veh===v.id&&r.kind===tag));DB.reminders.push({id:uid('r'),veh:v.id,cust:j.cust,kind:tag,due:d.getTime(),dueKm:j.km?j.km+km:0,job:j.id,sent:0});}});}
+    DB.reminders=DB.reminders.filter(r=>!(r.veh===v.id&&r.kind===tag));DB.reminders.push({id:uid('r'),veh:v.id,cust:j.cust,kind:tag,due:d.getTime(),dueKm:j.km?j.km+intU(km,v):0,job:j.id,sent:0});}});}
 function remindersDue(){const t=now(),D=864e5;return DB.reminders.filter(r=>!r.sent&&r.due<=t+7*D&&r.due>=t-31*D);}
 /* sticker */
 function stickerSheet(j){const v=vehOf(j);const has=k=>(j.items||[]).some(i=>(i.tag||'')===k);let kind=has('gear')&&!has('oil')?'gear':'oil';

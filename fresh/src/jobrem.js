@@ -52,7 +52,7 @@ function planRems(j){if(j.rems){const k=oilKm(j);if(k)j.rems.forEach(r=>{if(r.ki
     else if(s.rem&&(s.rem.mo||s.rem.km))add({kind:'other',name:s.ar||s.name,mo:+s.rem.mo||0,km:+s.rem.km||0});});
   return out;}
 const remName=r=>r.kind==='oil'?T_('Engine oil change'):r.kind==='gear'?T_('Gearbox oil'):r.name;
-function remWhen(j,r){const base=j.inv?j.inv.t:now();const d=new Date(base);if(r.mo)d.setMonth(d.getMonth()+r.mo);return {due:r.date||(r.mo?d.getTime():0),km:+r.atKm||(r.km&&j.km?(+j.km)+(+r.km):0)};}
+function remWhen(j,r){const base=j.inv?j.inv.t:now();const d=new Date(base);if(r.mo)d.setMonth(d.getMonth()+r.mo);return {due:r.date||(r.mo?d.getTime():0),km:+r.atKm||(r.km&&j.km?(+j.km)+intU(+r.km,vehOf(j)):0)};}
 /* closing the job makes them (replaces the old oil/gearbox-only rule) */
 makeReminders=window.makeReminders=function(j){const v=vehOf(j);if(!v)return;planRems(j).filter(r=>r.on!==false).forEach(r=>{const w=remWhen(j,r);if(!w.due&&!w.km)return;
   DB.reminders=DB.reminders.filter(x=>!(x.veh===v.id&&x.kind===r.kind&&(r.kind!=='other'||x.name===r.name)&&!x.sent));
@@ -63,12 +63,12 @@ invNext=window.invNext=function(j){const r=(DB.reminders||[]).filter(x=>x.job===
 function remSheet(j,k){const L=j.rems=JSON.parse(JSON.stringify(planRems(j)));const isNew=k==null;const r=isNew?{kind:'other',name:'',mo:6,km:0}:L[k];
   openSheet(`<h3>⏰ ${isNew?T_('New reminder'):esc(remName(r))}</h3>
    ${r.kind==='other'?`<label class="field-l">${T_('What to remind about')}<input class="field" id="rmn" value="${esc(r.name||'')}" placeholder="${T_('e.g. brake check, tyre rotation…')}"></label>`:''}
-   <div class="in2"><label class="field-l">${T_('After (months)')}<input class="field" id="rmo" inputmode="numeric" value="${r.mo||''}"></label><label class="field-l">${T_('or after (km)')}<input class="field" id="rkm" inputmode="numeric" value="${r.km||''}"></label></div>
+   <div class="in2"><label class="field-l">${T_('After (months)')}<input class="field" id="rmo" inputmode="numeric" value="${r.mo||''}"></label><label class="field-l">${T_(isMi(vehOf(j))?'or after (mi)':'or after (km)')}<input class="field" id="rkm" inputmode="numeric" value="${r.km?intU(r.km,vehOf(j)):''}"></label></div>
    <div class="chips">${[[1,'1 month'],[3,'3 months'],[6,'6 months'],[12,'1 year']].map(([m,t])=>`<button data-rq="${m}">${T_(t)}</button>`).join('')}</div>
    <button class="btn" id="rmok">${T_('Save')}</button>${isNew?'':`<button class="btn ghost" id="rmoff">${r.on===false?T_('Turn on'):T_('Do not remind')}</button>`}`,el=>{
     el.querySelectorAll('[data-rq]').forEach(b=>b.onclick=()=>{el.querySelector('#rmo').value=b.dataset.rq;});
     el.querySelector('#rmok').onclick=()=>{const n=el.querySelector('#rmn');if(n&&!n.value.trim()){toast(T_('Type what to remind about'));return;}
-      {const nm=num(el.querySelector('#rmo').value)||0,nkm=num(el.querySelector('#rkm').value)||0;if(nkm!==(+r.km||0)){delete r.atKm;r.kmSet=1;}if(nm!==(+r.mo||0))delete r.date;}Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:num(el.querySelector('#rkm').value)||0,on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
+      {const nm=num(el.querySelector('#rmo').value)||0,nkm=num(el.querySelector('#rkm').value)||0;if(nkm!==(r.km?intU(r.km,vehOf(j)):0)){delete r.atKm;r.kmSet=1;}if(nm!==(+r.mo||0))delete r.date;}Object.assign(r,{name:n?n.value.trim():r.name,mo:num(el.querySelector('#rmo').value)||0,km:(x=>isMi(vehOf(j))?Math.round(x*MI):x)(num(el.querySelector('#rkm').value)||0),on:true});if(!r.mo&&!r.km){toast(T_('Type months or km'));return;}
       if(isNew){r.manual=1;L.push(r);}logJ(j,'Reminder: '+remName(r));if(j.stage==='done')makeReminders(j);save();closeSheet();render();};
     const off=el.querySelector('#rmoff');if(off)off.onclick=()=>{r.on=r.on===false;if(j.stage==='done'){DB.reminders=DB.reminders.filter(x=>!(x.job===j.id&&x.kind===r.kind&&(r.kind!=='other'||x.name===r.name)));if(r.on!==false)makeReminders(j);}save();closeSheet();render();};});}
 (function(){const J=SCREENS.job;SCREENS.job=m=>{J(m);const j=byId('jobs',S.p&&S.p.id);if(!j)return;
@@ -79,6 +79,6 @@ function remSheet(j,k){const L=j.rems=JSON.parse(JSON.stringify(planRems(j)));co
         r.classList.toggle('jb-svc',!!o.svc);r.classList.toggle('jb-sub',!!o.sub);at.after(r);at=r;});}}
   /* 2) the reminders this visit leaves */
   const L=planRems(j);const card=document.createElement('div');card.className='jrem';
-  card.innerHTML=`${sec('⏰ '+T_('Reminders for the customer'),j.stage==='done'?T_('made'):T_('made when the job closes'))}<div class="list">${L.map((r,k)=>{const w=remWhen(j,r);return `<button class="row${r.on===false?' off':''}" data-rm="${k}"><div><b>${esc(remName(r))}${r.on===false?' · '+T_('off'):''}</b><span>${[r.km?`<bdi>${kmf(r.km)} km</bdi>${w.km?` (<bdi>${kmf(w.km)}</bdi>)`:''}`:'',w.due?`<bdi>${fmtD(w.due)}</bdi>`:''].filter(Boolean).join(' '+T_('or')+' ')}</span></div><span class="v">${T_('Edit')} ›</span></button>`;}).join('')||`<p class="hint">${T_('No reminder yet. Services with a reminder add one by themselves.')}</p>`}</div><button class="btn ghost sm" id="jrmadd">＋ ${T_('Add a reminder')}</button>`;
+  card.innerHTML=`${sec('⏰ '+T_('Reminders for the customer'),j.stage==='done'?T_('made'):T_('made when the job closes'))}<div class="list">${L.map((r,k)=>{const w=remWhen(j,r);return `<button class="row${r.on===false?' off':''}" data-rm="${k}"><div><b>${esc(remName(r))}${r.on===false?' · '+T_('off'):''}</b><span>${[r.km?`<bdi>${kmU(intU(r.km,vehOf(j)),vehOf(j))}</bdi>${w.km?` (<bdi>${kmf(w.km)}</bdi>)`:''}`:'',w.due?`<bdi>${fmtD(w.due)}</bdi>`:''].filter(Boolean).join(' '+T_('or')+' ')}</span></div><span class="v">${T_('Edit')} ›</span></button>`;}).join('')||`<p class="hint">${T_('No reminder yet. Services with a reminder add one by themselves.')}</p>`}</div><button class="btn ghost sm" id="jrmadd">＋ ${T_('Add a reminder')}</button>`;
   const ins=m.querySelector('#jinsp');const after=ins?(ins.closest('.row')||ins):m.querySelector('.jb-list');(after||m.lastChild).after(card);
   card.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>remSheet(j,+b.dataset.rm));card.querySelector('#jrmadd').onclick=()=>remSheet(j,null);};})();

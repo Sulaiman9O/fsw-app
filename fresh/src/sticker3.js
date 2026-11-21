@@ -48,6 +48,9 @@ function stickerHtml3(t,d,rb,o){o=o||{};const set=o.set||stkSet();const v=o.v!=n
   return `<div class="stk v3${z}${X}" style="${box}">${img?`<div class="lgw">${img}</div>`:''}${band}<div class="cells">${cells}</div>${foot.length?`<div class="ft" style="${fs('sm')}">${foot.join(' · ')}</div>`:''}${bot.length?`<div class="bot" style="${fs('sm')}">${bot.join(' · ')}</div>`:''}</div>`;}
 /* fonts differ from tablet to tablet: any text that is wider than its place is shrunk until it fits (done in the app, then printed as it is) */
 const STK_FIT='.k,.big,.mid,.tel,.tl,.ft,.o,.bar,.band,.ti,.rw,.h,.nm,.bt,.bot,.cl b,.t,.d1,.km,.wsn';
+/* 2.42.3: a car counting miles: the sticker's distance says MI / ميل */
+(function(){const H=stickerHtml3;window.stickerHtml3=stickerHtml3=function(t,d,rb,o){const h=H(t,d,rb,o);if(!d||!d.mi)return h;
+  return h.replace(/<small>km<\/small>/g,'<small>mi</small>').replace(/\bKM\b/g,'MI').replace(/الكيلومتر/g,'الميل').replace(/(>|\s)كم(<|\s|$)/g,'$1ميل$2').replace(/(\d) km\b/g,'$1 mi');};})();
 function stkFit(root){const st=root.classList&&root.classList.contains('stk')?root:root.querySelector('.stk');if(!st)return root;
   const over=e=>e.clientWidth>0&&e.scrollWidth>e.clientWidth+0.5;const own=x=>x.tagName!=='IMG'&&!(x.closest&&x.closest('svg'))&&[...x.childNodes].some(n=>n.nodeType===3&&n.textContent.trim());
   const shrink=(e,r)=>{[e,...e.querySelectorAll('*')].forEach(x=>{if(own(x))x.style.fontSize=(parseFloat(getComputedStyle(x).fontSize)*r).toFixed(2)+'px';});};
@@ -94,9 +97,9 @@ stickerSheet=window.stickerSheet=function(j,k0){const A=j.rems=planRems(j)||[];c
   if(!L.length){toast(T_('No reminder on this job. Add one under “Reminders for the customer”.'));return;}
   const set=stkSet();let k=k0!=null&&A[k0]?Math.max(0,L.indexOf(A[k0])):0,t=STK_ROLLS[set.roll].t.includes(set.tpl)?set.tpl:STK_ROLLS[set.roll].t[0];
   const oilLine=()=>{const o=(j.items||[]).find(i=>i.k==='part'&&(i.u==='L'||/oil/i.test(i.d||''))&&!/filter/i.test(i.d||''));return o?o.d.replace(/\s+F\/S.*$/i,'').replace(/\s+\d+\s*ltrs?.*$/i,''):'';};
-  const data=()=>dataOf(k);const dataOf=k=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
+  const data=()=>dataOf(k);const dataOf=k=>{const r=L[k];const w=remWhen(j,r);return {kind:r.kind,name:r.kind==='other'?r.name:'',next:w.due,nextKm:w.km,km:j.km,mi:isMi(vehOf(j))||undefined,line:r.kind==='oil'?oilLine():r.kind==='gear'?(((j.items||[]).find(i=>/atf|gear|cvt|matic|transmission/i.test(i.d||''))||{}).d||''):r.name};};
   openSheet(`<h3>🏷️ ${T_('Service sticker')}</h3>${L.length>1?`<div class="chips" id="skr"></div>`:''}<div class="stkpv3" id="spv3"></div><div class="chips" id="skt"></div>
-   <div class="in2"><label class="field-l">${T_('Next km')}<input class="field" id="snk" inputmode="numeric" autocomplete="off"></label><label class="field-l">${T_('Next date')}<input class="field" id="snd" type="date"></label></div>
+   <div class="in2"><label class="field-l">${T_(isMi(vehOf(j))?'Next mi':'Next km')}<input class="field" id="snk" inputmode="numeric" autocomplete="off"></label><label class="field-l">${T_('Next date')}<input class="field" id="snd" type="date"></label></div>
    ${j.km?'':`<label class="field-l stkkm">🛣 ${T_('Km now')} <b style="color:var(--bad)">*</b><input class="field" id="skm" inputmode="numeric" autocomplete="off" placeholder="${T_('Type the km first')}"></label>`}
    <button class="btn" id="sgo3">🖨 ${T_('Print sticker')}</button>${L.length>1?`<button class="btn ghost" id="sgoall">🖨 ${T_('Print all')} (${L.length})</button>`:''}<p class="hint">${T_('In the print screen choose the paper')} <b>${STK_PAPER[t][2]}</b>. ${T_('Look, logo, roll and colour: Settings → Sticker.')}</p>`,el=>{
     const draw=()=>{const sr=el.querySelector('#skr');if(sr){sr.innerHTML=L.map((r,i)=>`<button data-k="${i}" aria-pressed="${i===k}">${esc(remName(r))}</button>`).join('');sr.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=+b.dataset.k;draw();});}
