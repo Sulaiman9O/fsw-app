@@ -1,5 +1,5 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>فاتورة</title><meta property="og:title" content="عالم الخدمات السريعة · Fast Service World"><meta property="og:site_name" content="Fast Service World"><meta property="og:description" content="اضغط لعرض المستند وتحميله PDF">
+<meta name="robots" content="noindex,nofollow"><title>عالم الخدمات السريعة · Fast Service World</title><meta property="og:title" content="عالم الخدمات السريعة · Fast Service World"><meta property="og:site_name" content="Fast Service World"><meta property="og:description" content="اضغط لعرض المستند وتحميله PDF">
 <style>:root{--bg:#EEF1F5;--fg:#15202B;--mut:#5B6875;--card:#fff;--acc:#1D6FE0}
 @media (prefers-color-scheme:dark){:root{--bg:#0E1620;--fg:#E8EDF2;--mut:#93A1AE;--card:#18222D}}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:Tahoma,Arial,sans-serif}
@@ -32,11 +32,11 @@ const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&am
  try{const g=await get(K);const kind=g('kind')||'inv',n=Math.max(1,+g('n')||1),no=g('no'),ws=g('ws'),ph=g('ph');
   const pages=[{b64:g('img'),w:+g('w'),h:+g('h')}];if(!pages[0].b64)throw 0;
   for(let k=2;k<=n;k++){const x=await get(K+'-'+k);pages.push({b64:x('img'),w:+x('w'),h:+x('h')});}
-  const isI=kind==='insp',ttl=isI?'تقرير الفحص · Inspection report':'فاتورة رقم '+esc(no)+' · Invoice #'+esc(no);
-  document.title=(isI?'تقرير الفحص ':'فاتورة '+no+' ')+'· '+ws;
+  const isI=kind==='insp',isE=kind==='est',ttl=isI?'تقرير الفحص · Inspection report':isE?'عرض سعر رقم '+esc(no)+' · Estimate #'+esc(no):'فاتورة رقم '+esc(no)+' · Invoice #'+esc(no);
+  document.title=(isI?'تقرير الفحص ':isE?'عرض سعر '+no+' ':'فاتورة '+no+' ')+'· '+ws;
   TOP.innerHTML='<h1>'+esc(ws)+'</h1><div class="s">'+ttl+(isI&&no?' · '+esc(no):'')+'</div><div class="bar"><button class="b" id="dl">⬇️ تحميل PDF</button>'+(ph?'<a class="b g" href="tel:'+esc(ph.replace(/[^+0-9]/g,''))+'">📞 '+esc(ph)+'</a>':'')+'</div>';
-  V.className='';V.innerHTML=pages.map((J,k)=>'<img alt="'+(isI?'تقرير الفحص':'فاتورة '+esc(no))+' '+(k+1)+'" src="data:image/jpeg;base64,'+J.b64+'" style="margin-bottom:12px">').join('');
-  const fn=(isI?'Inspection-':'Invoice-')+String(no).replace(/[^A-Za-z0-9-]/g,'')+'.pdf';
+  V.className='';V.innerHTML=pages.map((J,k)=>'<img alt="'+(isI?'تقرير الفحص':isE?'عرض سعر '+esc(no):'فاتورة '+esc(no))+' '+(k+1)+'" src="data:image/jpeg;base64,'+J.b64+'" style="margin-bottom:12px">').join('');
+  const fn=(isI?'Inspection-':isE?'Estimate-':'Invoice-')+String(no).replace(/[^A-Za-z0-9-]/g,'')+'.pdf';
   document.getElementById('dl').onclick=()=>{const b=new Blob([pagesPdf(pages)],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);};
  }catch(e){V.textContent='الرابط انتهى أو غير موجود. تواصل مع الورشة · This link has expired.';}})();
 </script></body></html>

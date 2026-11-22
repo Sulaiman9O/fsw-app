@@ -46,7 +46,7 @@ SCREENS.job=m=>{
   $('#jnotes').onchange=e=>{j.notes=e.target.value;save();};
   $$('[data-jph]').forEach(b=>b.onclick=()=>{const p=photoOf(b.dataset.jph);if(p)openSheet(`<img src="${p.img}" style="width:100%;border-radius:14px;background:#fff">`);});
   $('#jinsp').onclick=()=>{if(j.insp)inspSheet(j);else openSheet(`<h3>Choose a checklist</h3><div class="list">${DB.insp.map(t=>`<button class="row" data-ti="${t.id}"><div><b>${esc(t.name)}</b><span>${t.items.length} items</span></div><span class="v">›</span></button>`).join('')}</div>`,el=>el.querySelectorAll('[data-ti]').forEach(b=>b.onclick=()=>{const t=DB.insp.find(x=>x.id===b.dataset.ti);j.insp={name:t.name,items:t.items.slice(),r:{}};logJ(j,'Inspection started');save();inspSheet(j);}));};
-  const se=$('#jsendest');if(se)se.onclick=()=>shareText(c.phone,docText(j,'estimate'));
+  const se=$('#jsendest');if(se)se.onclick=()=>sendEstimate(j);
   const iv=$('#jinv');if(iv)iv.onclick=()=>makeInvoice(j);
   if($('#jstk'))$('#jstk').onclick=()=>stickerSheet(j);
   const wa=$('#jwa');if(wa)wa.onclick=()=>shareText(c.phone,msg('ready',jobVars(j)));

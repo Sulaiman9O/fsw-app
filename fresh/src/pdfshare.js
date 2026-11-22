@@ -50,6 +50,8 @@ const b64of=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCo
    someone who has the link, nobody can list them), and the customer's chat opens with the invoice line + the link: one tap on Send.
    The link opens a page with the invoice and «Download PDF». Free (a few hundred KB each). ---------- */
 const INV_VIEW='https://fastserviceworld.web.app/f/';   /* Firebase Hosting site of the workshop (hosting/ in the repo) */
+/* estimates open on a copy of the same viewer kept with the app (docs/f): it says «عرض سعر». The workshop site's copy (hosting/) is not updated by a push */
+const EST_VIEW='https://sulaiman9o.github.io/fsw-app/f/?k=';
 const rid=n=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',b=new Uint8Array(n);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('');};
 async function invUploadLink(j){let J;for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(invoiceHtml(j,true),invDocCss(),210,sc,q);if(J.b64.length<900000)break;}
   if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
@@ -65,7 +67,7 @@ async function docUploadLink(kind,html,css,meta){const c=await htmlCanvas(html,c
   const id=rid(24),ts=firebase.firestore.FieldValue.serverTimestamp();
   for(let k=1;k<pg.length;k++)await FBS.collection('inv').doc(id+'-'+(k+1)).set({img:pg[k].b64,w:pg[k].w,h:pg[k].h,t:ts});
   await FBS.collection('inv').doc(id).set(Object.assign({kind,n:pg.length,img:pg[0].b64,w:pg[0].w,h:pg[0].h,ws:DB.ws.name||'',ph:DB.ws.phone||'',t:ts},meta));
-  return INV_VIEW+id;}
+  return (kind==='est'?EST_VIEW:INV_VIEW)+id;}
 /* open the customer's chat with the text + link (one tap on Send); false = could not make the link */
 async function sendDocLink(phone,make,text,done){let w=null;if(!window.CapApp){try{w=window.open('about:blank','_blank');}catch(e){}}
   try{const url=await Promise.race([make(),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),20000))]);const t=text(url);
@@ -82,6 +84,14 @@ async function sendInvoiceLink(j){const c=custOf(j)||{};
     j.invLink=url;logJ(j,'Invoice link sent');save();trail('pdf','link '+url.slice(-6));
     if(w){try{w.opener=null;}catch(e){}w.location.href=u;}else shareText(c.phone,t);return true;}
   catch(e){trail('pdf','link failed: '+(e&&e.message||e));if(w)try{w.close();}catch(x){}return false;}}
+/* 2.42.4: the estimate as a LINK, like the invoice: the same look titled «عرض سعر» (never «فاتورة»); offline = the text as before */
+function estCaption(j){const x=jobVars(j);return ['عرض سعر رقم '+j.no+' — '+DB.ws.name,(x.car||'')+(x.plate?' '+x.plate:''),'الإجمالي: '+x.total,'(هذا عرض سعر وليس فاتورة)'].filter(s=>s&&s.trim()).join('\n');}
+async function sendEstimate(j){const c=custOf(j)||{};const asText=()=>shareText(c.phone,docText(j,'estimate'));
+  if(!(j.items||[]).length){toast(T_('Add services or parts first'));return;}
+  if(!invLinkOk()){asText();return;}
+  toast(T_('Making the estimate link…'));
+  const ok=await sendDocLink(c.phone,()=>docUploadLink('est',invoiceHtml(j,true),invDocCss(),{no:String(j.no),job:j.id}),url=>estCaption(j)+'\n\n📄 عرض السعر:\n'+url,url=>{j.estLink=url;logJ(j,'Estimate link sent');save();});
+  if(!ok){toast(T_('Could not make the link, sent as text'));asText();}}
 async function sendInvoicePdf(j){if(invLinkOk()&&await sendInvoiceLink(j))return;const c=custOf(j)||{},cap=invCaption(j);const asText=()=>shareText(c.phone,docText(j,'invoice'));
   const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswShare;const app=!!window.CapApp;
   if(app&&!(P&&typeof P.sharePdf==='function')){toast(T_('This app version sends text. Install the new app to send a PDF.'));asText();return;}
