@@ -48,6 +48,21 @@ const W=t=>new Promise(r=>setTimeout(r,t));
   ok(E===null,'empty estimate: nothing sent');
   await ev(()=>{go('job',{id:'eL'});});await W(400);await p.screenshot({path:'/tmp/t140_job.png'});
   await ev(()=>{const d=document.createElement('div');d.id='pvx';d.style.cssText='position:fixed;inset:0;z-index:99999;background:#fff;overflow:auto';d.innerHTML='<style>'+invDocCss()+'</style><div style="width:210mm;zoom:.5">'+invoiceHtml(byId('jobs','eL'),true)+'</div>';document.body.appendChild(d);});await W(300);await p.screenshot({path:'/tmp/t140_est.png',fullPage:false});
+  /* 2.42.5: a bit longer than A4 (≤ 1.5 pages) → one page; longer → stays more pages, not shrunk */
+  for(const [n,want] of [[3,'one'],[11,'one'],[15,'one'],[45,'many']]){
+   const R=await ev(async n=>{const j=byId('jobs','eL');const it=j.items;const base=it.filter(i=>!i.pend)[0];j.items=[];for(let k=0;k<n;k++)j.items.push(Object.assign({},base,{d:base.d+' '+k,ar:'بند عربي '+k,num:'NUM-'+k,note:k%3?'':'ملاحظة طويلة للبند رقم '+k}));
+     j.notes='القطع التالية غير متوفرة لدينا:\n- فلتر الهواء\n- فلتر المكيف\n- سير المكينة\n- 6 بواجي\nCustomer to bring: air filter, A/C cabin filter, engine drive belt, 6 spark plugs.';
+     const S0=DB.ws.invStyle&&JSON.stringify(DB.ws.invStyle);DB.ws.invStyle=Object.assign(DB.ws.invStyle||{},{show:Object.assign({},invS().show,{notes:1,num:1,ar:1})});
+     const raw=await htmlCanvas(invoiceHtml(j,true),invDocCss(),210,1);const before=cutPages(raw).length;
+     const F=fitLink(invoiceHtml(j,true),invDocCss());const c=await htmlCanvas(F.html,F.css,210,1);const after=cutPages(c).length;
+     const tx=(()=>{const d=document.createElement('div');d.innerHTML=F.html;return d.textContent;})();
+     j.items=it;j.notes='';if(S0)DB.ws.invStyle=JSON.parse(S0);return {before,after,z:F.z,hasEnd:/شكراً لثقتكم|Thank you/.test(tx),last:tx.includes('NUM-'+(n-1))};},n);
+   if(want==='one')ok(R.after===1&&R.z>=1/1.5-0.01&&R.hasEnd&&R.last,n+' items: '+R.before+' page(s) → '+R.after+' page, zoom '+R.z.toFixed(2)+' (not below 0.67), nothing lost');
+   else ok(R.after===R.before&&R.after>=2&&R.z===1,n+' items: long ('+R.before+' pages) → stays '+R.after+' pages, not shrunk');}
+  const LP=await ev(async()=>{const o={};const U0=docUploadLink,K0=[FBS,SYNC.user],O0=window.open,S0=shareText;window.open=()=>null;window.shareText=shareText=()=>{};
+    const FL=fitLink;window.fitLink=fitLink=(h,c)=>{o.fit=1;return {html:h+'<i>FITTED</i>',css:c,z:1};};window.docUploadLink=docUploadLink=async(kind,html,css)=>{o.css=o.fit&&html.includes('FITTED');return EST_VIEW+'TESTabcdefghijklmnop';};FBS=FBS||{};SYNC.user=SYNC.user||{uid:'t'};
+    await sendEstimate(byId('jobs','eL'));window.fitLink=fitLink=FL;window.docUploadLink=docUploadLink=U0;FBS=K0[0];SYNC.user=K0[1];window.open=O0;window.shareText=shareText=S0;return o;});
+  ok(LP.css,'sending an estimate goes through the one-page fit');
   ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));await b.close();}
  /* the link viewer page (docs/f = hosting/f) */
  {const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:400,height:800}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));

@@ -22,6 +22,18 @@ async function htmlCanvas(html,css,wmm,scale){
   let o=c;if(bot<c.height){o=document.createElement('canvas');o.width=c.width;o.height=bot;const y=o.getContext('2d');y.fillStyle='#fff';y.fillRect(0,0,o.width,o.height);y.drawImage(c,0,0);}
   return o;}
 const cJpeg=(c,q)=>{const url=c.toDataURL('image/jpeg',q||0.88);return {b64:url.slice(url.indexOf(',')+1),w:c.width,h:c.height};};
+/* 2.42.5: a link page a little longer than A4 (up to one and a half pages once the spacing is tightened, so the text is never below 2/3 of its size) comes on ONE page: first tighter spacing
+   (the same steps as the print), then shrunk only as much as needed. Longer than that stays on more pages (text never tiny). */
+const FIT_MAX=1.5;
+function fitLink(html,css){try{const A=(297-18)*PDF_MM*0.97;
+  const meas=cls=>{const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:210mm;background:#fff';
+    host.innerHTML='<style>'+css+INV_FIT+'</style><div style="width:210mm;padding:9mm;box-sizing:border-box;font-family:Arial,Tahoma,sans-serif">'+html+'</div>';document.body.appendChild(host);
+    const iv=host.querySelector('.iv2');if(iv&&cls)iv.classList.add(...cls.split(' '));const h=host.firstElementChild.nextElementSibling.getBoundingClientRect().height-18*PDF_MM;host.remove();return h;};
+  const h0=meas('');if(!(h0>A))return {html,css,z:1,pages:1};
+  let cls='',h=h0;for(const c of ['fitA','fitA fitB']){if(h<=A)break;cls=c;h=meas(c);}
+  if(h>A*FIT_MAX)return {html,css,z:1,pages:Math.ceil(h0/A)};   /* even with tight spacing more than 1½ pages: keep the pages */
+  const z=h>A?A/h:1;let body=cls?html.replace(/class="iv2(\s|")/,'class="iv2 '+cls+'$1'):html;
+  return {html:z<1?'<div style="zoom:'+z.toFixed(4)+'">'+body+'</div>':body,css:css+INV_FIT,z,pages:1};}catch(e){return {html,css,z:1};}}
 async function htmlJpeg(html,css,wmm,scale,q){return cJpeg(await htmlCanvas(html,css,wmm,scale),q);}
 /* a long page (inspection report) cut into A4-shaped pages, each cut on a white line between rows */
 function cutPages(c){const pageH=Math.round(c.width*297/210),out=[];let y0=0;const x=c.getContext('2d');
@@ -53,7 +65,7 @@ const INV_VIEW='https://fastserviceworld.web.app/f/';   /* Firebase Hosting site
 /* estimates open on a copy of the same viewer kept with the app (docs/f): it says «عرض سعر». The workshop site's copy (hosting/) is not updated by a push */
 const EST_VIEW='https://sulaiman9o.github.io/fsw-app/f/?k=';
 const rid=n=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',b=new Uint8Array(n);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('');};
-async function invUploadLink(j){let J;for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(invoiceHtml(j,true),invDocCss(),210,sc,q);if(J.b64.length<900000)break;}
+async function invUploadLink(j){let J;const F=fitLink(invoiceHtml(j,true),invDocCss());for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(F.html,F.css,210,sc,q);if(J.b64.length<900000)break;}
   if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
   await FBS.collection('inv').doc(id).set({img:J.b64,w:J.w,h:J.h,no:String(j.inv.no),ws:DB.ws.name||'',ph:DB.ws.phone||'',job:j.id,t:firebase.firestore.FieldValue.serverTimestamp()});
   return INV_VIEW+id;}
@@ -90,7 +102,7 @@ async function sendEstimate(j){const c=custOf(j)||{};const asText=()=>shareText(
   if(!(j.items||[]).length){toast(T_('Add services or parts first'));return;}
   if(!invLinkOk()){asText();return;}
   toast(T_('Making the estimate link…'));
-  const ok=await sendDocLink(c.phone,()=>docUploadLink('est',invoiceHtml(j,true),invDocCss(),{no:String(j.no),job:j.id}),url=>estCaption(j)+'\n\n📄 عرض السعر:\n'+url,url=>{j.estLink=url;logJ(j,'Estimate link sent');save();});
+  const ok=await sendDocLink(c.phone,()=>(F=>docUploadLink('est',F.html,F.css,{no:String(j.no),job:j.id}))(fitLink(invoiceHtml(j,true),invDocCss())),url=>estCaption(j)+'\n\n📄 عرض السعر:\n'+url,url=>{j.estLink=url;logJ(j,'Estimate link sent');save();});
   if(!ok){toast(T_('Could not make the link, sent as text'));asText();}}
 async function sendInvoicePdf(j){if(invLinkOk()&&await sendInvoiceLink(j))return;const c=custOf(j)||{},cap=invCaption(j);const asText=()=>shareText(c.phone,docText(j,'invoice'));
   const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswShare;const app=!!window.CapApp;
