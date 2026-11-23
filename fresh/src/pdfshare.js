@@ -25,15 +25,16 @@ const cJpeg=(c,q)=>{const url=c.toDataURL('image/jpeg',q||0.88);return {b64:url.
 /* 2.42.5: a link page a little longer than A4 (up to one and a half pages once the spacing is tightened, so the text is never below 2/3 of its size) comes on ONE page: first tighter spacing
    (the same steps as the print), then shrunk only as much as needed. Longer than that stays on more pages (text never tiny). */
 const FIT_MAX=1.5;
-function fitLink(html,css){try{const A=(297-18)*PDF_MM*0.97;
-  const meas=cls=>{const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:210mm;background:#fff';
-    host.innerHTML='<style>'+css+INV_FIT+'</style><div style="width:210mm;padding:9mm;box-sizing:border-box;font-family:Arial,Tahoma,sans-serif">'+html+'</div>';document.body.appendChild(host);
-    const iv=host.querySelector('.iv2');if(iv&&cls)iv.classList.add(...cls.split(' '));const h=host.firstElementChild.nextElementSibling.getBoundingClientRect().height-18*PDF_MM;host.remove();return h;};
-  const h0=meas('');if(!(h0>A))return {html,css,z:1,pages:1};
-  let cls='',h=h0;for(const c of ['fitA','fitA fitB']){if(h<=A)break;cls=c;h=meas(c);}
+/* Measured on the PICTURE of the page, not on the app screen: a tablet with a bigger font-size setting makes the
+   screen text bigger, but the print and the link picture use the normal size (2.42.6: #1052 was shrunk for nothing) */
+async function docMm(html,css,wContent){const c=await htmlCanvas(html,css,wContent+18,1);return c.height/PDF_MM-18;}
+const withFit=(html,cls)=>cls?html.replace(/class="iv2(\s|")/,'class="iv2 '+cls+'$1'):html;
+async function fitLink(html,css){try{const A=(297-18)*0.97,C=css+INV_FIT;
+  const h0=await docMm(html,C,192);if(!(h0>A))return {html,css,z:1,pages:1};
+  let cls='',h=h0;for(const c of ['fitA','fitA fitB']){if(h<=A)break;cls=c;h=await docMm(withFit(html,c),C,192);}
   if(h>A*FIT_MAX)return {html,css,z:1,pages:Math.ceil(h0/A)};   /* even with tight spacing more than 1½ pages: keep the pages */
-  const z=h>A?A/h:1;let body=cls?html.replace(/class="iv2(\s|")/,'class="iv2 '+cls+'$1'):html;
-  return {html:z<1?'<div style="zoom:'+z.toFixed(4)+'">'+body+'</div>':body,css:css+INV_FIT,z,pages:1};}catch(e){return {html,css,z:1};}}
+  const z=h>A?A/h:1,body=withFit(html,cls);
+  return {html:z<1?'<div style="zoom:'+z.toFixed(4)+'">'+body+'</div>':body,css:C,z,pages:1};}catch(e){return {html,css,z:1};}}
 async function htmlJpeg(html,css,wmm,scale,q){return cJpeg(await htmlCanvas(html,css,wmm,scale),q);}
 /* a long page (inspection report) cut into A4-shaped pages, each cut on a white line between rows */
 function cutPages(c){const pageH=Math.round(c.width*297/210),out=[];let y0=0;const x=c.getContext('2d');
@@ -65,7 +66,7 @@ const INV_VIEW='https://fastserviceworld.web.app/f/';   /* Firebase Hosting site
 /* estimates open on a copy of the same viewer kept with the app (docs/f): it says «عرض سعر». The workshop site's copy (hosting/) is not updated by a push */
 const EST_VIEW='https://sulaiman9o.github.io/fsw-app/f/?k=';
 const rid=n=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',b=new Uint8Array(n);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('');};
-async function invUploadLink(j){let J;const F=fitLink(invoiceHtml(j,true),invDocCss());for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(F.html,F.css,210,sc,q);if(J.b64.length<900000)break;}
+async function invUploadLink(j){let J;const F=await fitLink(invoiceHtml(j,true),invDocCss());for(const [sc,q] of [[2,0.82],[1.7,0.72],[1.4,0.62]]){J=await htmlJpeg(F.html,F.css,210,sc,q);if(J.b64.length<900000)break;}
   if(J.b64.length>=900000)throw new Error('too big');const id=rid(24);
   await FBS.collection('inv').doc(id).set({img:J.b64,w:J.w,h:J.h,no:String(j.inv.no),ws:DB.ws.name||'',ph:DB.ws.phone||'',job:j.id,t:firebase.firestore.FieldValue.serverTimestamp()});
   return INV_VIEW+id;}
@@ -102,8 +103,15 @@ async function sendEstimate(j){const c=custOf(j)||{};const asText=()=>shareText(
   if(!(j.items||[]).length){toast(T_('Add services or parts first'));return;}
   if(!invLinkOk()){asText();return;}
   toast(T_('Making the estimate link…'));
-  const ok=await sendDocLink(c.phone,()=>(F=>docUploadLink('est',F.html,F.css,{no:String(j.no),job:j.id}))(fitLink(invoiceHtml(j,true),invDocCss())),url=>estCaption(j)+'\n\n📄 عرض السعر:\n'+url,url=>{j.estLink=url;logJ(j,'Estimate link sent');save();});
+  const ok=await sendDocLink(c.phone,async()=>{const F=await fitLink(invoiceHtml(j,true),invDocCss());return docUploadLink('est',F.html,F.css,{no:String(j.no),job:j.id});},url=>estCaption(j)+'\n\n📄 عرض السعر:\n'+url,url=>{j.estLink=url;logJ(j,'Estimate link sent');save();});
   if(!ok){toast(T_('Could not make the link, sent as text'));asText();}}
+/* 2.42.6: the estimate page — the same sheet as the link, to look at, print or send (like the invoice screen) */
+SCREENS.estv=m=>{const j=byId('jobs',S.p&&S.p.id);if(!j||j.stage!=='estimate'){go(j?'job':'work',j?{id:j.id}:undefined);return;}
+  m.innerHTML=head('Estimate <bdi dir="ltr">#'+j.no+'</bdi>','')+`<div class="inv-pv">${invoiceHtml(j)}</div>
+  <div class="two"><button class="btn wa" id="ewa">📤 ${T_('Send estimate')}</button><button class="btn ghost" id="epr">🖨 Print</button></div>
+  <button class="btn ghost" data-go="job:${j.id}">Back to the job</button>`;
+  $('#ewa').onclick=()=>sendEstimate(j);
+  $('#epr').onclick=()=>{logJ(j,'Estimate printed');save();printHtml(invPrintDoc(j,12),210,297,'Estimate '+j.no);};};
 async function sendInvoicePdf(j){if(invLinkOk()&&await sendInvoiceLink(j))return;const c=custOf(j)||{},cap=invCaption(j);const asText=()=>shareText(c.phone,docText(j,'invoice'));
   const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FswShare;const app=!!window.CapApp;
   if(app&&!(P&&typeof P.sharePdf==='function')){toast(T_('This app version sends text. Install the new app to send a PDF.'));asText();return;}
@@ -138,13 +146,11 @@ const INV_FIT=`.iv2.fitA{padding:2mm;line-height:1.3}.iv2.fitA .iv2-hd{margin-to
 .iv2.fitA .iv2-bot{margin-top:3mm;gap:3mm}.iv2.fitA .iv2-box{padding:2mm 2.8mm;margin-top:2mm}.iv2.fitA .iv2-tot{padding:2.2mm 3mm}.iv2.fitA .iv2-tot .due b{font-size:6.5mm}
 .iv2.fitA .iv2-sign{margin-top:5mm}.iv2.fitA .iv2-ft{margin-top:3mm;padding-top:2mm}.iv2.fitA .iv2-end{margin-top:2.5mm}
 .iv2.fitB .iv2-brand img{max-height:16mm}.iv2.fitB .iv2-hd{margin-top:1.5mm}.iv2.fitB .iv2-t td{padding:.6mm 2mm}.iv2.fitB .iv2-sign{margin-top:3mm}.iv2.fitB .iv2-cards .big{font-size:3.6mm}`;
-function invPrintDoc(j,mar){const css=invDocCss()+INV_FIT,html=invoiceHtml(j,true);
-  const measure=(cls,m)=>{try{const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;width:'+(210-2*m)+'mm;background:#fff;font-family:Arial,sans-serif';
-    host.innerHTML='<style>'+css+'</style>'+html;document.body.appendChild(host);const iv=host.querySelector('.iv2')||host.querySelector('.inv');if(iv&&cls)iv.classList.add(...cls.split(' '));
-    const h=iv?iv.getBoundingClientRect().height:0;host.remove();return {h,av:((297-2*m)*PDF_MM-6)*0.95};}catch(e){return {h:0,av:1};}};
-  const steps=[['',mar||12],['fitA',9],['fitA fitB',7]];let pick=steps[steps.length-1],z=1,M=null;
-  for(const st of steps){const r=measure(st[0],st[1]);M=r;pick=st;if(r.h<=r.av)break;}
-  if(M&&M.h>M.av)z=Math.max(0.45,M.av/M.h);
-  const cls=pick[0],m=pick[1];let body=html;if(cls)body=body.replace(/class="iv2(\s|")/,'class="iv2 '+cls+'$1');
+async function invPrintDoc(j,mar){const css=invDocCss()+INV_FIT,html=invoiceHtml(j,true);
+  const steps=[['',mar||12],['fitA',9],['fitA fitB',7]];let pick=steps[0],z=1,h=0,av=1;
+  for(const st of steps){av=(297-2*st[1])*0.97;try{h=await docMm(withFit(html,st[0]),css,210-2*st[1]);}catch(e){h=0;}pick=st;if(h<=av)break;}
+  if(h>av*FIT_MAX){pick=steps[0];}   /* more than 1½ pages even tight: printed on more pages at full size */
+  else if(h>av)z=av/h;               /* a little over: shrunk only as much as needed (never below 2/3) */
+  const cls=pick[0],m=pick[1],body=withFit(html,cls);
   return '<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:'+m+'mm}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif}'+css+
-   '.iv2-seal,.iv2-ft,.iv2-bot{break-inside:avoid}.iv2{width:auto!important;max-width:'+(210-2*m)+'mm}'+(z<1?'.iv2,.inv{zoom:'+z.toFixed(4)+'}':'')+'</style></head><body>'+body+'</body></html>';}
+   '.iv2-seal,.iv2-ft,.iv2-bot{break-inside:avoid}.iv2{width:auto!important'+(z<1?'':';max-width:'+(210-2*m)+'mm')+'}</style></head><body>'+(z<1?'<div style="zoom:'+z.toFixed(4)+'">'+body+'</div>':body)+'</body></html>';}

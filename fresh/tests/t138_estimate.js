@@ -15,7 +15,7 @@ const W=t=>new Promise(r=>setTimeout(r,t));
  ok(!(await p.$('#jstk'))&&!(await p.$('#jrstk')),tag+'no sticker buttons on an estimate');
  const bar=await p.textContent('.paybar');ok(/Estimate total|مجموع عرض السعر/.test(bar)&&!/Invoice|pay|دفع|فاتورة/i.test(bar.replace(/Send estimate|إرسال عرض السعر/,'')),tag+'bar: estimate total, nothing about invoice/pay → '+bar.trim().slice(0,60));
  /* sending: the WhatsApp text */
- const sent=await ev(()=>{let got=null;const S0=window.shareText;window.shareText=(ph,t)=>{got=t;};document.querySelector('#jsendest2').click();window.shareText=S0;return got;});
+ const sent=await ev(()=>{let got=null;const S0=window.shareText;window.shareText=(ph,t)=>{got=t;};const jid=S.p.id;document.querySelector('#jsendest2').click();document.querySelector('#ewa').click();window.shareText=S0;go('job',{id:jid});return got;});
  ok(/عرض سعر رقم 8801/.test(sent)&&/وليس فاتورة/.test(sent)&&!/فاتورة رقم|المدفوع|المتبقي|المستحق|دفع/.test(sent.replace('وليس فاتورة','')),tag+'message: «عرض سعر رقم 8801 … وليس فاتورة», no payment lines');
  /* customer agreed → job card: now invoice & pay is there, stickers back */
  await p.click('#jnext');await W(400);ok(await ev(()=>byId('jobs','eT').stage)==='new'&&!!(await p.$('#jpay'))&&!(await p.$('#jsendest2')),tag+'customer agreed → job card: «Invoice & pay» back, no estimate button');

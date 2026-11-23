@@ -8,6 +8,7 @@ const DESK={
   job:{top:'.nh-head',side:'#jinsp,.jrem,.jrbtns,label.field-l,.jb-log',sideSec:1},
   custd:{top:'.nh-head',side:'.chd,.two,.kpis3'},
   inv:{top:'.nh-head',side:'.lnk,.ops-sec,.jb-list,.two,.btn',main:'.inv-pv'},
+  estv:{top:'.nh-head',side:'.two,.btn',main:'.inv-pv'},
   inspr:{top:'.nh-head',side:'.two',main:'.invwrap'},
   invstyle:{top:'.nh-head',from:'#ipv'},
   stkset:{top:'.nh-head',from:'#spvS'}};

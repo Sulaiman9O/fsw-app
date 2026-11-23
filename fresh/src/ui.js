@@ -16,7 +16,7 @@ function stepDone(w,i,auto){if(DB.steps[stepKey(w,i)])return true;return !!(auto
 function stepsProgress(){let d=0,t=0;STEPS.forEach(([w,,list])=>list.forEach(([,a],i)=>{t++;if(stepDone(w,i,a))d++;}));return [d,t];}
 
 const NAV=[['home','i-home','Home'],['work','i-wrench','Work'],['cust','i-car','Customers'],['more','i-gear','More']];
-const navOf=r=>({home:'home',search:'home',counter:'home',sale:'home',quote:'home',bugs:'more',work:'work',job:'work',newjob:'work',inv:'work',cust:'cust',custd:'cust'}[r]||'more');
+const navOf=r=>({home:'home',search:'home',counter:'home',sale:'home',quote:'home',bugs:'more',work:'work',job:'work',newjob:'work',inv:'work',estv:'work',cust:'cust',custd:'cust'}[r]||'more');
 /* screens with no fixed parent (quick price, debts, checks…) go back to where they were opened from */
 let GO_BACK=false;
 /* Back goes to the screen you came from: every move is kept in a short history. The four bottom tabs start a new history;
@@ -26,7 +26,7 @@ function go(r,p){S.hist=S.hist||[];if(S.r==='po'&&r!=='po')S.poSnap=null;if(!(S.
   if(!GO_BACK){if(NAV.some(n=>n[0]===r)){S.hist=[];S.freshJ=null;}
     else if(S.r&&S.r!==r){if(!NOHIST.has(S.r))S.hist.push({r:S.r,p:S.p});const pid=p&&p.id;const i=S.hist.findIndex(h=>h.r===r&&((h.p&&h.p.id)||undefined)===(pid||undefined));if(i>=0)S.hist=S.hist.slice(0,i);}
     if(S.hist.length>40)S.hist=S.hist.slice(-40);}S.selJ=null;S.sel=null;if(r!=='newjob')S.pendQuote=null;try{closeQs();}catch(e){}S.r=r;S.p=p||{};S.sheet=null;closeSheet();if(!window.CapApp)try{history.pushState({r},'');}catch(e){}render();scrollTo(0,0);}
-function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(document.getElementById('spov')){closeSelSearch();return true;}if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;if($('#sheet'))sheetLeave();else closeSheet();return true;}
+function back(){const parent={job:'work',newjob:'work',inv:'job',estv:'job',custd:'cust',part:'stock',po:'vendors',search:'home',list:'lists',menu:'lists',lists:'more',outw:'money',msgs:'more',audit:'more',news:'more',slow:'stock',stockval:'stock',stocktools:'stock'}[S.r];if(document.getElementById('spov')){closeSelSearch();return true;}if(S.sheet){if(typeof S.sheetBack==='function'&&S.sheetBack())return true;if($('#sheet'))sheetLeave();else closeSheet();return true;}
   /* back first undoes what is open on this screen (strip, selection, undo bar) before leaving it */
   if(document.getElementById('qs')){try{closeQs();}catch(e){}return true;}
   if(S.selJ||S.sel){S.selJ=null;S.sel=null;render();return true;}
@@ -38,7 +38,7 @@ function back(){const parent={job:'work',newjob:'work',inv:'job',custd:'cust',pa
   if(S.r==='stock'&&S.p.low){go('stock');return true;}if(S.r==='arc'&&S.p.k){go('arc');return true;}if(S.r==='svc'&&S.p.hid){go('svc');return true;}
   if(S.r==='quote')S.quote=null;
   const H=S.hist||[];while(H.length){const h=H.pop();if(h.r!==S.r&&routeOk(h.r)&&(h.r!=='job'||!h.p||!h.p.id||byId('jobs',h.p.id))){GO_BACK=true;try{go(h.r,h.p);}finally{GO_BACK=false;}return true;}}
-  if(S.r==='inv'){go('job',{id:S.p.id});return true;}
+  if(S.r==='inv'||S.r==='estv'){go('job',{id:S.p.id});return true;}
   if(parent){go(parent);return true;}if(S.r!=='home'){go(NAV.some(n=>n[0]===S.r)?'home':'more');return true;}return false;}
 window.addEventListener('popstate',()=>{if(!back())try{history.pushState({},'');}catch(e){}});
 
@@ -48,7 +48,7 @@ function render(){
   if(!DB.ws){renderOnboard();return;}
   if(!S.user){renderLogin();return;}
   ensureLists();
-  const T={quote:'Quick price',checks:'Invoice checks',debts:'Debts',home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages',audit:'Activity log',news:'What\'s new',slow:'Slow parts',stockval:'Stock value',stocktools:'Stock tools'};
+  const T={quote:'Quick price',checks:'Invoice checks',debts:'Debts',home:DB.ws.name,work:'Work',job:'Job',newjob:'New car in',inv:'Invoice',estv:'Estimate',cust:'Customers',custd:'Customer',stock:'Stock',part:'Part',vendors:'Suppliers',po:'Supplier order',svc:'Services',money:'Money',exp:'Expenses',close:'Daily close',count:'Daily count',reports:'Reports',setup:'Setup · 100 steps',settings:'Settings',users:'Users',more:'More',insp:'Inspections',canned:'Canned jobs',search:'Search',lists:'Lists',list:'Lists',menu:'More menu',outw:'Other workshops',msgs:'Messages',audit:'Activity log',news:'What\'s new',slow:'Slow parts',stockval:'Stock value',stocktools:'Stock tools'};
   const nb=NAV.filter(n=>routeOk(n[0])).map(([k,i,l])=>`<button class="navb" data-nav="${k}" ${navOf(S.r)===k?'aria-current="page"':''}><svg><use href="#${i}"/></svg>${l}</button>`).join('');
   $('#root').innerHTML=`<div class="shell">
    <header class="top">${logoImg('em')}<span class="t">${esc(T[S.r]||'')}</span><button class="synb" id="synb" data-synb hidden>⚠️ Not synced</button><button class="bugb" data-bug title="Something is wrong">🐞</button><div class="me"><span>${new Date().toLocaleDateString('en-GB',{weekday:'short',timeZone:'Asia/Muscat'})}<br>${fmtDs(now())}</span><span class="av me" style="background:${safeCol(S.user.color)}">${initials(S.user.name)}</span></div></header>
@@ -110,7 +110,7 @@ function autoListSearch(el){if(el.querySelector('input[type=text],input:not([typ
     q.oninput=()=>{rows.forEach(r=>{r.style.display=srchHit(r.textContent,q.value)?'':'none';});};});}
 /* a screen with a long list and no search box gets one (the words stay while the screen redraws) */
 S.pq=S.pq||{};
-const NOPGSRCH=['home','more','job','inv','newjob','settings','setup','lists','menu','reports','money','close','inspj','inspr','counter','sale','quote','invstyle','stkset'];
+const NOPGSRCH=['home','more','job','inv','estv','newjob','settings','setup','lists','menu','reports','money','close','inspj','inspr','counter','sale','quote','invstyle','stkset'];
 function autoPageSearch(m){if(NOPGSRCH.includes(S.r))return;if(m.querySelector('input[type=text]:not(.qin),input:not([type]):not(.qin),input[type=search]'))return;
   const list=[...m.querySelectorAll('.list')].find(l=>[...l.children].filter(r=>r.matches('button,.row,[role=button],[data-go]')).length>SRCH_MIN+4);if(!list)return;
   const rows=[...list.children].filter(r=>r.matches('button,.row,[role=button],[data-go]'));const key=S.r;

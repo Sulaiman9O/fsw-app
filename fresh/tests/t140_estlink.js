@@ -10,6 +10,7 @@ async function start(vp){const b=await chromium.launch();const p=await (await b.
 const W=t=>new Promise(r=>setTimeout(r,t));
 (async()=>{
  {const {b,p,errs}=await start();const ev=(f,a)=>p.evaluate(f,a);
+  await ev(()=>{window.SENDE=()=>{go('job',{id:'eL'});document.querySelector('#jsendest2').click();document.querySelector('#ewa').click();};});
   await ev(()=>{const j=JSON.parse(JSON.stringify(DB.jobs.find(x=>!isInvoiced(x)&&(x.items||[]).length&&!(x.items||[]).some(i=>i.pend))));j.id='eL';j.no=8802;j.stage='estimate';delete j.inv;j.pays=[];DB.jobs.push(j);save();});
   /* the page, in every invoice look and language */
   for(const t of ['modern','clean','classic'])for(const lang of ['both','ar','en']){
@@ -29,7 +30,7 @@ const W=t=>new Promise(r=>setTimeout(r,t));
   /* sending with a link: kind est, number, text has the link and عرض سعر, no فاتورة */
   const L=await ev(async()=>{const o={};const S0=shareText,U0=docUploadLink,K0=[FBS,SYNC.user],O0=window.open;
     window.open=()=>null;window.shareText=shareText=(ph,t)=>{o.text=t;o.ph=ph;};window.docUploadLink=docUploadLink=async(kind,html,css,meta)=>{o.kind=kind;o.meta=meta;o.html=html.includes('عرض سعر');return EST_VIEW+'TESTabcdefghijklmnop';};FBS=FBS||{};SYNC.user=SYNC.user||{uid:'t'};
-    document.querySelector('#main')&&go('job',{id:'eL'});await new Promise(r=>setTimeout(r,400));document.querySelector('#jsendest2').click();await new Promise(r=>setTimeout(r,600));
+    document.querySelector('#main')&&go('job',{id:'eL'});await new Promise(r=>setTimeout(r,400));SENDE();await new Promise(r=>setTimeout(r,600));
     window.shareText=shareText=S0;window.docUploadLink=docUploadLink=U0;FBS=K0[0];SYNC.user=K0[1];window.open=O0;o.link=byId('jobs','eL').estLink;o.log=byId('jobs','eL').log.slice(-1)[0][1];return o;});
   ok(L.kind==='est'&&L.meta&&L.meta.no==='8802'&&L.html,'link made as kind est, no 8802, page says عرض سعر');
   ok(/عرض سعر رقم 8802/.test(L.text||'')&&/github\.io\/fsw-app\/f\/\?k=TEST/.test(L.text||'')&&!/فاتورة/.test((L.text||'').replace('وليس فاتورة','')),'WhatsApp text: عرض سعر رقم 8802 + the link → '+(L.text||'').replace(/\n/g,' | ').slice(0,160));
@@ -38,10 +39,10 @@ const W=t=>new Promise(r=>setTimeout(r,t));
   /* the link fails → text as before */
   const F=await ev(async()=>{const o={};const S0=shareText,U0=docUploadLink,K0=[FBS,SYNC.user],O0=window.open;
     window.open=()=>null;window.shareText=shareText=(ph,t)=>{o.text=t;};window.docUploadLink=docUploadLink=async()=>{throw new Error('offline');};FBS=FBS||{};SYNC.user=SYNC.user||{uid:'t'};
-    document.querySelector('#jsendest2').click();await new Promise(r=>setTimeout(r,800));window.shareText=shareText=S0;window.docUploadLink=docUploadLink=U0;FBS=K0[0];SYNC.user=K0[1];window.open=O0;return o;});
+    SENDE();await new Promise(r=>setTimeout(r,800));window.shareText=shareText=S0;window.docUploadLink=docUploadLink=U0;FBS=K0[0];SYNC.user=K0[1];window.open=O0;return o;});
   ok(/عرض سعر رقم 8802/.test(F.text||'')&&!/http/.test(F.text||''),'link failed → sent as text (no link)');
   /* no internet / not signed in → text right away */
-  const N=await ev(()=>{let t=null;const S0=shareText;window.shareText=shareText=(ph,x)=>{t=x;};document.querySelector('#jsendest2').click();window.shareText=shareText=S0;return t;});
+  const N=await ev(()=>{let t=null;const S0=shareText;window.shareText=shareText=(ph,x)=>{t=x;};SENDE();window.shareText=shareText=S0;return t;});
   ok(/عرض سعر رقم 8802/.test(N||''),'offline → text right away');
   /* an empty estimate: nothing is sent */
   const E=await ev(()=>{const j=byId('jobs','eL');const it=j.items;j.items=[];let t=null;const S0=shareText;window.shareText=shareText=(ph,x)=>{t=x;};sendEstimate(j);window.shareText=shareText=S0;j.items=it;return t;});
@@ -54,7 +55,7 @@ const W=t=>new Promise(r=>setTimeout(r,t));
      j.notes='القطع التالية غير متوفرة لدينا:\n- فلتر الهواء\n- فلتر المكيف\n- سير المكينة\n- 6 بواجي\nCustomer to bring: air filter, A/C cabin filter, engine drive belt, 6 spark plugs.';
      const S0=DB.ws.invStyle&&JSON.stringify(DB.ws.invStyle);DB.ws.invStyle=Object.assign(DB.ws.invStyle||{},{show:Object.assign({},invS().show,{notes:1,num:1,ar:1})});
      const raw=await htmlCanvas(invoiceHtml(j,true),invDocCss(),210,1);const before=cutPages(raw).length;
-     const F=fitLink(invoiceHtml(j,true),invDocCss());const c=await htmlCanvas(F.html,F.css,210,1);const after=cutPages(c).length;
+     const F=await fitLink(invoiceHtml(j,true),invDocCss());const c=await htmlCanvas(F.html,F.css,210,1);const after=cutPages(c).length;
      const tx=(()=>{const d=document.createElement('div');d.innerHTML=F.html;return d.textContent;})();
      j.items=it;j.notes='';if(S0)DB.ws.invStyle=JSON.parse(S0);return {before,after,z:F.z,hasEnd:/شكراً لثقتكم|Thank you/.test(tx),last:tx.includes('NUM-'+(n-1))};},n);
    if(want==='one')ok(R.after===1&&R.z>=1/1.5-0.01&&R.hasEnd&&R.last,n+' items: '+R.before+' page(s) → '+R.after+' page, zoom '+R.z.toFixed(2)+' (not below 0.67), nothing lost');
@@ -63,6 +64,25 @@ const W=t=>new Promise(r=>setTimeout(r,t));
     const FL=fitLink;window.fitLink=fitLink=(h,c)=>{o.fit=1;return {html:h+'<i>FITTED</i>',css:c,z:1};};window.docUploadLink=docUploadLink=async(kind,html,css)=>{o.css=o.fit&&html.includes('FITTED');return EST_VIEW+'TESTabcdefghijklmnop';};FBS=FBS||{};SYNC.user=SYNC.user||{uid:'t'};
     await sendEstimate(byId('jobs','eL'));window.fitLink=fitLink=FL;window.docUploadLink=docUploadLink=U0;FBS=K0[0];SYNC.user=K0[1];window.open=O0;window.shareText=shareText=S0;return o;});
   ok(LP.css,'sending an estimate goes through the one-page fit');
+  /* 2.42.6: the estimate sheet — look, print, send */
+  await ev(()=>{const x=document.getElementById('pvx');if(x)x.remove();go('job',{id:'eL'});});await W(400);
+  ok(/عرض سعر|Estimate/.test(await p.textContent('#jsendest2')),'estimate bar button «📄 عرض سعر»');
+  await p.click('#jsendest2');await W(500);
+  const V=await ev(()=>({r:S.r,pv:(document.querySelector('.inv-pv')||{}).textContent||'',wa:!!document.querySelector('#ewa'),pr:!!document.querySelector('#epr')}));
+  ok(V.r==='estv'&&/عرض سعر|ESTIMATE/.test(V.pv)&&!/INVOICE/.test(V.pv)&&V.wa&&V.pr,'estimate sheet opens: shows the estimate, Send + Print');
+  await p.screenshot({path:'/tmp/t140_estv.png'});
+  const PR=await ev(async()=>{const P0=printHtml;let got=null;window.printHtml=printHtml=(d,w,h,n)=>{got={d,w,h,n};};document.querySelector('#epr').click();window.printHtml=printHtml=P0;const d=await got.d;return {w:got.w,h:got.h,n:got.n,est:/عرض سعر/.test(d)&&/ESTIMATE/.test(d),zoom:/zoom:/.test(d),log:byId('jobs','eL').log.slice(-1)[0][1]};});
+  ok(PR.w===210&&PR.h===297&&PR.est&&!PR.zoom&&/Estimate 8802/.test(PR.n)&&/Estimate printed/.test(PR.log),'Print: A4 estimate page, not shrunk, logged → '+JSON.stringify(PR).slice(0,120));
+  await ev(()=>back());await W(300);ok(await ev(()=>S.r==='job'&&S.p.id==='eL'),'back from the estimate sheet → the job');
+  /* print measured on the page picture: bigger text on the screen (tablet font-size) does not shrink the print */
+  const PZ=await ev(async()=>{const st=document.createElement('style');st.id='bigtx';st.textContent='.iv2{font-size:140%!important;line-height:2.4!important}.iv2 *{line-height:2.4!important}';document.head.appendChild(st);
+    const j=byId('jobs','eL');const it=j.items;const base=it.filter(i=>!i.pend)[0];const mk=n=>{j.items=[];for(let k=0;k<n;k++)j.items.push(Object.assign({},base,{d:base.d+' '+k,ar:'بند '+k,num:'N'+k}));};
+    const out={};const pr=async n=>{mk(n);const d=await invPrintDoc(j,12);return {zoom:+((d.match(/zoom:([\d.]+)/)||[])[1]||1),fit:(d.match(/class="iv2 ([^"]*)"/)||[])[1]||''};};for(const n of [6,8,13,45])out[n]=await pr(n);st.remove();for(const n of [6,8,13])out['n'+n]=await pr(n);
+    j.items=it;st.remove();return out;});
+  ok(PZ[6].zoom===1&&!PZ[6].fit,'6 items with big screen text: printed at full size, normal spacing '+JSON.stringify(PZ[6]));
+  ok([6,8,13].every(n=>JSON.stringify(PZ[n])===JSON.stringify(PZ['n'+n])),'big screen text changes nothing in the print '+JSON.stringify(PZ));
+  ok(PZ[13].zoom>=0.66,'13 items: one page, shrunk at most to 2/3 '+JSON.stringify(PZ[13]));
+  ok(PZ[45].zoom===1&&!PZ[45].fit,'45 items: printed on more pages at full size '+JSON.stringify(PZ[45]));
   ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));await b.close();}
  /* the link viewer page (docs/f = hosting/f) */
  {const b=await chromium.launch();const p=await (await b.newContext({viewport:{width:400,height:800}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));

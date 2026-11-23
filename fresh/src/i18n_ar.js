@@ -256,3 +256,5 @@ Object.assign(AR_DICT,{'Estimate total':'مجموع عرض السعر','Send est
 Object.assign(AR_DICT,{'Making the estimate link…':'جاري تجهيز رابط عرض السعر…','Could not make the link, sent as text':'ما قدرنا نسوي الرابط، انرسل كنص','Estimate link sent':'انرسل رابط عرض السعر'});
 Object.assign(AR_DICT,{'miles':'ميل','Odometer':'العداد','or after (mi)':'أو بعد (ميل)','Next mi':'الميل القادم'});
 Object.assign(AR_DICT,{'Odometer now':'العداد الحين'});
+
+Object.assign(AR_DICT,{'Preparing to print…':'جاري تجهيز الطباعة…'});
