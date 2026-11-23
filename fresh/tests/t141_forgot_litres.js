@@ -34,29 +34,12 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};c
  ok(/3\.3 L/.test(await p.textContent('#qlit')),'gearbox oil litres can be changed too');
  await p.click('#qlit');await W(300);await p.fill('#qgl','abc');await p.click('#qglok');await W(200);ok(!!(await p.$('#qgl')),'wrong litres: sheet stays open');await ev(()=>closeSheet());
  await ev(vid=>{delete byId('vehicles',vid).oilQ;save();},vid);
- /* (2) forgotten cards */
+ /* (2) removed in 2.42.7 at Sulaiman's word («makes the app more complicated»): no forgotten section on Home */
  const ids=await ev(()=>{const v=DB.vehicles[1],v2=DB.vehicles[2];const mk=(v,st,days,no)=>{const j={id:'fg'+no,no,cust:v.cust,veh:v.id,km:0,stage:st,items:[{k:'labour',d:'Test check',q:1,p:5}],disc:0,t:Date.now()-days*864e5,by:'S',log:[[Date.now()-days*864e5,'Job opened']],pays:[]};DB.jobs.push(j);return j.id;};
-   const a=mk(v,'new',3,9901),b=mk(v2,'new',3,9902),c=mk(v,'new',1,9903),d=mk(v,'work',5,9904),e=mk(v2,'estimate',40,9905),f=mk(v2,'estimate',10,9906);save();go('home');return [a,b,c,d,e,f];});
+   const a=mk(v,'new',3,9901),e=mk(v2,'estimate',40,9905),f=mk(v2,'estimate',10,9906);save();go('home');return [a,e,f];});
  await W(500);
- const H=await ev(()=>{const f=document.querySelector('#forg');return {has:!!f,ids:f?[...f.querySelectorAll('[data-go]')].map(r=>r.dataset.go.split(':')[1]):[],txt:document.body.textContent};});
- ok(H.has&&H.ids.includes('fg9901')&&H.ids.includes('fg9902')&&!H.ids.includes('fg9903')&&!H.ids.includes('fg9904'),'Home «Opened and forgotten»: the 3-day-old new cards, not the 1-day one, not a started one '+JSON.stringify(H.ids));
- ok(/مفتوحة ومنسية|Opened and forgotten/.test(H.txt),'section title shown');
- const inShop=await ev(()=>[...document.querySelectorAll('.list:not(#forg) [data-go^="job:fg99"]')].map(r=>r.dataset.go));
- ok(!inShop.includes('job:fg9901')&&inShop.includes('job:fg9903'),'forgotten cards are not in «In the workshop now» '+JSON.stringify(inShop));
- /* a normal tap still opens the card */
- await p.locator('#forg [data-go="job:fg9902"]').scrollIntoViewIfNeeded();await p.click('#forg [data-go="job:fg9902"]');await W(400);ok(await ev(()=>S.r==='job'&&S.p.id==='fg9902'),'tap opens the card');
- await ev(()=>go('home'));await W(400);
- const hold=async id=>{const el=p.locator('#forg [data-go="job:'+id+'"]');await el.evaluate(e=>e.scrollIntoView({block:'center'}));const bx=await el.boundingBox();await p.mouse.move(bx.x+bx.width/2,bx.y+bx.height/2);await p.mouse.down();await W(700);await p.mouse.up();await W(300);};
- await hold('fg9901');const acts=await ev(()=>[...document.querySelectorAll('#qs button,#sheet button')].map(b=>b.textContent.trim()));
- ok(acts.some(t=>/عرض سعر|estimate/i.test(t))&&acts.some(t=>/احذف|Delete/i.test(t)),'hold: «make it an estimate» / «delete it» '+JSON.stringify(acts));
- await p.locator('#qs button,#sheet button',{hasText:/عرض سعر|estimate/i}).first().click();await W(400);
- const a1=await ev(()=>{const j=byId('jobs','fg9901');return {st:j.stage,log:j.log.slice(-1)[0][1],still:!!document.querySelector('#forg [data-go="job:fg9901"]')};});
- ok(a1.st==='estimate'&&/estimate/i.test(a1.log)&&!a1.still,'made an estimate: logged, left the forgotten list '+JSON.stringify(a1));
- await hold('fg9902');await p.locator('#qs button,#sheet button',{hasText:/احذف|Delete/i}).first().click();await W(300);
- await p.locator('#sheet button',{hasText:/^(Delete|حذف)$/}).first().click().catch(async()=>{await p.locator('#sheet .btn').first().click();});await W(400);
- const a2=await ev(()=>({gone:!byId('jobs','fg9902'),sec:!!document.querySelector('#forg')}));
- ok(a2.gone&&!a2.sec,'deleted after asking; section gone when empty '+JSON.stringify(a2));
- /* worker without delete permission: no delete */
+ const H=await ev(()=>({forg:!!document.querySelector('#forg'),inShop:!!document.querySelector('[data-go="job:fg9901"]')}));
+ ok(!H.forg&&H.inShop,'Home: no forgotten section; the 3-day-old card is in «In the workshop now» as before');
  /* (3) old estimates */
  await ev(()=>go('work',{f:'estimate'}));await W(400);
  const L=await ev(()=>({ids:[...document.querySelectorAll('.list [data-go]')].map(r=>r.dataset.go),old:!!document.querySelector('#wold')}));

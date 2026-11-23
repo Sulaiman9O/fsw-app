@@ -80,10 +80,8 @@ const MI=1.609344;const isMi=v=>!!(v&&v.odo==='mi');const odoU=v=>isMi(v)?'mi':'
 const kmU=(n,v)=>kmf(n)+' '+odoU(v);const intU=(km,v)=>isMi(v)&&km?Math.max(100,Math.round(km/MI/100)*100):(+km||0);
 const estOf=v=>v&&v.id?DB.jobs.filter(j=>j.stage==='estimate'&&!isInvoiced(j)&&Date.now()-(+j.t||0)<45*864e5&&(j.veh===v.id||sameCar(byId('vehicles',j.veh),v))).sort((a,b)=>(b.veh===v.id)-(a.veh===v.id)||b.t-a.t)[0]||null:null;
 const estRecent=j=>j.stage==='estimate'&&Date.now()-(+j.t||0)<14*864e5;
-/* 2.42.7: forgotten cards — a job card that never started (stage new, no invoice) and nothing changed for 2 days: often opened only to give a price.
-   Estimates with nothing changed for 30 days leave the lists (not deleted: search and the car's page still find them) */
+/* 2.42.7: estimates with nothing changed for 30 days leave the lists (not deleted: search and the car's page still find them) */
 const lastTouch=j=>Math.max(+j.t||0,...(j.log||[]).map(l=>+(l&&l[0])||0));
-const isForgot=j=>j.stage==='new'&&!isInvoiced(j)&&Date.now()-lastTouch(j)>2*864e5;
 const estOld=j=>j.stage==='estimate'&&Date.now()-lastTouch(j)>30*864e5;
 /* agreed from the other saved copy of the same car: the job goes on the car and customer that were picked now */
 function estAgree(e,v){if(v&&v.id&&e.veh!==v.id){const was=carName(byId('vehicles',e.veh)||{})+' · '+((byId('customers',e.cust)||{}).name||'');e.veh=v.id;if(v.cust)e.cust=v.cust;try{logJ(e,'Moved from '+was);}catch(x){}}e.stage='new';e.fromEst=true;e.t=now();try{logJ(e,'Customer agreed');}catch(x){}save();toast(T_('Estimate')+' #'+e.no+' → '+T_('job card'));go('job',{id:e.id});}
