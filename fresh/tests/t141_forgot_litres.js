@@ -11,8 +11,8 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};c
  /* (4) cc sizes */
  const D=await ev(()=>['2500','3445mL','3456 CC','1971','VR30 (DDTT) 2997CC','Toyota 2018','2.4L 2AZ-FE','engine 2018','12345'].map(x=>dispTxt(x)));
  ok(JSON.stringify(D)===JSON.stringify(['2.5','3.4','3.5','2.0','3.0','','2.4','','']),'engine sizes in cc read: '+JSON.stringify(D));
- const E=await ev(()=>{const mk=(m,md,y,e)=>effEng({id:'_t'+Math.random(),make:m,model:md,year:y,engine:e});return [mk('Toyota','RAV4',2017,'2500'),mk('Toyota','FJ Cruiser',2014,'3.9L'),mk('Toyota','Camry',2020,'')];});
- ok(/2AR-FE/.test(E[0])&&/1GR-FE/.test(E[1])&&E[2]==='','engine found from «2500» (RAV4 → 2AR-FE) and «3.9L» (FJ → 1GR-FE); unknown stays unknown → '+JSON.stringify(E));
+ const E=await ev(()=>{const mk=(m,md,y,e)=>effEng({id:'_t'+Math.random(),make:m,model:md,year:y,engine:e});return [mk('Toyota','RAV4',2014,'2500'),mk('Toyota','FJ Cruiser',2014,'3.9L'),mk('Toyota','Camry',2020,'')];});
+ ok(/2AR-FE/.test(E[0])&&/1GR-FE/.test(E[1])&&E[2]==='','engine found from «2500» (RAV4 2014 → 2AR-FE) and «3.9L» (FJ → 1GR-FE); unknown stays unknown → '+JSON.stringify(E));
  /* (1) quick price litres */
  const vid=await ev(()=>{const v=DB.vehicles.find(x=>/camry/i.test(x.model||''))||DB.vehicles[0];delete v.oilQ;save();return v.id;});
  await ev(vid=>{S.quote={vid,car:null,kind:'oil',vf:'all',cv:false,q:''};go('quote');},vid);await W(500);

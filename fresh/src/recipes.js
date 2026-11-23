@@ -94,9 +94,17 @@ function engSpecOf(v){if(typeof ENGSPEC==='undefined')return null;const hit=k=>{
   const toks=last.split(/[\s/,]+/).filter(t=>t&&!/^\d+(\.\d+)?[lt]?$/i.test(t)&&!/^(v\d+|l\d|\d+cyl|cyl|turbo|twin|diesel|petrol|hybrid|engine)$/i.test(t));
   for(const k of [seg.length>1?last:'',...toks.map(t=>d+' '+t),...toks,...toks.map(t=>ENG_ALIAS[nrmK(t)]),ENG_ALIAS[nrmK(last)]])if(k&&k.length>1&&(r=hit(k)))return r;return null;}
 const ENG_ALIAS={pe:'PE-VPS',py:'PY-VPS (SkyActiv-G 2.5)',p5:'P5-VPS',amc242:'Jeep 4.0',242:'Jeep 4.0',pentastar:'3.6 Pentastar',hemi:'5.7 Hemi',m20fks:'M20A-FKS',f35afts:'V35A-FTS',ea888:'EA888',vr30:'VR30DDTT',pyvpts:'PY-VPST'};
+/* 2.42.7: the engine is not known, but every engine this model had that year (of this size, if the size is known) takes the same oil
+   and about the same litres (±0.3): that is the maker's data whichever it is (Camry 2018–21 2.5: 2AR-FE or A25A-FKS; Tahoe 5.3/6.2) */
+function sharedSpec(v){if(!v||!v.make||!v.model||typeof carEngines!=='function')return null;let E;try{E=carEngines(v.make,v.model,v.year).L.filter(e=>e.yr!=='added by you'&&!/electric/i.test(e.n));}catch(e){return null;}
+  const d=dispTxt(cleanEng(v.engine)||'');if(d){const x=E.filter(e=>dispTxt(e.n)===d);if(x.length)E=x;}if(!E.length||E.length>4)return null;
+  const S=E.map(e=>engSpecOf({id:'_s'+e.n,make:v.make,model:v.model,year:v.year,engine:e.n}));if(S.some(x=>!x||!x.oil_l||!(x.visc||[]).length))return null;
+  if(S.some(x=>x.visc[0]!==S[0].visc[0]))return null;const caps=S.map(x=>+x.oil_l);if(Math.max(...caps)-Math.min(...caps)>0.3)return null;
+  const f0=S.map(x=>(x.filter||[])[0]||'');return {visc:S[0].visc,cap:Math.max(...caps),filter:f0.every(f=>f===f0[0])?S[0].filter:[],xref:[],conf:S.some(x=>x.conf==='low')?'low':'medium',code:'',shared:E.length};}
 function specOf(v){if(!v)return null;const mk=lc(v.make).trim(),md=lc(v.model),d=dispOf(v),y=+v.year||0;
   const own=(DB.spec||{})[mk+'|'+baseModel(v.model)+'|'+d];if(own)return Object.assign({own:true},own);
   const es=engSpecOf(v);if(es&&(es.visc||[]).length)return {visc:es.visc,cap:es.oil_l||0,filter:es.filter||[],xref:es.xref||[],conf:es.conf,code:engCodeX(v),src:es.src};
+  const sh=sharedSpec(v);if(sh)return sh;
   const r=SPEC0.find(s=>s[0]===mk&&s[1].test(md)&&s[2]===d&&(!y||((!s[3]||y>=s[3])&&(!s[4]||y<=s[4]))));return r?{visc:r[5],cap:r[6]}:null;}
 /* pick an oil from stock with this viscosity: the usual one if it is in stock, else the one with most stock; for the maker, prefer the maker's own brand */
 function oilFor(visc,usual,mkBrand){const L=DB.parts.filter(p=>p.cat==='Engine oil'&&viscTxt(p.name)===visc);if(!L.length)return null;
