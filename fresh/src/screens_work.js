@@ -4,8 +4,8 @@ function carRow(j,pay){const v=vehOf(j),c=custOf(j),T=jobTotals(j);let [sl,sc]=S
   const right=unpaid?f3(T.due):j.stage==='ready'&&T.due>0?`not paid · ${f3(T.due)}`:j.stage==='work'&&j.eta?`ready ~${hm(j.eta)}`:j.stage==='done'?f3(T.total):ago(j.t);
   return `<button class="car" data-go="job:${j.id}" style="--sc:${sc}"><div class="no">#${j.no}</div>${typeof vehThumb==='function'?vehThumb(v):''}<div class="tx"><b>${esc(carName(v)||'Car')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><span>${esc(c.name||'Walk-in')}${(j.items||[]).length?' · '+esc(j.items.slice(0,2).map(i=>i.d).join(' + ')):''}</span></div><div class="st">${sl.toUpperCase()} <small>${right}</small>${pay===true&&(unpaid||(j.stage==='ready'&&isInvoiced(j)&&T.due>0.0005&&!j.returned))&&canPay()?`<span class="cpay" role="button" data-pj="${j.id}">💵 ${T_('Pay')}</span>`:''}</div></button>`;}
 SCREENS.home=m=>{
-  const open=openJobs(),[pd,pt]=stepsProgress(),due=totalDue(),low=lowParts().length,rem=remindersDue().length;
-  const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate');
+  const open0=openJobs(),forg=open0.filter(isForgot),open=open0.filter(j=>!isForgot(j)),[pd,pt]=stepsProgress(),due=totalDue(),low=lowParts().length,rem=remindersDue().length;
+  const todayInv=DB.jobs.filter(j=>isInvoiced(j)&&dayKey(j.inv.t)===today());const est=DB.jobs.filter(j=>j.stage==='estimate'&&!estOld(j));
   m.innerHTML=demoBanner()+`
   <button class="srch" data-go="counter"><svg><use href="#i-list"/></svg><b>Plate, phone or name…</b></button>
   <button class="qbtn" data-go="quote"><span>💬</span><b>Quick price</b><small>Oil and services · every brand with the full price</small></button>
@@ -13,7 +13,8 @@ SCREENS.home=m=>{
   ${false&&pd<pt?`<button class="setupbar" data-go="setup"><div><b>Setup · ${pd}/${pt} steps</b><span>Finish setting up your workshop</span></div><div class="ring" style="--p:${Math.round(pd/pt*100)}">${Math.round(pd/pt*100)}%</div></button>`:''}
   ${sec(`In the workshop now · ${open.length}`,open.length?'<a data-go="work">All ›</a>':'')}
   ${open.length?`<div class="list">${open.slice().sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,window.innerWidth>=1100?8:4).map(carRow).join('')}</div>`:empty('🚗','No cars in the workshop. Tap <b>New car in</b> when one arrives.')}
-  ${(()=>{if(!canPay())return '';const oid=new Set(open.map(j=>j.id));const U=DB.jobs.filter(j=>!oid.has(j.id)&&jobDue(j)>0.0005).sort((a,b)=>((b.inv&&b.inv.t)||b.t)-((a.inv&&a.inv.t)||a.t));if(!U.length)return '';
+  ${forg.length?sec(`🕸 ${T_('Opened and forgotten')} · ${forg.length}`,'')+`<p class="hint" style="margin:-4px 2px 6px">${T_('No change for 2 days. Hold one: make it an estimate, or delete it.')}</p><div class="list" id="forg">${forg.sort((a,b)=>lastTouch(b)-lastTouch(a)).map(carRow).join('')}</div>`:''}
+  ${(()=>{if(!canPay())return '';const oid=new Set(open0.map(j=>j.id));const U=DB.jobs.filter(j=>!oid.has(j.id)&&jobDue(j)>0.0005).sort((a,b)=>((b.inv&&b.inv.t)||b.t)-((a.inv&&a.inv.t)||a.t));if(!U.length)return '';
     return sec(`💳 ${T_('Not paid yet')} · ${U.length} · ${f3(U.reduce((a,j)=>a+jobDue(j),0))}`,can.money()?'<a data-go="debts">All ›</a>':'')+`<div class="list">${U.slice(0,window.innerWidth>=1100?6:3).map(j=>carRow(j,true)).join('')}</div>`;})()}
   <div class="kpis3">${can.money()?`<button class="kpi org" data-go="debts"><b>${f3(due)}</b><span>Due · ${DB.ws.currency}</span></button>`:''}<button class="kpi ${low?'red':''}" data-go="stock"><b>${low}</b><span>To order</span></button><button class="kpi" data-go="cust"><b>${rem}</b><span>Reminders</span></button></div>
   <div class="grp">
@@ -24,8 +25,13 @@ SCREENS.home=m=>{
    ${can.money()?`<button class="g" data-go="money" style="--tc:color-mix(in srgb,var(--ok) 18%,var(--panel));--glow:color-mix(in srgb,var(--ok) 26%,transparent)"><span class="ic">💰</span><b>Money</b><div class="sub"><span><i>${f3(due)}</i> due</span><span><i>${f3(todayInv.reduce((a,j)=>a+jobTotals(j).total,0))}</i> today</span><span><i>${DB.expenses.length}</i> expenses</span></div></button>`:`<button class="g" data-go="count" style="--tc:color-mix(in srgb,var(--ok) 18%,var(--panel));--glow:color-mix(in srgb,var(--ok) 26%,transparent)"><span class="ic">📦</span><b>Count</b><div class="sub"><span><i>${countToday().length}</i> to count today</span></div></button>`}
   </div>
   <button class="morerow" data-go="more"><span>⋯</span><b>More</b><span>Suppliers · Inspections · Reports · Settings</span></button>`;
+  $$('#forg [data-go]').forEach(r=>longPress(r,()=>{const j=byId('jobs',r.dataset.go.split(':')[1]);if(j)forgotSheet(j);}));
   const dx=$('#demox');if(dx)dx.onclick=()=>confirmSheet('Remove all test data (everything with 🧪)? Your real data stays.','Remove test data',removeDemo);
 };
+function forgotSheet(j){const v=vehOf(j);actionSheet('#'+j.no+' · '+esc(carName(v)||''),esc((custOf(j)||{}).name||''),[
+  {ic:'🧾',t:T_('Make it an estimate'),fn:()=>{j.stage='estimate';logJ(j,'Made an estimate (forgotten card) · '+S.user.name);save();render();toast(T_('Moved to estimates'));}},
+  {ic:'🗑',t:T_('Delete it'),danger:1,hide:!can.del(),fn:()=>confirmSheet(T_('Delete job')+' #'+j.no+'?','Delete',()=>{audit('delete','Job #'+j.no+' deleted ('+carName(v)+') · forgotten card');DB.jobs=DB.jobs.filter(x=>x!==j);DB.reminders=(DB.reminders||[]).filter(r=>r.job!==j.id);save();render();})},
+  {ic:'🔧',t:T_('Open it'),fn:()=>go('job',{id:j.id})}]);}
 /* ---------- SEARCH ---------- */
 SCREENS.search=m=>{
   m.innerHTML=head('Search')+`<input class="field" id="sq" placeholder="Plate, phone, name, VIN or job #" value="${esc(S.q)}" autocomplete="off"><div id="sres"></div>`;
@@ -39,13 +45,14 @@ SCREENS.search=m=>{
 };
 /* ---------- WORK ---------- */
 SCREENS.work=m=>{
-  const f=S.p.f||'open';const cnt=k=>k==='all'?DB.jobs.length:DB.jobs.filter(j=>k==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):k==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):j.stage===k).length;
-  let list=DB.jobs.filter(j=>f==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):f==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):f==='all'?true:j.stage===f).sort((a,b)=>b.t-a.t);
+  const f=S.p.f||'open';const cnt=k=>k==='all'?DB.jobs.length:DB.jobs.filter(j=>k==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):k==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):j.stage===k&&!(k==='estimate'&&estOld(j))).length;
+  let list0=DB.jobs.filter(j=>f==='open'?(j.stage!=='done'&&j.stage!=='estimate'||estRecent(j)):f==='today'?(j.stage==='done'&&isInvoiced(j)&&dayKey(j.inv.t)===today()):f==='all'?true:j.stage===f).sort((a,b)=>b.t-a.t);
+  const nOld=f==='estimate'?list0.filter(estOld).length:0;let list=f==='estimate'&&!S.p.old?list0.filter(j=>!estOld(j)):list0;
   m.innerHTML=head('Work')+`<div class="pipe">${[['new','New'],['work','Working'],['ready','Ready'],['today','Done today']].map(([k,l])=>`<button data-f="${k}" class="${f===k?'on':''}"><b>${cnt(k)}</b><span>${l}</span></button>`).join('')}</div>
   <div class="chips">${[['open','Open'],['estimate','Estimates'],['done','Done'],['all','All']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${f===k}">${l}<span>${cnt(k)}</span></button>`).join('')}</div>
   <button class="btn okb" data-go="newjob">＋ New car in</button>
-  ${list.length?`<div class="list">${list.slice(0,S.p.n||80).map(carRow).join('')}</div>${list.length>(S.p.n||80)?`<button class="btn ghost" id="wmore">${T_('Show more')} (${list.length-(S.p.n||80)})</button>`:''}`:empty('🔧','Nothing here.')}`;
-  m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.p.f=b.dataset.f;S.p.n=0;render();});const wm=$('#wmore');if(wm)wm.onclick=()=>{S.p.n=(S.p.n||80)+200;render();};
+  ${list.length?`<div class="list">${list.slice(0,S.p.n||80).map(carRow).join('')}</div>${list.length>(S.p.n||80)?`<button class="btn ghost" id="wmore">${T_('Show more')} (${list.length-(S.p.n||80)})</button>`:''}`:empty('🔧','Nothing here.')}${nOld&&!S.p.old?`<button class="btn ghost" id="wold">🗂 ${T_('Older estimates (no change for 30 days)')} · ${nOld}</button>`:''}`;
+  m.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.p.f=b.dataset.f;S.p.n=0;render();});const wo=$('#wold');if(wo)wo.onclick=()=>{S.p.old=1;render();};const wm=$('#wmore');if(wm)wm.onclick=()=>{S.p.n=(S.p.n||80)+200;render();};
 };
 /* ---------- NEW JOB (customer → car → job) ---------- */
 /* same phone = same person: 968 / 00968 / spaces don't matter */

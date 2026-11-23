@@ -2,8 +2,8 @@
    (oil for this car's litres + filter + labour) in one list, before any job card exists ---------- */
 const QK={oil:{t:'Engine oil change',ic:'🛢'},gear:{t:'Gearbox oil',ic:'⚙️'}};
 function quoteCar(Q){if(Q.vid){const v=byId('vehicles',Q.vid);if(v)return v;}return Q.car?Object.assign({id:'_q'},Q.car):null;}
-function quoteRows(v,kind,fid){const R=RX[kind];if(!R)return {rows:[],qty:0};const rec=kind==='oil'?oilRecipe(v,'usual'):null;const sp=kind==='oil'?specOf(v):null;
-  const qty=kind==='oil'?(+v.oilQ>0?+v.oilQ:0)||(rec&&rec.qty)||(sp&&sp.cap)||guessLitres('oil',v):(learned(kind,v)||guessLitres(kind,v));
+function quoteRows(v,kind,fid,qOver){const R=RX[kind];if(!R)return {rows:[],qty:0};const rec=kind==='oil'?oilRecipe(v,'usual'):null;const sp=kind==='oil'?specOf(v):null;
+  const qty=+qOver>0?+qOver:kind==='oil'?(+v.oilQ>0?+v.oilQ:0)||(rec&&rec.qty)||(sp&&sp.cap)||guessLitres('oil',v):(learned(kind,v)||guessLitres(kind,v));
   const fopts=kind==='oil'?filterOpts(v,rec):[];const pick=fid&&fid!=='none'&&(fopts.find(o=>o.p.id===fid)||(byId('parts',fid)?{p:byId('parts',fid),n:0}:null));const filter=kind==='oil'&&fid!=='none'?((pick&&pick.p)||(rec&&rec.filter)||makerFilter(v)||fitsFilter(v)):null;if(filter&&!fopts.some(o=>o.p.id===filter.id))fopts.unshift({p:filter,n:0});const svc=rxSvcFor(kind,v);const lab=svc?svcPrice(svc,v):0;const fP=filter?(+filter.price||0):0;
   const last={};if(v.id!=='_q')DB.jobs.filter(j=>j.veh===v.id).sort((a,b)=>a.t-b.t).forEach(j=>(j.items||[]).forEach(i=>{const p=partOfItem(i);if(p&&R.cat.includes(p.cat))last.id=p.id;}));
   const rows=DB.parts.filter(p=>R.cat.includes(p.cat)&&(+p.price||0)>0).map(p=>{const g=gradeOf(p),next=g&&GRADE[g]?GRADE[g][1]:0;const lq=liqQ(p,qty),q=lq.q;const oil=r3(q*(+p.price||0));const total=r3(oil+fP+lab);
@@ -11,7 +11,7 @@ function quoteRows(v,kind,fid){const R=RX[kind];if(!R)return {rows:[],qty:0};con
   rows.sort((a,b)=>a.total-b.total);const per=rows.filter(r=>r.per).map(r=>r.per);const best=per.length>1?Math.min(...per):0;rows.forEach(r=>r.best=best&&Math.abs(r.per-best)<1e-9);
   const okV=kind==='oil'?[...new Set([rec&&rec.visc,...(sp?sp.visc:[])].filter(Boolean))]:[];
   /* what the app only guessed: litres with no visit and no maker value; a filter only because it "fits" (no visit, not the maker's) */
-  const qGuess=kind==='oil'&&!(+v.oilQ>0)&&!(rec&&rec.qty&&!(rec.qsrc&&rec.qsrc.guess))&&!(sp&&sp.cap);const fGuess=kind==='oil'&&!!filter&&!pick&&!(rec&&rec.filter&&rec.filter.id===filter.id)&&!(makerFilter(v)&&makerFilter(v).id===filter.id);
+  const qGuess=kind==='oil'&&!(+qOver>0)&&!(+v.oilQ>0)&&!(rec&&rec.qty&&!(rec.qsrc&&rec.qsrc.guess))&&!(sp&&sp.cap);const fGuess=kind==='oil'&&!!filter&&!pick&&!(rec&&rec.filter&&rec.filter.id===filter.id)&&!(makerFilter(v)&&makerFilter(v).id===filter.id);
   return {rows,qty:Math.round(qty*10)/10,filter,fopts,svc,lab,fP,rec,sp,okV,qGuess,fGuess};}
 /* brands as tiles with their picture. Pictures are kept on the phone (SQLite, one small record per brand) and shared to the other devices by sync, so nothing loads from the internet when the app opens */
 const BRAND2=['mercedes benz','ac delco','acdelco','can royal','toyota genuine','mobil 1'];
@@ -68,24 +68,29 @@ SCREENS.quote=m=>{const Q=S.quote||(S.quote={vid:null,car:null,kind:'oil',vf:'au
     inp.oninput=draw;draw();setTimeout(()=>inp.focus(),60);
     const setCar=r=>{Q.car=r;Q.vid=null;Q.vf='auto';Q.fid=null;render();};$('#qpick').onclick=()=>carPicker({},setCar);
     return;}
-  const D=quoteRows(v,Q.kind,Q.fid);const cust=v.id!=='_q'&&byId('customers',v.cust);
+  const D=quoteRows(v,Q.kind,Q.fid,Q.qL&&Q.qL[Q.kind]);const cust=v.id!=='_q'&&byId('customers',v.cust);
   let rows=D.rows;const visc=[...new Set(rows.map(r=>r.visc).filter(Boolean))].sort();
   /* the car's own viscosities, but 0W-xx is never mixed with 5W-xx (0W-20 is a different oil) */
   const z=x=>/^0W/.test(x);const okG=[D.okV.filter(z),D.okV.filter(x=>!z(x))].filter(g=>g.length&&rows.some(r=>g.includes(r.visc)));
   const gk=g=>'ok:'+g.join('/');const pref=(D.rec&&D.rec.visc)||D.okV[0];
   const vf=Q.vf==='auto'?(okG.length?gk(okG.find(g=>g.includes(pref))||okG[0]):'all'):Q.vf;
   if(vf.startsWith('ok:')){const g=vf.slice(3).split('/');rows=rows.filter(r=>g.includes(r.visc));}else if(vf!=='all')rows=rows.filter(r=>r.visc===vf);
-  const ex=[D.qty+' L',D.filter?'🔩 '+(D.filter.num||D.filter.name):'',D.svc?T_('labour')+' '+f3(D.lab):''].filter(Boolean).join(' · ');
+  const ex=[D.filter?'🔩 '+(D.filter.num||D.filter.name):'',D.svc?T_('labour')+' '+f3(D.lab):''].filter(Boolean).join(' · ');
   h+=`<div class="card qcar"><div class="h"><b>${esc(carName(v)||'')}${v.plate?` <span class="pl">${esc(v.plate)}</span>`:''}</b><button class="lnk" id="qchg">${T_('Change')}</button></div><span class="sub">${cust?esc(cust.name)+' · ':''}${esc(effEng(v)||T_('engine not known'))}</span></div>
    <div class="chips" id="qkind">${Object.entries(QK).map(([k,o])=>`<button data-k="${k}" aria-pressed="${Q.kind===k}">${o.ic} ${T_(o.t)}</button>`).join('')}</div>
    ${Q.kind==='oil'?`<div class="chips qvf" data-notr>${okG.map(g=>`<button data-vf="${esc(gk(g))}" aria-pressed="${vf===gk(g)}">✓ ${esc(g.join(' / '))}</button>`).join('')}${visc.filter(x=>!okG.some(g=>g.includes(x))).map(x=>`<button data-vf="${esc(x)}" aria-pressed="${vf===x}">${esc(x)}</button>`).join('')}<button data-vf="all" aria-pressed="${vf==='all'}">${T_('All')}</button></div>`:''}
-   <p class="hint qex" dir="ltr" data-notr>${esc(ex)}</p>
+   <p class="hint qex" dir="ltr" data-notr><button class="lnk qlit" id="qlit" title="${T_('Change the litres')}">🛢 ${D.qty} L ✎</button> ${esc(ex)}</p>
    ${D.qGuess||D.fGuess?`<div class="guess">⚠️ ${[D.qGuess?T_('Litres are a guess'):'',D.fGuess?T_('Filter is a guess'):''].filter(Boolean).join(' · ')} · ${T_('check before you tell the customer')}</div>`:''}
    ${Q.kind==='oil'&&!Q.cv?`<div class="lbl">${T_('Filter')}</div><div class="chips qfo" data-notr>${D.fopts.slice(0,6).map(o=>`<button data-fo="${o.p.id}" aria-pressed="${D.filter&&D.filter.id===o.p.id}">${esc(o.p.num||o.p.name)} · ${f3(o.p.price)}${o.n?` <small>×${o.n}</small>`:''}${(+o.p.stock||0)<=0?' ⚠':''}</button>`).join('')}${D.filter&&!D.fopts.slice(0,6).some(o=>o.p.id===D.filter.id)?`<button data-fo="${D.filter.id}" aria-pressed="true">${esc(D.filter.num||D.filter.name)} · ${f3(D.filter.price)}</button>`:''}${Q.fid==='none'?`<button aria-pressed="true">${T_('No filter')}</button>`:''}<button class="qfx" data-fx="1">🔍 ${T_('Other filter')}</button></div>`:''}
    ${rows.length?`<div class="qtiles${Q.cv?' cv':''}">${rows.map(qTile).join('')}</div>`:empty('🛢','No oils in the parts list for this.')}
    ${rows.length&&cust&&cust.phone?`<button class="btn wa" id="qwa">📤 ${T_('Send these prices on WhatsApp')}</button>`:''}`;
   m.innerHTML=h;
-  $('#qchg').onclick=()=>{Q.vid=null;Q.car=null;Q.q='';Q.fid=null;render();};const cv=$('#qcv');if(cv)cv.onclick=()=>{Q.cv=!Q.cv;render();};
+  $('#qchg').onclick=()=>{Q.vid=null;Q.car=null;Q.q='';Q.fid=null;render();};
+  /* 2.42.7: the litres can be changed here (the price was wrong when the litres were wrong, so people opened a job card instead) */
+  $('#qlit').onclick=()=>{const setQ=x=>{Q.qL=Object.assign({},Q.qL,{[Q.kind]:x});};
+    if(Q.kind==='oil')qtySheet(v,D.qty,()=>{if(Q.qL)delete Q.qL.oil;render();},x=>{setQ(x);render();});
+    else openSheet(`<h3>⚙️ ${T_('Litres')}</h3><input class="field" id="qgl" inputmode="decimal" value="${D.qty||''}" style="font-size:1.4rem;text-align:center"><button class="btn" id="qglok">${T_('OK')}</button>`,el=>{const i=el.querySelector('#qgl');setTimeout(()=>{i.focus();i.select();},80);
+      el.querySelector('#qglok').onclick=()=>{const x=Math.round(num(i.value)*10)/10;if(!(x>0&&x<30)){toast(T_('Type the litres'));return;}setQ(x);closeSheet();render();};});};const cv=$('#qcv');if(cv)cv.onclick=()=>{Q.cv=!Q.cv;render();};
   $$('#qkind [data-k]').forEach(b=>b.onclick=()=>{Q.kind=b.dataset.k;Q.vf='auto';render();});
   $$('[data-vf]').forEach(b=>b.onclick=()=>{Q.vf=b.dataset.vf;render();});$$('[data-fo]').forEach(b=>b.onclick=()=>{Q.fid=b.dataset.fo;render();});const fx=$('[data-fx]');if(fx)fx.onclick=()=>qFilterPick(v,D,id=>{Q.fid=id;render();});
   const wa=$('#qwa');if(wa)wa.onclick=()=>{const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;const items=rows.slice(0,6).map(r=>'• '+r.p.name+(r.next?' ('+kmf(r.next)+' كم)':'')+': '+f3(r.total)+' '+cur).join('\n');

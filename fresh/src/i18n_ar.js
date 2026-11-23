@@ -258,3 +258,6 @@ Object.assign(AR_DICT,{'miles':'ميل','Odometer':'العداد','or after (mi)
 Object.assign(AR_DICT,{'Odometer now':'العداد الحين'});
 
 Object.assign(AR_DICT,{'Preparing to print…':'جاري تجهيز الطباعة…'});
+Object.assign(AR_DICT,{'Change the litres':'تغيير اللترات','This time only':'هالمرة بس','Litres':'اللترات'});
+Object.assign(AR_DICT,{'OK':'تمام'});
+Object.assign(AR_DICT,{'Opened and forgotten':'مفتوحة ومنسية','No change for 2 days. Hold one: make it an estimate, or delete it.':'ما تغير فيها شي من يومين. اضغط عليها ضغطة طويلة: خلها عرض سعر، أو احذفها.','Make it an estimate':'خلها عرض سعر','Moved to estimates':'انتقلت لعروض الأسعار','Delete it':'احذفها','Open it':'افتحها','Delete job':'حذف البطاقة','Older estimates (no change for 30 days)':'عروض أقدم (ما تغيرت من 30 يوم)'});
