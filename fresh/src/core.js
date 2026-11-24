@@ -14,6 +14,10 @@ const today=()=>dayKey(now());
 const fmtD=t=>{const n=tOk(t);return n==null?'':F_D.format(n);};
 const fmtDs=t=>{const n=tOk(t);return n==null?'':F_DS.format(n);};
 const hm=t=>{const n=tOk(t);return n==null?'':F_HM.format(n);};
+/* 2.42.9: «opened 13:20» had no day and no AM/PM — the job/estimate head now says «opened today 1:20 PM» or «opened 21 Nov 1:20 PM» (Arabic: «فُتح اليوم 1:20 م») */
+const F_H12=DTF(['en-US',{hour:'numeric',minute:'2-digit',hour12:true}]),F_H12A=DTF(['ar-OM-u-nu-latn',{hour:'numeric',minute:'2-digit',hour12:true}]),F_DSA=DTF(['ar-OM-u-nu-latn',{day:'numeric',month:'short'}]);
+const h12=t=>{const n=tOk(t);if(n==null)return '';const ar=typeof langPref==='function'&&langPref()==='ar';return (ar?F_H12A:F_H12).format(n);};
+const dayH12=t=>{const n=tOk(t);if(n==null)return '';const ar=typeof langPref==='function'&&langPref()==='ar';const d=F_DK.format(n)===F_DK.format(Date.now())?(ar?'اليوم':'today'):(ar?F_DSA:F_DS).format(n);return d+' '+h12(n);};
 const ago=t=>{const d=Math.floor((now()-t)/864e5);return d<=0?'today':d===1?'1 day':d+' days';};
 /* numbers typed with an Arabic keyboard: ٠-٩ / ۰-۹ digits and ٫ decimal point */
 const isCreditM=m=>/^(credit|on credit|آجل|اجل|دين)$/i.test(String(m||'').trim());
@@ -65,7 +69,7 @@ function jobTotals(j){let parts=0,labour=0,cost=0,passOut=0,owe=0;const ow={};(j
   const wo=j.wo?Math.min(due,R3(+j.wo.amt||0)):0;if(wo)due=R3(due-wo);
   return {parts,labour,sub,disc,total,paid,due,wo,cost,passOut,owe,ow,sales,profit:sales-cost};}
 const STAGE={estimate:['Estimate','#8b7bff'],new:['New','var(--st-new)'],work:['Working','var(--st-work)'],ready:['Ready','var(--ok)'],done:['Done','var(--dim)']};
-const isInvoiced=j=>!!(j.inv&&!j.inv.void);
+const isInvoiced=j=>!!(j.inv&&!j.inv.void&&j.stage!=='estimate');   /* 2.42.9: an estimate is never an invoice or a debt — before 2.42.3 its bar said «Invoice & pay», so one old estimate (#1058) got invoice #1042 and showed in «Not paid yet» */
 const openJobs=()=>DB.jobs.filter(j=>j.stage!=='done'&&j.stage!=='estimate');
 /* a recent estimate waiting for this car (not older than 45 days) */
 /* 2.42.2: the same car can be saved twice (e.g. «camry 27084» by the worker and «Camry 27084 R4» under the customer):

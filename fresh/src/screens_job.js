@@ -7,7 +7,7 @@ SCREENS.job=m=>{
   const stages=['new','work','ready','done'];const si=stages.indexOf(j.stage);
   m.innerHTML=head((j.stage==='estimate'?'Estimate':'Job')+' <bdi dir="ltr">#'+j.no+'</bdi>',`<span class="tag" style="background:${sc};color:#000">${sl}</span>`)+`
   <div class="card"><div class="h"><b>${esc(carName(v)||'Car')} ${v.plate?`<span class="pl">${esc(v.plate)}</span>`:''}</b><button class="lnk" data-go="custd:${c.id}">${esc(c.name||'')} ›</button></div>
-   <span class="sub">${v.engine?'⚙️ <bdi data-notr>'+esc(engShort(v.engine))+'</bdi><br>':''}${c.phone?'<bdi dir="ltr">'+esc(c.phone)+'</bdi> · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> '+odoU(v):T_('Add km')} ✎</button> · opened ${hm(j.t)} by ${esc(j.by)}${j.eta&&j.stage==='work'?' · ready ~'+hm(j.eta):''}</span></div>
+   <span class="sub">${v.engine?'⚙️ <bdi data-notr>'+esc(engShort(v.engine))+'</bdi><br>':''}${c.phone?'<bdi dir="ltr">'+esc(c.phone)+'</bdi> · ':''}<button class="kmchip" data-kmj>🛣 ${j.km?'<bdi>'+kmf(j.km)+'</bdi> '+odoU(v):T_('Add km')} ✎</button> · <bdi data-notr>${langPref()==='ar'?'فُتح '+dayH12(j.t)+' بواسطة '+esc(j.by)+(j.eta&&j.stage==='work'?' · جاهزة ~'+h12(j.eta):''):'opened '+dayH12(j.t)+' by '+esc(j.by)+(j.eta&&j.stage==='work'?' · ready ~'+h12(j.eta):'')}</bdi></span></div>
   ${j.stage!=='estimate'?`<div class="jb-steps">${stages.map((s,i)=>`<div class="${i<=si?'on':''}" style="--sc:${STAGE[s][1]}"><i></i><span>${STAGE[s][0]}</span></div>`).join('')}</div>`:''}
   ${nx?`<button class="btn okb" id="jnext">${nx[1]}</button>`:''}
   ${sec('Services & parts',`${(j.items||[]).length} items`)}
@@ -27,7 +27,7 @@ SCREENS.job=m=>{
   ${sec('Timeline')}<div class="jb-log">${j.log.slice().reverse().map(l=>`<div><span>${hm(l[0])}</span>${esc(l[1])}</div>`).join('')}</div>
   ${can.del()&&!isInvoiced(j)?`<button class="btn ghost jb-del" id="jdel">Delete ${j.stage==='estimate'?'estimate':'job'}</button>`:''}`;
   const nb=$('#jnext');if(nb)nb.onclick=()=>{
-    if(j.stage==='estimate'){j.stage='new';j.fromEst=true;logJ(j,'Customer agreed');save();render();return;}
+    if(j.stage==='estimate'){if(j.inv){logJ(j,'Old estimate invoice #'+j.inv.no+' dropped');delete j.inv;delete j.invLink;delete j.nost;}j.stage='new';j.fromEst=true;logJ(j,'Customer agreed');save();render();return;}
     if(j.stage==='new'){const mins=(j.items||[]).reduce((a,i)=>a+(+i.min||0)*(i.k==='part'?0:Math.max(1,Math.round(+i.q||1))),0);openSheet(`<h3>How long will it take?</h3>${mins?`<p class="hint">The services on this job take about <b>${mins>=60?Math.floor(mins/60)+' h '+(mins%60?mins%60+' min':''):mins+' min'}</b>.</p>`:''}<div class="chips big">${mins?`<button data-eta="${mins}">≈ ${mins>=60?(Math.round(mins/6)/10)+' h':mins+' min'} (services)</button>`:''}${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']].map(([x,l])=>`<button data-eta="${x}">${l}</button>`).join('')}</div>`,el=>el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const x=+b.dataset.eta;j.eta=x>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():now()+x*60e3;j.stage='work';logJ(j,'Working · ETA '+b.textContent);save();closeSheet();render();}));return;}
     if(j.stage==='ready'&&!isInvoiced(j)){toast(can.invoice()?'Make the invoice first':'Ask the manager to make the invoice first');return;}
     j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
@@ -54,7 +54,7 @@ SCREENS.job=m=>{
 };
 function shareText(phone,t){const u='https://wa.me/'+(phone?waNum(phone):'')+'?text='+encodeURIComponent(t);try{if(window.CapApp)location.href=u;else{const w=window.open(u,'_blank');if(w){try{w.opener=null;}catch(e){}}else location.href=u;}}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t).catch(()=>{});}
 function jobVars(j){const v=vehOf(j),c=custOf(j),T=jobTotals(j);const cur=DB.ws.currency==='OMR'?'ر.ع':DB.ws.currency;
-  return {name:c.name||'',car:carName(v),plate:v.plate||'',no:j.inv&&!j.inv.void?j.inv.no:j.no,date:fmtD(j.inv?j.inv.t:j.t),
+  return {name:c.name||'',car:carName(v),plate:v.plate||'',no:isInvoiced(j)?j.inv.no:j.no,date:fmtD(isInvoiced(j)?j.inv.t:j.t),
     items:(j.items||[]).filter(i=>!i.pend).map(i=>'• '+(i.ar||i.d)+(i.q!==1||i.u?' '+(+i.q)+(i.u?' '+i.u:'')+' × '+f3(i.p):'')+': '+f3(i.q*i.p)).join('\n')+(T.disc?'\nخصم: −'+f3(T.disc):''),
     total:f3(T.total)+' '+cur,paid:f3(T.paid)+' '+cur,due:f3(T.due)+' '+cur,km:j.km?kmf(j.km)+(isMi(vehOf(j))?' ميل':''):'',warranty:DB.ws.warranty||''};}
 function docText(j,kind){const x=jobVars(j);if(kind==='estimate')x.no=j.no;return msg(kind,x);}

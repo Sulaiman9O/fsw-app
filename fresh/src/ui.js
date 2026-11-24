@@ -188,7 +188,7 @@ document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return
   let k=e.key;const ai='٠١٢٣٤٥٦٧٨٩'.indexOf(k);if(ai>=0)k=String(ai);if(k==='Backspace'||k==='Delete')k='⌫';
   const b=[...pd.querySelectorAll('button[data-k]')].find(x=>x.dataset.k===k);if(!b)return;e.preventDefault();b.classList.add('kb-hit');setTimeout(()=>b.classList.remove('kb-hit'),120);b.click();});
 
-/* CAMERA RULE (2.30.2) — every live camera view in the app uses camView() inside a box with class "camv", and camLive() on its <video>.
+/* CAMERA RULE (2.30.2) — every live camera view in the app uses camView() inside a box with class "camv", and camLive() on its <video>. (2.42.9) In a sheet, wrap that box in <div class="vswrap"> — in the sheet's grid a box sized by aspect-ratio can cover what is under it when the screen gets shorter (keyboard).
    No grey ▶ poster from the WebView, no black flash: a dark box with a spinner and "Opening the camera…" until the first frame, then a soft fade-in.
    Any NEW screen that opens the camera must use these two, not a bare <video>. */
 const CAM_POSTER='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';

@@ -23,7 +23,7 @@ const suggestPrice=p=>{const m=markOf(p.cat);return m&&+p.cost?Math.round((+p.co
 function bestVendor(p){const vp=p.vprices||{};let b=null;Object.entries(vp).forEach(([v,x])=>{if(byId('vendors',v)&&(!b||x.cost<b.cost))b={v,cost:x.cost,t:x.t};});return b;}
 /* barcode */
 async function scanSheet(onCode){if(!('BarcodeDetector' in window)){toast('This phone has no built-in scanner. Type the number, or use a scanner gun.');return;}
-  let stream,stop=false;openSheet(`<h3>Scan a barcode</h3><div class="scbox camv">${camView('scv')}<div class="scfr"><b></b><b></b><b></b><b></b><em></em></div></div><p class="hint">Hold the barcode inside the frame.</p>`,()=>{});
+  let stream,stop=false;openSheet(`<h3>Scan a barcode</h3><div class="vswrap"><div class="scbox camv">${camView('scv')}<div class="scfr"><b></b><b></b><b></b><b></b><em></em></div></div></div><p class="hint">Hold the barcode inside the frame.</p>`,()=>{});
   const end=()=>{stop=true;if(stream)stream.getTracks().forEach(t=>t.stop());};const cb=$('#sheet [data-close]');if(cb)cb.addEventListener('click',end);
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vd=$('#scv');camLive(vd);vd.srcObject=stream;await vd.play();
     const det=new BarcodeDetector();const loop=async()=>{if(stop||!$('#scv'))return end();try{const r=await det.detect(vd);if(r.length){const c=r[0].rawValue;end();closeSheet();onCode(c);return;}}catch(e){}requestAnimationFrame(loop);};loop();

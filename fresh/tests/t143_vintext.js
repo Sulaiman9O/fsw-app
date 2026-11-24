@@ -48,4 +48,16 @@ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1;};c
  ok(/google reader failed/.test(B.log),'logged in the trail');
  /* the laptop (no Google reader): the page reader has a time limit */
  const lim=await ev(async()=>{try{await withLimit(new Promise(()=>{}),300);return 'no';}catch(e){return e.timeout?'timeout':'other';}});ok(lim==='timeout','page reader stops after its time limit');
+ /* 2.42.9: the real Land Cruiser plate (Arabic + English lines): one answer, no look-alikes; with the keyboard open the picture does not cover the numbers */
+ await ev(()=>{window.__OCR.mode='plate';closeSheet&&closeSheet();});await W(300);
+ await ev(()=>{const P=window.Capacitor.Plugins.FswText;P.read=async()=>({text:'اسم الصانع وبلد الصنع : تويوتا موتور كوربوريشن اليابان\n2013.05 :سنة وشهر الانتاج\nJTMHU09JXD5074537 :الرقم المميز\nصنف : سيارة ركاب متعددة الاغراض\n5\nMODEL:GRJ200L-GNANKV C/TR:1F7/FK03\nENGINE:1GR-FE 3956mL A/TM:A02B/A750F\nPLANT:A51 830 MADE IN JAPAN',lines:[]});});
+ await open();await p.click('#vsocr');await W(1200);
+ const LC=await ev(()=>[...document.querySelectorAll('#vsres input')].map(i=>i.value));
+ ok(LC.length===1&&LC[0]==='JTMHU09JXD5074537','Land Cruiser plate → only JTMHU09JXD5074537 '+JSON.stringify(LC));
+ await p.locator('#vsres input').first().focus();await p.setViewportSize({width:400,height:470});await W(500);
+ const OV=await ev(()=>{const v=document.querySelector('.vsv').getBoundingClientRect(),t=document.querySelector('#vsocr').getBoundingClientRect(),r=document.querySelector('#vsres').getBoundingClientRect();return {vb:Math.round(v.bottom),bt:Math.round(t.top),rt:Math.round(r.top),done:document.querySelector('.vsv').classList.contains('done')};});
+ ok(OV.done&&OV.vb<=OV.bt+1&&OV.vb<=OV.rt+1,'keyboard open: the picture stays above the buttons and the numbers (small after a reading) '+JSON.stringify(OV));
+ await p.screenshot({path:'/tmp/t143_kb.png'});await p.setViewportSize({width:400,height:868});
+ ok(await ev(()=>/camera open \d+ms/.test((TRAIL.buf||[]).map(e=>e[1]+' '+e[2]).join('|'))),'camera opening time logged');
+ ok(await ev(()=>{try{return !!localStorage.getItem('ws_cam');}catch(e){return false;}}),'the lens is remembered for the next time');
  ok(errs.length===0,'no page errors '+JSON.stringify(errs.slice(0,3)));await b.close();})();

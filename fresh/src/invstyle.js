@@ -34,7 +34,7 @@ const INV2_CSS=`@media print{.iv2,.iv2 *{-webkit-print-color-adjust:exact;print-
 .inv-pv .iv2{padding:6mm;width:190mm;box-sizing:border-box}`;
 (function(){const st=document.createElement('style');st.textContent=INV2_CSS;document.head.appendChild(st);})();
 function invNext(j){const r=(DB.reminders||[]).filter(x=>x.job===j.id&&(x.kind==='oil'||x.kind==='gear')).sort((a,b)=>a.due-b.due)[0];return r||null;}
-function invoiceModern(j,I){I=I||invS();const E=j.stage==='estimate'&&!j.inv;/* 2.42.4: an estimate gets the same look, titled «عرض سعر», with no paid / due */if(j.nost&&I.stamp)I=Object.assign({},I,{stamp:0});const v=vehOf(j)||{},c=custOf(j)||{},T=jobTotals(j);const W=DB.ws;const sh=I.show;
+function invoiceModern(j,I){I=I||invS();const E=j.stage==='estimate';/* 2.42.4: an estimate gets the same look, titled «عرض سعر», with no paid / due */if(j.nost&&I.stamp)I=Object.assign({},I,{stamp:0});const v=vehOf(j)||{},c=custOf(j)||{},T=jobTotals(j);const W=DB.ws;const sh=I.show;
   const L=(ar,en)=>I.lang==='ar'?ar:I.lang==='en'?en:ar+' · '+en;const cur=W.currency==='OMR'?(I.lang==='en'?'OMR':'ر.ع'):W.currency;
   const lh={s:'12mm',m:'18mm',l:'26mm'}[I.lsz]||'18mm';
   const inPk=i=>i.k==='pkg'||i.inPkg||i.pkgx;const P=(j.items||[]).filter(i=>i.k==='pkg');
@@ -48,8 +48,8 @@ function invoiceModern(j,I){I=I||invS();const E=j.stage==='estimate'&&!j.inv;/* 
   const payTxt=(j.pays||[]).filter(p=>!isCreditM(p.m)).map(p=>T_(p.m)).filter((x,i,a)=>a.indexOf(x)===i).join('، ');
   return `<div class="iv2${I.t==='clean'?' clean':''}" data-notr style="--ia:${esc(I.acc)}"><div class="iv2-bar"><i></i><i></i></div>
    <div class="iv2-hd"><div class="iv2-brand">${W.logo?`<img src="${W.logo}" style="height:${lh}" alt="">`:`<div class="nm">${esc(W.name)}</div>`}<small>${[W.logo?esc(W.name):'',esc(W.addr||''),W.phone?'<bdi>'+esc(W.phone)+'</bdi>':'',W.cr?L('س.ت','CR')+' <bdi>'+esc(W.cr)+'</bdi>':''].filter(Boolean).join(' · ')}</small></div>
-    <div class="iv2-ttl">${I.lang!=='ar'?`<b>${E?'ESTIMATE':'INVOICE'}</b>`:''}${I.lang!=='en'?`<span>${E?'عرض سعر':'فاتورة'}</span>`:''}<em>#${j.inv?j.inv.no:j.no}</em></div></div>
-   <div class="iv2-strip"><div><small>${L('التاريخ','Date')}</small><b><bdi>${fmtD(j.inv?j.inv.t:j.t)}</bdi></b></div><div><small>${L('العداد','Odometer')}</small><b><bdi>${sh.km&&j.km?kmU(j.km,v):'—'}</bdi></b></div><div><small>${L('الحالة','Status')}</small>${st}</div>${E?'':`<div><small>${L('أمر العمل','Job')}</small><b><bdi>#${j.no}</bdi></b></div>`}</div>
+    <div class="iv2-ttl">${I.lang!=='ar'?`<b>${E?'ESTIMATE':'INVOICE'}</b>`:''}${I.lang!=='en'?`<span>${E?'عرض سعر':'فاتورة'}</span>`:''}<em>#${!E&&j.inv?j.inv.no:j.no}</em></div></div>
+   <div class="iv2-strip"><div><small>${L('التاريخ','Date')}</small><b><bdi>${fmtD(!E&&j.inv?j.inv.t:j.t)}</bdi></b></div><div><small>${L('العداد','Odometer')}</small><b><bdi>${sh.km&&j.km?kmU(j.km,v):'—'}</bdi></b></div><div><small>${L('الحالة','Status')}</small>${st}</div>${E?'':`<div><small>${L('أمر العمل','Job')}</small><b><bdi>#${j.no}</bdi></b></div>`}</div>
    <div class="iv2-cards"><div><div class="lb">${L('العميل','BILL TO')}</div><div class="big">${esc(isWalk(c)?L('عميل نقدي','Cash customer'):c.name||'—')}</div>${c.phone?`<div class="sm"><bdi>${esc(c.phone)}</bdi></div>`:''}</div>
     ${j.kind==='sale'?`<div><div class="lb">${L('البيع','SALE')}</div><div class="big">${L('بيع مباشر','Counter sale')}</div></div>`:`<div><div class="lb">${L('المركبة','VEHICLE')}</div><div class="big"><bdi>${esc(carName(v)||'—')}</bdi></div>${v.plate?`<span class="iv2-pl">${esc(v.plate)}</span>`:''}${sh.vin&&v.vin?`<div class="sm"><bdi>VIN ${esc(v.vin)}</bdi></div>`:''}</div>`}</div>
    <table class="iv2-t"><thead><tr><th>${L('الوصف','Description')}</th><th class="c" style="width:18mm">${L('الكمية','Qty')}</th><th class="c" style="width:22mm">${L('السعر','Unit')}</th><th class="a" style="width:24mm">${L('المبلغ','Amount')}</th></tr></thead>
@@ -61,7 +61,7 @@ function invoiceModern(j,I){I=I||invS();const E=j.stage==='estimate'&&!j.inv;/* 
    ${invSeal(I,L)}
    <div class="iv2-ft"><div><b>${esc(I.thanks||L('شكراً لثقتكم','Thank you'))}</b>${I.note?`<small style="white-space:pre-wrap">${esc(I.note)}</small>`:''}</div><div style="text-align:left"><b>${esc(W.name)}</b>${W.phone?`<small><bdi>${esc(W.phone)}</bdi></small>`:''}</div></div>
    <div class="iv2-end"></div></div>`;}
-(function(){const IH=invoiceHtml;window.invoiceHtml=invoiceHtml=function(j,print){const I=invS();if(j&&j.stage==='estimate'&&!j.inv&&I.t==='classic')return invoiceModern(j,Object.assign({},I,{t:'clean'}));/* the classic look needs an invoice number */return I.t==='classic'?IH(j,print):invoiceModern(j);};})();
+(function(){const IH=invoiceHtml;window.invoiceHtml=invoiceHtml=function(j,print){const I=invS();if(j&&j.stage==='estimate'&&I.t==='classic')return invoiceModern(j,Object.assign({},I,{t:'clean'}));/* the classic look needs an invoice number */return I.t==='classic'?IH(j,print):invoiceModern(j);};})();
 /* a sample for the preview when no invoice exists yet */
 function invSample(){const j=DB.jobs.filter(x=>x.inv&&!x.returned&&(x.items||[]).length).sort((a,b)=>b.inv.t-a.inv.t)[0];if(j)return j;
   const v=DB.vehicles[0]||{id:'_v',make:'Toyota',model:'Camry',year:'2018',plate:'12345 AB'};return {id:'_s',no:1,veh:v.id,cust:v.cust,km:120500,t:now(),inv:{no:DB.ws.nextInv||1001,t:now()},items:[{k:'part',d:'Toyota Motor Oil 5W-30 F/S 4ltrs',q:4.5,u:'L',p:2.12},{k:'part',d:'Toyota Oil Filter 04152-YZZD1',num:'04152-YZZD1',q:1,p:2.5},{k:'labour',d:'Engine Oil Change',ar:'تغيير زيت المحرك',q:1,p:2.5}],pays:[],disc:0};}

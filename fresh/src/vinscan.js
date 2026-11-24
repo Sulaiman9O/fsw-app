@@ -109,6 +109,7 @@ async function camOpen(vid,el,setS){const md=navigator.mediaDevices;const q=id=>
   let B=await camBacks();const cur=()=>{const t=s.getVideoTracks()[0];return t&&t.getSettings?t.getSettings().deviceId:'';};
   /* first time: if the phone gave a side lens, move to the main back camera */
   if(!want&&B.length>1&&B[0].deviceId&&cur()!==B[0].deviceId){try{const s2=await md.getUserMedia(q(B[0].deviceId));s.getTracks().forEach(t=>t.stop());s=s2;}catch(e){}}
+  if(!want){try{const id=cur();if(id)localStorage.setItem('ws_cam',id);}catch(e){}}/* 2.42.9: remembered, so the next time it opens straight on this lens (was: open, then switch = slow) */
   const tune=()=>{const t=s.getVideoTracks()[0];if(!t)return;try{const c=t.getCapabilities?t.getCapabilities():{};if(c.zoom&&c.zoom.min!=null)t.applyConstraints({advanced:[{zoom:c.zoom.min}]}).catch(()=>{});if(c.focusMode&&c.focusMode.includes('continuous'))t.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
       const tb=el.querySelector('#vstorch');if(tb){tb.hidden=!c.torch;let on=false;tb.onclick=()=>{on=!on;t.applyConstraints({advanced:[{torch:on}]}).catch(()=>{});tb.classList.toggle('on',on);};}}catch(e){}};
   const lens=()=>{const lb=el.querySelector('#vslens');if(!lb)return;lb.hidden=B.length<2;const i=Math.max(0,B.findIndex(d=>d.deviceId===cur()));lb.querySelector('span').textContent=(i+1)+'/'+B.length;
@@ -119,13 +120,14 @@ async function camOpen(vid,el,setS){const md=navigator.mediaDevices;const q=id=>
 function vinScan(onPick){let stream=null,stop=false,busy=false;
   const end=()=>{stop=true;try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}};
   openSheet(`<h3>📷 ${T_('Chassis number (VIN)')}</h3>
-    <div class="vsv camv">${camView('vsvid')}<div class="vsbox"></div><div class="vscam"><button id="vslens" hidden>🔄 <span></span></button><button id="vstorch" hidden>🔦</button></div></div>
+    <div class="vswrap"><div class="vsv camv">${camView('vsvid')}<div class="vsbox"></div><div class="vscam"><button id="vslens" hidden>🔄 <span></span></button><button id="vstorch" hidden>🔦</button></div></div></div>
     <p class="hint" id="vsst">${T_('Point the camera at the VIN barcode or the printed number, inside the frame.')}</p>
     <div class="two"><button class="btn" id="vsocr">📸 ${T_('Read the number')}</button><button class="btn ghost" id="vspic">🖼 ${T_('From a photo')}</button></div>
     <div id="vsres"></div>`,el=>{
     const st=t=>{const e=el.querySelector('#vsst');if(e)e.textContent=t;};const vid=el.querySelector('#vsvid');camLive(vid);
     const show=(L,raw)=>{const box=el.querySelector('#vsres');if(!box)return;
       if(!L.length){box.innerHTML=`<p class="hint">${T_('No VIN found. Hold the camera closer, keep it straight, and try again — or type it.')}</p>${raw?`<details class="pmore"><summary>${T_('What was read')}</summary><pre class="vsraw">${esc(raw)}</pre></details>`:''}`;return;}
+      {const vv=el.querySelector('.vsv');if(vv)vv.classList.add('done');}
       box.innerHTML=`<label class="lbl">${T_('Found — check it, then tap to use')}</label>`+L.map((v,ix)=>{const mk=vinMake(v),y=vinYear(v);return `<div class="vsc"><input class="field" value="${v}" maxlength="17" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px"><button class="btn okb sm">${T_('Use')}</button><small>${[L.length>1&&!ix?'⭐ '+T_('Most likely'):'',mk,y?('~'+y):'',vinCheck(v)?'✓ '+T_('number checks out'):''].filter(Boolean).join(' · ')}</small></div>`;}).join('');
       /* which car each one is (online or from your own cars) — helps pick the right one */
       box.querySelectorAll('.vsc').forEach(r=>{const v=r.querySelector('input').value;if(typeof vinDecode!=='function')return;vinDecode(v).then(o=>{if(!o||!document.body.contains(r))return;const sm=r.querySelector('small');if(sm&&(o.model||o.src.includes('online')))sm.innerHTML='🚗 <b>'+esc(vinLabel(o))+'</b> · '+sm.innerHTML;}).catch(()=>{});});
@@ -134,12 +136,12 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};
     const band=c=>({x:0,y:Math.round(c.height*.3),w:c.width,h:Math.round(c.height*.4)});/* the frame on screen */
     const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{
-        if(textPlugin()){st(T_('Reading…'));const nt=await nativeText(src);if(nt!==null){const ln=nt.split('\n').filter(l=>(l.match(/\d/g)||[]).length>=5).map(l=>l.replace(/\b(VIN|V\.I\.N\.?|CHASSIS|FRAME|NO\.?)\b[:.#\s]*/gi,' ').trim());/* every VIN has 5+ digits: lines of words (TOYOTA MOTOR CORPORATION) would make false VINs */const L0=ln.length?vinFind(ln.join('\n')+'\f'+ln.map(l=>l.replace(/[ \t]+/g,'')).join('\n')):[];/* a VIN printed in groups is joined, only on lines with real digits (words would make false VINs) */show(L0,nt);st('');return;}}
+        if(textPlugin()){st(T_('Reading…'));const nt=await nativeText(src);if(nt!==null){const ln=nt.split('\n').filter(l=>(l.match(/\d/g)||[]).length>=5).map(l=>l.replace(/\b(VIN|V\.I\.N\.?|CHASSIS|FRAME|NO\.?)\b[:.#\s]*/gi,' ').trim());/* every VIN has 5+ digits: lines of words (TOYOTA MOTOR CORPORATION) would make false VINs */const LX=ln.length?vinFind(ln.join('\n')+'\f'+ln.map(l=>l.replace(/[ \t]+/g,'')).join('\n'),true):[];/* Google reads the letters right: a VIN found as written is the answer, no guessed look-alikes */const L0=LX.length?LX:ln.length?vinFind(ln.join('\n')+'\f'+ln.map(l=>l.replace(/[ \t]+/g,'')).join('\n')):[];/* a VIN printed in groups is joined, only on lines with real digits (words would make false VINs) */show(L0,nt);st('');return;}}
         const t0=Date.now();let {L,raw}=await withLimit(ocrDeep(src,crop,st),25000);try{trail('vin','page reader '+(Date.now()-t0)+'ms · '+(L[0]||'none'));}catch(e){}if(!L.length&&crop&&Date.now()-t0<12000){const raw2=(await withLimit(ocrDeep(src,null,st),25000-(Date.now()-t0))).raw;L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
       catch(e){if(e&&e.timeout){try{OCRW&&OCRW.terminate();}catch(x){}OCRW=null;/* stop the reading that ran too long */st(T_('Could not read it in time. Try «From a photo», or type the number.'));try{trail('vin','page reader timeout');}catch(x){}return;}st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
     /* 📸: take the picture at once (the camera stops and the picture stays on screen), then read it — no need to keep aiming */
     let frozen=false;const shot=el.querySelector('#vsocr');
-    const unfreeze=()=>{frozen=false;const im=el.querySelector('#vsimg');if(im)im.remove();camWait(vid);vid.hidden=false;shot.textContent='📸 '+T_('Read the number');el.querySelector('#vsres').innerHTML='';startCam();};
+    const unfreeze=()=>{frozen=false;{const vv=el.querySelector('.vsv');if(vv)vv.classList.remove('done');}const im=el.querySelector('#vsimg');if(im)im.remove();camWait(vid);vid.hidden=false;shot.textContent='📸 '+T_('Read the number');el.querySelector('#vsres').innerHTML='';startCam();};
     const take=async()=>{if(frozen){unfreeze();return;}if(!vid.videoWidth){st(T_('No camera here. Use «From a photo».'));return;}
       const c=grab();frozen=true;end();try{navigator.vibrate&&navigator.vibrate(25);}catch(e){}
       const im=document.createElement('img');im.id='vsimg';im.src=c.toDataURL('image/jpeg',.85);vid.hidden=true;vid.after(im);shot.textContent='📸 '+T_('Another photo');
@@ -150,13 +152,13 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     el.querySelector('#vspic').onclick=()=>{const f=document.createElement('input');f.type='file';f.accept='image/*';f.onchange=()=>{const x=f.files&&f.files[0];if(!x)return;const im=new Image();im.onload=async()=>{
         const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);await barcodeReader();const B=(await barcodeRead(c)).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));return;}ocrFrom(c);};im.src=URL.createObjectURL(x);};f.click();};
     /* live camera: keep looking for a barcode */
-    const startCam=async()=>{stop=false;try{stream=await camOpen(vid,el,s=>{stream=s;});if(stop){end();return;}}
+    const startCam=async()=>{stop=false;const tc=Date.now();try{stream=await camOpen(vid,el,s=>{stream=s;});try{trail('vin','camera open '+(Date.now()-tc)+'ms');}catch(e){}if(stop){end();return;}}
       catch(e){st(T_('No camera here. Use «From a photo».'));el.querySelector('.vsv').hidden=true;return;}
       const ok=await barcodeReader();const loop=async()=>{if(stop||!document.body.contains(vid))return end();
         if(!busy&&ok&&vid.videoWidth){const B=(await barcodeRead(grab())).flatMap(t=>vinFind(t,true));if(B.length){show(B);st(T_('Read from the barcode.'));try{navigator.vibrate&&navigator.vibrate(30);}catch(e){}return;}}
         setTimeout(loop,350);};loop();};startCam();
     /* get the reader ready while the camera is open, so reading starts at once after 📸 */
-    setTimeout(()=>{if(!stop||frozen)ocrWorker().catch(()=>{});},600);
+    setTimeout(()=>{if(!textPlugin()&&(!stop||frozen))ocrWorker().catch(()=>{});},600);/* 2.42.9: not on the app with Google's reader — loading 7 MB while the camera opens made it slow */
     const x=el.querySelector('[data-close]');if(x){const c0=x.onclick;x.onclick=()=>{end();c0&&c0();};}
     const sh=$('#sheet');if(sh){const o=sh.onclick;sh.onclick=e=>{if(e.target===sh)end();o&&o(e);};}});}
 /* a 📷 button next to every VIN field (new car in, edit car); a full VIN — scanned or typed — fills make, model, year and engine */
