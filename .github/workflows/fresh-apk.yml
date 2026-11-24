@@ -38,7 +38,10 @@ jobs:
           D=android/app/src/main/java/om/fsw/garage
           sed 's/^package om.fsw.workshop;/package om.fsw.garage;/' ../native/FswPrintPlugin.java > $D/FswPrintPlugin.java
           cp native/FswSharePlugin.java $D/FswSharePlugin.java
-          printf 'package om.fsw.garage;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(FswPrintPlugin.class);\n        registerPlugin(FswSharePlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n' > $D/MainActivity.java
+          cp native/FswTextPlugin.java $D/FswTextPlugin.java
+          sed -i '0,/^dependencies {/s//dependencies {\n    implementation "com.google.mlkit:text-recognition:16.0.1"/' android/app/build.gradle
+          grep -n "mlkit" android/app/build.gradle
+          printf 'package om.fsw.garage;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(FswPrintPlugin.class);\n        registerPlugin(FswSharePlugin.class);\n        registerPlugin(FswTextPlugin.class);\n        super.onCreate(savedInstanceState);\n    }\n}\n' > $D/MainActivity.java
           cat $D/MainActivity.java
       - name: Share a PDF (FileProvider for the app's cache folder)
         run: |

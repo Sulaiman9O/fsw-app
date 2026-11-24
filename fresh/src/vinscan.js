@@ -68,12 +68,20 @@ function vinFind(txt,exact){const R=String(txt||'').split('\f');const tot=new Ma
 function ocrTurn(c,deg){const r=deg*Math.PI/180,s=Math.abs(Math.sin(r)),k=Math.abs(Math.cos(r));const o=document.createElement('canvas');o.width=Math.round(c.width*k+c.height*s);o.height=Math.round(c.width*s+c.height*k);
   const g=o.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,o.width,o.height);g.translate(o.width/2,o.height/2);g.rotate(r);g.drawImage(c,-c.width/2,-c.height/2);return o;}
 /* read; if no number passes the check digit, try the picture turned a little each way (stops at the first good one) */
+/* 2.42.8: on the Android app, Google's reader on the phone (ML Kit) reads the printed VIN in a second or two, no internet.
+   The slow reader in the page (Tesseract) is kept for the laptop and for an older app, with a time limit. */
+const textPlugin=()=>{try{return window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.FswText||null;}catch(e){return null;}};
+const withLimit=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(Object.assign(new Error('timeout'),{timeout:1})),ms))]);
+async function nativeText(src){const P=textPlugin();if(!P)return null;
+  const c=src.tagName==='CANVAS'?src:(()=>{const x=document.createElement('canvas');x.width=src.videoWidth||src.naturalWidth||src.width;x.height=src.videoHeight||src.naturalHeight||src.height;x.getContext('2d').drawImage(src,0,0);return x;})();
+  const t0=Date.now();try{const r=await withLimit(P.read({image:c.toDataURL('image/jpeg',.92)}),15000);const t=(r&&r.text)||'';try{trail('vin','google reader '+(Date.now()-t0)+'ms · '+t.length+' letters');}catch(e){}return t;}
+  catch(e){try{trail('vin','google reader failed: '+(e&&e.message||e));}catch(x){}return null;}}
 async function ocrDeep(src,crop,step){const c=ocrPrep(src,crop);let raw=await ocrRead(c,step);let L=vinFind(raw);
   const sure=()=>L.length&&vinCheck(L[0])&&raw.split('\f').filter(r=>vinFind(r).includes(L[0])).length>=2;
-  for(const d of [-4,4,-8,8]){if(sure())break;raw+='\f'+await ocrRead(ocrTurn(c,d),step);L=vinFind(raw);}return {L,raw};}
+  for(const d of [-4,4]){if(L.length)break;raw+='\f'+await ocrRead(ocrTurn(c,d),step);L=vinFind(raw);}return {L,raw};}
 /* make a picture easier to read: grey, stronger contrast, about 1600 px wide */
 function ocrPrep(src,crop){const sw=crop?crop.w:(src.videoWidth||src.naturalWidth||src.width),sh=crop?crop.h:(src.videoHeight||src.naturalHeight||src.height);
-  const k=Math.min(3,2400/sw);const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
+  const k=Math.min(2,1600/sw);/* 2.42.8: smaller = several times faster on the tablet, still enough for a VIN */const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);const g=c.getContext('2d');
   g.drawImage(src,crop?crop.x:0,crop?crop.y:0,sw,sh,0,0,c.width,c.height);const im=g.getImageData(0,0,c.width,c.height),d=im.data;let lo=255,hi=0;
   for(let i=0;i<d.length;i+=4){const y=d[i]*.299+d[i+1]*.587+d[i+2]*.114;d[i]=y;if(y<lo)lo=y;if(y>hi)hi=y;}const r=Math.max(1,hi-lo);
   for(let i=0;i<d.length;i+=4){const y=(d[i]-lo)*255/r;d[i]=d[i+1]=d[i+2]=y;}g.putImageData(im,0,0);return c;}
@@ -125,8 +133,10 @@ function vinScan(onPick){let stream=null,stop=false,busy=false;
     const confirm0=v=>{st(T_('A VIN has 17 letters and numbers. This one has {n}.'.replace('{n}',v.length)));return v.length>=11;};
     const grab=()=>{const c=document.createElement('canvas');c.width=vid.videoWidth;c.height=vid.videoHeight;c.getContext('2d').drawImage(vid,0,0);return c;};
     const band=c=>({x:0,y:Math.round(c.height*.3),w:c.width,h:Math.round(c.height*.4)});/* the frame on screen */
-    const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{let {L,raw}=await ocrDeep(src,crop,st);if(!L.length&&crop){const raw2=(await ocrDeep(src,null,st)).raw;L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
-      catch(e){st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
+    const ocrFrom=async(src,crop)=>{if(busy)return;busy=true;try{
+        if(textPlugin()){st(T_('Reading…'));const nt=await nativeText(src);if(nt!==null){const ln=nt.split('\n').filter(l=>(l.match(/\d/g)||[]).length>=5).map(l=>l.replace(/\b(VIN|V\.I\.N\.?|CHASSIS|FRAME|NO\.?)\b[:.#\s]*/gi,' ').trim());/* every VIN has 5+ digits: lines of words (TOYOTA MOTOR CORPORATION) would make false VINs */const L0=ln.length?vinFind(ln.join('\n')+'\f'+ln.map(l=>l.replace(/[ \t]+/g,'')).join('\n')):[];/* a VIN printed in groups is joined, only on lines with real digits (words would make false VINs) */show(L0,nt);st('');return;}}
+        const t0=Date.now();let {L,raw}=await withLimit(ocrDeep(src,crop,st),25000);try{trail('vin','page reader '+(Date.now()-t0)+'ms · '+(L[0]||'none'));}catch(e){}if(!L.length&&crop&&Date.now()-t0<12000){const raw2=(await withLimit(ocrDeep(src,null,st),25000-(Date.now()-t0))).raw;L=vinFind(raw2);if(!L.length){show([],raw+'\n'+raw2);st('');return;}}show(L,raw);st(L.length?'':T_('No VIN found.'));}
+      catch(e){if(e&&e.timeout){try{OCRW&&OCRW.terminate();}catch(x){}OCRW=null;/* stop the reading that ran too long */st(T_('Could not read it in time. Try «From a photo», or type the number.'));try{trail('vin','page reader timeout');}catch(x){}return;}st(navigator.onLine===false?T_('The reader downloads once (about 7 MB). Connect to the internet one time, then it works without internet.'):T_('Could not start the reader')+': '+(e&&e.message||e));}finally{busy=false;}};
     /* 📸: take the picture at once (the camera stops and the picture stays on screen), then read it — no need to keep aiming */
     let frozen=false;const shot=el.querySelector('#vsocr');
     const unfreeze=()=>{frozen=false;const im=el.querySelector('#vsimg');if(im)im.remove();camWait(vid);vid.hidden=false;shot.textContent='📸 '+T_('Read the number');el.querySelector('#vsres').innerHTML='';startCam();};

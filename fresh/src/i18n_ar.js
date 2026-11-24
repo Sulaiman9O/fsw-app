@@ -261,3 +261,4 @@ Object.assign(AR_DICT,{'Preparing to print…':'جاري تجهيز الطباع
 Object.assign(AR_DICT,{'Change the litres':'تغيير اللترات','This time only':'هالمرة بس','Litres':'اللترات'});
 Object.assign(AR_DICT,{'OK':'تمام'});
 Object.assign(AR_DICT,{'Opened and forgotten':'مفتوحة ومنسية','No change for 2 days. Hold one: make it an estimate, or delete it.':'ما تغير فيها شي من يومين. اضغط عليها ضغطة طويلة: خلها عرض سعر، أو احذفها.','Make it an estimate':'خلها عرض سعر','Moved to estimates':'انتقلت لعروض الأسعار','Delete it':'احذفها','Open it':'افتحها','Delete job':'حذف البطاقة','Older estimates (no change for 30 days)':'عروض أقدم (ما تغيرت من 30 يوم)'});
+Object.assign(AR_DICT,{'No VIN found. Hold the camera closer, or try «From a photo».':'ما لقيت رقم شاصي. قرّب الكاميرا، أو جرّب «من صورة».','Could not read it in time. Try «From a photo», or type the number.':'ما قدرت أقرأه. جرّب «من صورة»، أو اكتب الرقم.'});
