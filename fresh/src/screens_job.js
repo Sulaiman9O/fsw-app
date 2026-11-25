@@ -30,7 +30,7 @@ SCREENS.job=m=>{
     if(j.stage==='estimate'){if(j.inv){logJ(j,'Old estimate invoice #'+j.inv.no+' dropped');delete j.inv;delete j.invLink;delete j.nost;}j.stage='new';j.fromEst=true;logJ(j,'Customer agreed');save();render();return;}
     if(j.stage==='new'){const mins=(j.items||[]).reduce((a,i)=>a+(+i.min||0)*(i.k==='part'?0:Math.max(1,Math.round(+i.q||1))),0);openSheet(`<h3>How long will it take?</h3>${mins?`<p class="hint">The services on this job take about <b>${mins>=60?Math.floor(mins/60)+' h '+(mins%60?mins%60+' min':''):mins+' min'}</b>.</p>`:''}<div class="chips big">${mins?`<button data-eta="${mins}">≈ ${mins>=60?(Math.round(mins/6)/10)+' h':mins+' min'} (services)</button>`:''}${[[30,'30 min'],[60,'1 hour'],[120,'2 hours'],[180,'3 hours'],[1440,'Tomorrow']].map(([x,l])=>`<button data-eta="${x}">${l}</button>`).join('')}</div>`,el=>el.querySelectorAll('[data-eta]').forEach(b=>b.onclick=()=>{const x=+b.dataset.eta;j.eta=x>=1440?new Date(new Date().setHours(33,0,0,0)).getTime():now()+x*60e3;j.stage='work';logJ(j,'Working · ETA '+b.textContent);save();closeSheet();render();}));return;}
     if(j.stage==='ready'&&!isInvoiced(j)){toast(can.invoice()?'Make the invoice first':'Ask the manager to make the invoice first');return;}
-    j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();};
+    const was=j.stage;j.stage=nx[0];logJ(j,STAGE[nx[0]][0]);if(j.stage==='done')makeReminders(j);save();render();if(was==='work'&&j.stage==='ready')undoBar(T_('Marked ready'),()=>{if(j.stage!=='ready'||isInvoiced(j))return;j.stage='work';logJ(j,'Back to working (undo)');save();render();});};
   const ad=$('#jadd');if(ad)ad.onclick=()=>addItemSheet(j);rxBind(j);
   $$('[data-sa]').forEach(b=>b.onclick=()=>selAct(j,b.dataset.sa));
   $$('[data-it]').forEach(b=>b.onclick=()=>{if(S.selJ&&S.selJ.id===j.id){const k=+b.dataset.it;S.selJ.set.has(k)?S.selJ.set.delete(k):S.selJ.set.add(k);render();return;}if(isInvoiced(j)){editInvAsk(j);return;}PRESS=null;itemMenu(j,+b.dataset.it);});
@@ -94,7 +94,7 @@ function addItemSheet(j,opt){opt=opt||{};
       ${pcs.length?`<div class="atabs pc"><span>Parts</span>${pcs.map(c=>`<button data-tab="p:${esc(c)}" aria-pressed="${tab==='p:'+c}">${esc(c)}</button>`).join('')}</div>`:''}`;
     let h='';
     if(q){const sv=svAll.filter(s=>qHit(q,s.name,s.ar,s.cat)).sort(byUse);const ps=DB.parts.filter(p=>qHit(q,p.name,p.num,p.cat,(p.codes||[]).join(' ')));const cj=DB.canned.filter(c=>qHit(q,c.name));
-      h=(cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(cjRow).join(''):'')+(sv.length?`<div class="lbl">Services</div>`+sv.slice(0,60).map(svRow).join(''):'')+(ps.length?`<div class="lbl">Parts</div>`+partOpts(v,ps.slice(0,80)):'')+(!sv.length&&!ps.length&&!cj.length?`<p class="hint">Nothing found. Use “Something else” to type it.</p>`:'');}
+      h=(cj.length?`<div class="lbl">Canned jobs</div>`+cj.map(cjRow).join(''):'')+(sv.length?`<div class="lbl">Services</div>`+sv.slice(0,60).map(svRow).join(''):'')+(ps.length?`<div class="lbl">Parts</div>`+partOpts(v,ps.slice(0,80)):'')+(!sv.length&&!ps.length&&!cj.length?`<p class="hint">Nothing found.</p>`+[["labour","as a service"],["part","as a part"]].map(([k,l])=>`<button class="opt" data-addx="${k}"><div class="tx"><b>＋ ${T_("Add")} “${esc(el.querySelector("#aq").value.trim())}” ${T_(l)}</b></div></button>`).join(""):'');}
     else if(tab==='cj')h=DB.canned.map(cjRow).join('');
     else if(tab.startsWith('s:')){const g=tab.slice(2);h=svAll.filter(s=>s.cat===g).sort(byUse).map(svRow).join('');}
     else if(tab.startsWith('p:')){const c=tab.slice(2);const ps=DB.parts.filter(p=>p.cat===c).sort((a,b)=>((+b.stock||0)>0)-((+a.stock||0)>0)||a.name.localeCompare(b.name));h=partOpts(v,ps);}
@@ -107,6 +107,7 @@ function addItemSheet(j,opt){opt=opt||{};
       h+=`<div class="lbl">Services${Object.keys(use).length?' · most used first':''}</div>`+top.map(svRow).join('');
       if(!DB.parts.length)h+=`<p class="hint">No parts yet. Add them in Stock, or use “Something else”.</p>`;}
     el.querySelector('#alist').innerHTML=h;
+    el.querySelectorAll('[data-addx]').forEach(b=>b.onclick=()=>{const d=el.querySelector('#aq').value.trim();j.items.push({k:b.dataset.addx,d,q:1,u:'',p:0,neu:1,by:S.user.name});editItemSheet(j,j.items.length-1,true);});
     el.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;draw(el);const a=el.querySelector('#alist');if(a)a.scrollIntoView({block:'nearest'});});
     const rp=el.querySelector('#arep');if(rp)rp.onclick=()=>{const n=repeatVisit(j,lv);save();closeSheet();render();toast('Added '+n+' items from the last visit. Check the prices.');};
     el.querySelectorAll('[data-sz]').forEach(b=>b.onclick=()=>{v.size=+b.dataset.sz;save();draw(el);});
@@ -163,7 +164,7 @@ function editItemSheet(j,i,isNew,priceNow){
    <label class="chk"><input type="checkbox" id="epd" ${it.pend&&!priceNow?'checked':''}> Ask the owner for the price</label>
    <button class="btn" id="eok">Save</button><button class="btn ghost jb-del" id="edel">Remove</button>`,el=>{
     let k=it.k;el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=b.dataset.k;el.querySelectorAll('[data-k]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
-    el.querySelector('#eok').onclick=()=>{const d=$('#ed').value.trim();if(!d){toast('Type a name');return;}it.d=d;it.k=k;it.q=num($('#eq').value)||1;it.pend=$('#epd').checked;it.p=it.pend?0:num($('#ep').value);const ec=$('#ec');if(ec)it.cost=num(ec.value);const eo=$('#eo');if(eo)it.outside=eo.checked;
+    el.querySelector('#eok').onclick=()=>{const d=$('#ed').value.trim();if(!d){toast('Type a name');return;}{const qv=$('#eq').value.trim(),pv=$('#ep')?$('#ep').value.trim():'';if(qv&&!(num(qv)>0)){toast(T_('Type the quantity'));return;}if(!$('#epd').checked&&pv&&(num(pv)<0||!/\d/.test(pv)||/[a-z\u0621-\u064a]/i.test(pv))){toast(T_('Type the price'));return;}}it.d=d;it.k=k;it.q=num($('#eq').value)||1;it.pend=$('#epd').checked;it.p=it.pend?0:num($('#ep').value);const ec=$('#ec');if(ec)it.cost=num(ec.value);const eo=$('#eo');if(eo)it.outside=eo.checked;
       if(!can.discount()&&it.ref){const base=it.k==='part'?(byId('parts',it.ref)||{}).price:null;if(base!=null&&it.p<+base-0.0005){it.p=+base;toast('Workers cannot lower prices');}}
       delete it.oldp;const neu=it.neu;logJ(j,(neu?'Added ':'Changed ')+d+(it.pend?' (price pending)':' '+f3(it.q*it.p))+(!neu&&(was.q!==+it.q||was.p!==+it.p||was.pend!==!!it.pend)?' (was '+was.q+' × '+(was.pend?'?':f3(was.p))+')':''));delete it.neu;save();closeSheet();render();if(!neu)jobUndo(j,before,d);};
     el.querySelector('#edel').onclick=()=>{j.items.splice(i,1);logJ(j,'Removed '+(it.d||'item'));save();closeSheet();render();if(!it.neu)jobUndo(j,before,it.d);};

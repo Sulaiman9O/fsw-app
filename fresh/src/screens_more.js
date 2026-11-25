@@ -255,7 +255,7 @@ function jobPaySheet(j,m0){if(!j)return;const due=jobDue(j);if(!(due>0.0005)){to
    <input class="field" id="jpa" inputmode="decimal" value="${f3(due)}" aria-label="${T_('Amount')}"><button class="btn okb" id="jpok">💵 ${T_('Save payment')}</button>
    <button class="btn ghost" data-go="inv:${j.id}">🧾 ${T_('Open the invoice')}</button>`,el=>{
     el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{m=b.dataset.m;el.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',x===b));});
-    el.querySelector('#jpok').onclick=()=>{const d=jobDue(j);let a=Math.round(num(el.querySelector('#jpa').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}if(a>d+0.0005){toast(T_('More than what is owed')+' ('+f3(d)+')');return;}
+    el.querySelector('#jpok').onclick=()=>{const d=jobDue(j);let a=Math.round(numDec(el.querySelector('#jpa').value)*1000)/1000;if(!(a>0)){toast(T_('Type the amount'));return;}if(a>d+0.0005){toast(T_('More than what is owed')+' ('+f3(d)+')');return;}
       j.pays=j.pays||[];j.pays.push({m,amt:a,t:now(),by:S.user.name});audit('pay','Payment '+f3(a)+' '+m+' · invoice #'+j.inv.no);logJ(j,'Paid '+f3(a)+' · '+m);
       const left=jobDue(j);if(left<=0.0005)closeJob(j);save();closeSheet();render();toast(left>0.0005?T_('Saved')+' · '+T_('still due')+' '+f3(left):T_('Paid in full')+' ✓');};});}
 /* 2.42.2: a payment saved by mistake — the owner presses and holds it on the invoice page (no extra button) */

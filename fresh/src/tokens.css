@@ -1,0 +1,39 @@
+/* ShopFlo design tokens — direction A «هادئ» (chosen 25 Nov 2026). The only place colours, sizes, radii and
+   motion values are defined. Components use the ROLE names (--c-*), never raw values. See fresh/DESIGN.md. */
+:root{
+  /* raw palette (brand.json) */
+  --raw-navy:#0B1F3A;--raw-blue:#1F6FEB;--raw-blue-bright:#2F80FF;--raw-fog:#F3F6FB;
+  /* spacing: 4px grid */
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:24px;--s-6:32px;--s-7:48px;--s-8:64px;
+  /* type scale (Arabic never below --t-2) */
+  --t-1:12px;--t-2:14px;--t-3:16px;--t-4:18px;--t-5:22px;--t-6:28px;--t-7:34px;
+  --font:"Manrope","Tajawal",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* radius */
+  --r-s:8px;--r-m:12px;--r-full:999px;
+  /* controls */
+  --h-control:48px;--h-row:56px;--h-primary:56px;--icon:20px;--icon-stroke:2;
+  /* elevation */
+  --e-1:0 1px 2px rgba(11,31,58,.08);--e-2:0 4px 16px rgba(11,31,58,.12);--e-3:0 12px 32px rgba(11,31,58,.22);
+  /* motion */
+  --d-instant:100ms;--d-fast:150ms;--d-base:200ms;--d-enter:250ms;--d-exit:180ms;--d-slow:300ms;
+  --ease-out:cubic-bezier(.2,.8,.2,1);--ease-in:cubic-bezier(.4,0,1,1);--ease-std:cubic-bezier(.2,0,0,1);
+}
+/* roles — dark (default) */
+html.ds{
+  --c-bg:#0B1F3A;--c-surface:#12284A;--c-surface-2:#183257;--c-text:#FFFFFF;--c-text-muted:#B4C2D6;--c-border:#2A446E;
+  --c-primary:#1F6FEB;--c-on-primary:#FFFFFF;--c-primary-tint:#1B3761;--c-link:#7FB0FF;--c-focus:#7FB0FF;
+  --c-success:#5FD4A4;--c-success-tint:#143C3C;--c-warning:#F5A524;--c-warning-tint:#3D3320;--c-danger:#FF8A8A;--c-danger-tint:#44222F;--c-danger-solid:#C62F35;
+  --c-scrim:rgba(4,12,26,.6);
+}
+/* roles — light */
+html.ds.m-light{
+  --c-bg:#F3F6FB;--c-surface:#FFFFFF;--c-surface-2:#F3F6FB;--c-text:#0B1F3A;--c-text-muted:#51607A;--c-border:#DCE3EE;
+  --c-primary:#1F6FEB;--c-on-primary:#FFFFFF;--c-primary-tint:#EAF1FF;--c-link:#1A5FD0;--c-focus:#1F6FEB;
+  --c-success:#157347;--c-success-tint:#E3F4EC;--c-warning:#9A5B00;--c-warning-tint:#FDF1DC;--c-danger:#B3261E;--c-danger-tint:#FDECEC;--c-danger-solid:#C62F35;
+  --c-scrim:rgba(11,31,58,.45);
+}
+/* a workshop may pick another accent: themes change the primary roles only */
+html.ds:not(.t-shopflo):not(.t-indigo){--c-primary:#D42A28;--c-link:#FF9C9A;--c-focus:#FF9C9A;--c-primary-tint:#4A2330}
+html.ds.m-light:not(.t-shopflo):not(.t-indigo){--c-link:#C22624;--c-focus:#C22624;--c-primary-tint:#FDECEC}
+html.ds.t-indigo{--c-primary:#3D4FE0;--c-link:#A5B0FF;--c-focus:#A5B0FF;--c-primary-tint:#252C6B}
+html.ds.m-light.t-indigo{--c-link:#3D4FE0;--c-focus:#3D4FE0;--c-primary-tint:#ECEEFF}

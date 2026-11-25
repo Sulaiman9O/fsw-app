@@ -51,7 +51,7 @@ jobs:
           cat android/app/src/main/res/xml/file_paths.xml
       - name: Icons
         continue-on-error: true
-        run: npx capacitor-assets generate --android --iconBackgroundColor '#2F80FF' --splashBackgroundColor '#0B1F3A' --iconBackgroundColorDark '#2F80FF' --splashBackgroundColorDark '#0B1F3A'
+        run: npx capacitor-assets generate --android --iconBackgroundColor '#0B1F3A' --splashBackgroundColor '#0B1F3A' --iconBackgroundColorDark '#0B1F3A' --splashBackgroundColorDark '#0B1F3A'
       - name: Plain launch screen (the app shows its own opening)
         continue-on-error: true
         run: |

@@ -132,7 +132,7 @@ const selBig=s=>s&&s.tagName==='SELECT'&&!s.disabled&&!s.multiple&&!s.dataset.no
 document.addEventListener('click',e=>{const s=e.target&&e.target.closest&&e.target.closest('select');if(!selBig(s))return;e.preventDefault();e.stopPropagation();s.blur();selSearch(s);},true);
 document.addEventListener('keydown',e=>{const s=e.target;if(selBig(s)&&(e.key==='Enter'||e.key===' '||e.key==='ArrowDown')){e.preventDefault();selSearch(s);}},true);
 function closeSheet(){const el=$('#sheet');if(el){try{el.querySelectorAll('video').forEach(v=>{const s=v.srcObject;if(s&&s.getTracks)s.getTracks().forEach(t=>t.stop());});}catch(e){}try{motionSheetOut(el);}catch(e){}el.remove();}S.sheet=null;S.sheetBack=null;document.documentElement.classList.remove('sheet-open');}
-function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>el.querySelector('#cfy').onclick=()=>{closeSheet();onYes();});}
+function confirmSheet(msg,yes,onYes){openSheet(`<h3>${msg}</h3><button class="btn" id="cfy">${yes}</button>`,el=>{let done=false;el.querySelector('#cfy').onclick=()=>{if(done)return;done=true;closeSheet();onYes();};});}
 
 /* ---------- onboarding (first run) ---------- */
 const OB={step:0,name:'',phone:'',addr:'',owner:'',pin:'',pin1:''};
