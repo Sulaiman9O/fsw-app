@@ -12,10 +12,11 @@ function vehThumb(v,c){const id=v&&(v.ph||[])[0];const p=id&&photoOf(id);const u
 const vehPhotos=v=>(v&&v.ph||[]).map(id=>photoOf(id)).filter(Boolean);
 /* mode 'cam' (the default on a phone or tablet): the camera opens straight away. Without «capture» Android often opened the gallery instead.
    mode 'gal': choose one or more pictures already on the device. */
-function vehAddPhotos(v,done,mode){mode=mode||(matchMedia('(pointer:coarse)').matches?'cam':'gal');const f=document.createElement('input');f.type='file';f.accept='image/*';
-  if(mode==='cam')f.setAttribute('capture','environment');else f.multiple=true;trail('photo',mode==='cam'?'camera':'gallery');
-  f.onchange=()=>{const L=[...(f.files||[])];if(!L.length)return;let n=0;L.forEach(x=>shrinkCar(x,u=>{if(u){DB.photos=DB.photos||[];const id=uid('ph');DB.photos.push({id,veh:v.id,img:u,t:now()});(v.ph=v.ph||[]).push(id);}
-    if(++n===L.length){save();toast(T_('Photo saved'));done&&done();}}));};f.click();}
+function vehAddPhotos(v,done,mode){mode=mode||(matchMedia('(pointer:coarse)').matches?'cam':'gal');
+  const got=L=>{if(!L.length)return;let n=0;L.forEach(x=>shrinkCar(x,u=>{if(u){DB.photos=DB.photos||[];const id=uid('ph');DB.photos.push({id,veh:v.id,img:u,t:now()});(v.ph=v.ph||[]).push(id);}
+    if(++n===L.length){save();toast(T_('Photo saved'));done&&done();}}));};
+  /* 2.43.3: the camera opens inside the app (the system camera made Android close ShopFlo on the tablet — photo lost) */
+  if(mode==='cam')snapPhoto(got,{title:T_('Car photo')});else{trail('photo','gallery');sysPick(true,got);}}
 function vehDelPhoto(v,id){v.ph=(v.ph||[]).filter(x=>x!==id);DB.photos=(DB.photos||[]).filter(x=>x.id!==id);save();toast(T_('Photo deleted'));}
 /* small pictures with a ✕ on each (tap ✕ twice to delete) — tap the picture to see it big */
 function vehThumbs(v,P,cls){return P.map((p,k)=>`<div class="vph${k?'':' main'}${cls?' '+cls:''}"><button class="vpo" data-vph="${p.id}"><img src="${p.img}" alt=""></button>${k?'':`<span class="vpm">⭐</span>`}<button class="vpx" data-vpx="${p.id}" title="${T_('Delete photo')}">✕</button></div>`).join('');}

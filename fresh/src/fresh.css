@@ -668,3 +668,4 @@ button.kpi{text-align:start;font:inherit;cursor:pointer}
 /* 2.42.2 take payment from the lists */
 .car .st:has(.cpay){display:flex;flex-direction:column;align-items:flex-end;gap:6px}.car .st .cpay{display:inline-block;margin:0;padding:6px 10px;border-radius:999px;background:var(--ok);color:#fff;font:700 .78rem var(--f-body);white-space:nowrap}
 .debtnote .btn{margin-inline-start:8px;vertical-align:middle}.paybar.due b.bad{color:var(--bad)}
+

@@ -41,8 +41,9 @@ const expCashOn=day=>DB.expenses.reduce((a,e)=>a+expPays(e).filter(p=>p.m==='Cas
 const MUS=4*3600e3;const expDayT=(day,t0)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(day||'');if(!m)return null;const tod=t0!=null?((t0+MUS)%864e5+864e5)%864e5:12*3600e3;return Date.UTC(+m[1],+m[2]-1,+m[3])-MUS+tod;};
 /* receipt pictures: bigger than car pictures so the small print can be read */
 function shrinkImg(file,max,q,cb){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',q));};im.onerror=()=>{toast(T_('Could not read this picture'));cb(null);};im.src=r.result;};r.onerror=()=>{toast(T_('Could not read this picture'));cb(null);};r.readAsDataURL(file);}
-function pickImgs(mode,cb){const f=document.createElement('input');f.type='file';f.accept='image/*';if(mode==='cam')f.setAttribute('capture','environment');else f.multiple=true;try{trail('photo',mode==='cam'?'camera':'gallery');}catch(e){}
-  f.onchange=()=>{const L=[...(f.files||[])];if(!L.length)return;const out=[];let n=0;L.forEach(x=>shrinkImg(x,1400,.62,u=>{if(u)out.push(u);if(++n===L.length)cb(out);}));};f.click();}
+function pickImgs(mode,cb){const got=L=>{if(!L.length)return;const out=[];let n=0;L.forEach(x=>shrinkImg(x,1400,.62,u=>{if(u)out.push(u);if(++n===L.length)cb(out);}));};
+  /* 2.43.3: camera inside the app (see snap.js) */
+  if(mode==='cam')snapPhoto(got,{title:T_('Receipt photo')});else{try{trail('photo','gallery');}catch(e){}sysPick(true,got);}}
 SCREENS.exp=m=>{const f=rangeOf('month');const P=S.p||{};const fv=P.vend?byId('vendors',P.vend):null;const fo=!!P.owed;
   const all=DB.expenses.slice().sort((a,b)=>b.t-a.t);const list=all.filter(e=>(!fv||e.vend===fv.id)&&(!fo||expOwed(e)>0));const mon=DB.expenses.filter(e=>e.t>=f);
   const owed=DB.expenses.reduce((a,e)=>a+expOwed(e),0);const byC={};mon.forEach(e=>byC[e.cat]=(byC[e.cat]||0)+e.amt);
